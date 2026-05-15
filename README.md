@@ -19,6 +19,7 @@ q> nmap full     enum     Aggressive scan with default scripts
 - **Parallel multi-target execution** — `q run -j 8 'curl -s {{URL}}/robots.txt'` fans out across every session target.
 - **External cheatsheet sync** — pull upstream pentest repos (e.g. PayloadsAllTheThings) into `cheatsheets/external/<name>/`. Same parser, same index.
 - **Multi-session workflow** — switch contexts with `q session use <name>`. Targets, vars, history, discovered data are scoped per session.
+- **Tmux integration** — one tmux session per `q` session with pre-built 3-pane layout, prefix bindings for common ops, and `q run --tmux` to spawn one live pane per target. Detach and reattach without losing state.
 - **MRU bias** — recently used commands float to the top of the search list.
 
 ---
@@ -39,8 +40,10 @@ flowchart LR
     Q -.-> Chain[chains.sh<br/>YAML pipelines]
     Q -.-> Runner[runner.sh<br/>parallel exec]
     Q -.-> Sync[sync.sh<br/>upstream pull]
+    Q -.-> Tmux[tmux.sh<br/>panes + bindings]
     Chain --> Exec
     Runner --> Logger
+    Tmux --> Runner
 
     classDef entry fill:#1e40af,stroke:#60a5fa,color:#fff
     classDef core fill:#7c3aed,stroke:#c4b5fd,color:#fff
@@ -52,7 +55,7 @@ flowchart LR
     class Q,Parser,Search,Vars core
     class Exec,Logger,Promote exec
     class Session data
-    class Chain,Runner,Sync ext
+    class Chain,Runner,Sync,Tmux ext
 ```
 
 ---
@@ -83,6 +86,7 @@ The installer registers a `q` shim on your `$PATH` and wires up the `Ctrl+Q` she
 | `xclip`    | Clipboard read/write for vars and copy |
 | `yq`       | YAML parsing for `q chain`             |
 | `parallel` | Alternative parallel backend           |
+| `tmux`     | `q tmux` workflow and `q run --tmux`   |
 
 `q` calls `apt-get install` automatically for missing hard deps the first time it runs.
 
@@ -138,6 +142,8 @@ q chain run example_recon
 | `q logs show TOOL [TARGET]`              | Cat most recent matching log                              |
 | `q logs prune [--older-than N] [--keep N]` | Trim old logs                                           |
 | `q sync list / run [NAME] / add / disable / remove` | Sync upstream cheatsheet repos                 |
+| `q tmux start / attach / kill / list / send / help` | tmux session tied to active q session         |
+| `q run --tmux CMD`                       | Parallel run with one tmux pane per target                |
 | `q rebuild`                              | Force-rebuild the cheatsheet index                        |
 | `q --version`, `q --help`                | Print version / help                                      |
 
@@ -345,6 +351,59 @@ Placeholders honored per target: `{{TARGET}}`, `{{IP}}`, `{{URL}}`, `{{HOST}}`, 
 
 ---
 
+## Tmux workflow
+
+`q tmux start` creates a detached tmux session named for the active `q` session. The window has three panes: a work shell in the active `q` session, a live `q ls` viewer, and a tail of `history.log`. Detach with `prefix d`, come back later with `q tmux attach` — your work shell, target list, vars, and discovered data are all where you left them.
+
+```mermaid
+flowchart TB
+    Window["tmux window: q-session"]
+    Main["main pane &mdash; 70%<br/>shell with Q_SESSION_NAME exported<br/>cwd = sessions/&lt;name&gt;/"]
+    State["state pane &mdash; 15%<br/>watch -n 2 q ls<br/>vars + targets live view"]
+    Hist["history pane &mdash; 15%<br/>tail -F history.log<br/>every command as it runs"]
+    Window --> Main
+    Window --> State
+    Window --> Hist
+
+    classDef container fill:#1e40af,stroke:#60a5fa,color:#fff
+    classDef work fill:#7c3aed,stroke:#c4b5fd,color:#fff
+    classDef watch fill:#047857,stroke:#6ee7b7,color:#fff
+    classDef log fill:#c2410c,stroke:#fdba74,color:#fff
+    class Window container
+    class Main work
+    class State watch
+    class Hist log
+```
+
+### Key bindings (prefix = `C-b`)
+
+| Binding      | Action                                                                |
+| ------------ | --------------------------------------------------------------------- |
+| `prefix t`   | Prompt for a target value and run `q t <input>` in the main pane     |
+| `prefix s`   | Prompt for `KEY=VALUE` and run `q set`                                |
+| `prefix r`   | Open interactive `q` search in the main pane                          |
+| `prefix p`   | Run `q promote`                                                       |
+| `prefix L`   | `q logs ls` in a tmux popup (tmux >= 3.2) or new pane                 |
+| `prefix Y`   | Capture current pane to the clipboard (xclip)                         |
+| `prefix ?`   | Show this binding table in a popup                                    |
+
+Bindings are sourced onto the running tmux server when `q tmux start` runs. Killing the session does not unbind them — they remain available until the tmux server restarts.
+
+### Per-target live panes
+
+```bash
+q run --tmux 'nmap -sV {{TARGET}}'
+```
+
+Creates a new window named `run-<ts>` in the q tmux session with one tiled pane per target. Each pane:
+- Substitutes per-target placeholders (`{{TARGET}}`, `{{IP}}`, `{{URL}}`, `{{HOST}}`, `{{DOMAIN}}`).
+- Tees output to `sessions/<n>/runs/parallel/<target>-<ts>.out` so logs persist.
+- Stays alive after the command exits so you can re-run / inspect.
+
+Type incompatibility skips that target (e.g. a `{{URL}}`-only template skips IP targets). With <=1 target the command errors and points back to plain `q run`.
+
+---
+
 ## Output logs
 
 ```bash
@@ -426,7 +485,8 @@ Tests run in isolated `BATS_TEST_TMPDIR` and never touch real user data.
 │   ├── chains.sh            # YAML chain runner
 │   ├── runner.sh            # parallel multi-target exec
 │   ├── logger.sh            # per-target timestamped logs
-│   └── sync.sh              # upstream cheatsheet sync
+│   ├── sync.sh              # upstream cheatsheet sync
+│   └── tmux.sh              # tmux session + per-target panes + bindings
 ├── cheatsheets/             # built-in markdown library (~130 sheets)
 ├── chains/                  # built-in chain YAML files
 └── tests/                   # bats suite + fixtures

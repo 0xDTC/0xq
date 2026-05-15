@@ -214,8 +214,17 @@ ${Q_BOLD}CHAINS${Q_RESET}
 
 ${Q_BOLD}PARALLEL EXECUTION${Q_RESET}
     q run [-j N] CMD            Run CMD against every session target in parallel
+    q run --tmux CMD            Same, but one tmux pane per target (live view)
     q run show TARGET           Show last output for TARGET
     q run clean                 Wipe parallel-run output dir
+
+${Q_BOLD}TMUX WORKFLOW${Q_RESET}
+    q tmux start [NAME]         Create a tmux session tied to a q session
+    q tmux attach [NAME]        Attach (or switch-client if inside tmux)
+    q tmux list                 List q-managed tmux sessions
+    q tmux kill [NAME]          Kill the tmux session for q session NAME
+    q tmux send CMD [PANE]      Paste CMD into the main pane
+    q tmux help                 Show tmux key bindings
 
 ${Q_BOLD}OUTPUT LOGS${Q_RESET}
     q logs ls [--tool T] [--target V]   List per-target log files

@@ -82,7 +82,7 @@ q_main() {
 q_source_all_libs() {
     local lib
     for lib in parser.sh search.sh variables.sh executor.sh session.sh \
-               logger.sh promote.sh chains.sh runner.sh sync.sh; do
+               logger.sh promote.sh chains.sh runner.sh sync.sh tmux.sh; do
         if [[ -f "${Q_ROOT}/lib/${lib}" ]]; then
             # shellcheck source=/dev/null
             source "${Q_ROOT}/lib/${lib}"
@@ -311,6 +311,13 @@ case "${1:-}" in
         q_ensure_dirs
         q_config_load
         shift
+        # --tmux backend: spawn one pane per target inside the q tmux session
+        if [[ "${1:-}" == "--tmux" ]]; then
+            shift
+            source "${Q_ROOT}/lib/tmux.sh"
+            q_tmux_run_parallel "$@"
+            exit $?
+        fi
         case "${1:-}" in
             show)
                 [[ $# -lt 2 ]] && { q_error "Usage: q run show TARGET"; exit 1; }
@@ -321,6 +328,41 @@ case "${1:-}" in
                 ;;
             *)
                 q_run_parallel "$@"
+                ;;
+        esac
+        exit $?
+        ;;
+
+    # -- Tmux integration --------------------------------------------------
+    tmux)
+        source "${Q_ROOT}/lib/session.sh"
+        source "${Q_ROOT}/lib/tmux.sh"
+        q_ensure_dirs
+        q_config_load
+        case "${2:-help}" in
+            start)
+                q_tmux_start "${3:-}"
+                ;;
+            attach|a)
+                q_tmux_attach "${3:-}"
+                ;;
+            kill)
+                q_tmux_kill "${3:-}"
+                ;;
+            list|ls)
+                q_tmux_list
+                ;;
+            send)
+                [[ $# -lt 3 ]] && { q_error "Usage: q tmux send CMD [PANE]"; exit 1; }
+                q_tmux_send "$3" "${4:-}"
+                ;;
+            help|"")
+                q_tmux_help
+                ;;
+            *)
+                q_error "Unknown tmux subcommand: ${2}"
+                q_error "Valid: start, attach, kill, list, send, help"
+                exit 1
                 ;;
         esac
         exit $?
