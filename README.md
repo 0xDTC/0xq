@@ -297,7 +297,7 @@ steps:
 flowchart LR
     S([step]) --> Gate{when:<br/>var set?}
     Gate -- no --> Skip[skip step<br/>increment skipped]
-    Gate -- yes --> Resolve[fill {{vars}}<br/>from session]
+    Gate -- yes --> Resolve[fill &#123;&#123;vars&#125;&#125;<br/>from session]
     Resolve --> Resolved{all vars<br/>resolved?}
     Resolved -- no --> Warn[warn + skip]
     Resolved -- yes --> Mode{dry-run?}
