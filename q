@@ -7,7 +7,7 @@ set -euo pipefail
 # Resolve Q_ROOT to the directory containing this script (follows symlinks)
 # ---------------------------------------------------------------------------
 Q_ROOT="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
-Q_VERSION="1.0.0"
+Q_VERSION="1.1.0"
 export Q_ROOT Q_VERSION
 
 # ---------------------------------------------------------------------------
@@ -81,7 +81,8 @@ q_main() {
 # ---------------------------------------------------------------------------
 q_source_all_libs() {
     local lib
-    for lib in parser.sh search.sh variables.sh executor.sh session.sh; do
+    for lib in parser.sh search.sh variables.sh executor.sh session.sh \
+               logger.sh promote.sh chains.sh runner.sh sync.sh; do
         if [[ -f "${Q_ROOT}/lib/${lib}" ]]; then
             # shellcheck source=/dev/null
             source "${Q_ROOT}/lib/${lib}"
@@ -260,6 +261,133 @@ case "${1:-}" in
         q_session_list_vars || true
         q_target_list || true
         exit 0
+        ;;
+
+    # -- Promote discoveries to targets -----------------------------------
+    promote)
+        source "${Q_ROOT}/lib/session.sh"
+        source "${Q_ROOT}/lib/promote.sh"
+        q_ensure_dirs
+        q_config_load
+        q_promote_discoveries
+        exit $?
+        ;;
+
+    # -- YAML command chains ----------------------------------------------
+    chain)
+        source "${Q_ROOT}/lib/session.sh"
+        source "${Q_ROOT}/lib/variables.sh"
+        source "${Q_ROOT}/lib/executor.sh"
+        source "${Q_ROOT}/lib/chains.sh"
+        q_ensure_dirs
+        q_config_load
+        case "${2:-}" in
+            list|"")
+                q_chain_list
+                ;;
+            show)
+                [[ $# -lt 3 ]] && { q_error "Usage: q chain show NAME"; exit 1; }
+                q_chain_show "$3"
+                ;;
+            run)
+                [[ $# -lt 3 ]] && { q_error "Usage: q chain run NAME [--dry-run]"; exit 1; }
+                shift 2
+                q_chain_run "$@"
+                ;;
+            *)
+                q_error "Unknown chain subcommand: ${2}"
+                q_error "Valid: list, show, run"
+                exit 1
+                ;;
+        esac
+        exit $?
+        ;;
+
+    # -- Parallel multi-target execution ----------------------------------
+    run)
+        source "${Q_ROOT}/lib/session.sh"
+        source "${Q_ROOT}/lib/variables.sh"
+        source "${Q_ROOT}/lib/runner.sh"
+        q_ensure_dirs
+        q_config_load
+        shift
+        case "${1:-}" in
+            show)
+                [[ $# -lt 2 ]] && { q_error "Usage: q run show TARGET"; exit 1; }
+                q_run_show "$2"
+                ;;
+            clean)
+                q_run_clean "${2:-}"
+                ;;
+            *)
+                q_run_parallel "$@"
+                ;;
+        esac
+        exit $?
+        ;;
+
+    # -- Per-target output logs -------------------------------------------
+    logs)
+        source "${Q_ROOT}/lib/session.sh"
+        source "${Q_ROOT}/lib/logger.sh"
+        q_ensure_dirs
+        q_config_load
+        case "${2:-ls}" in
+            ls)
+                shift 2 2>/dev/null || shift
+                q_log_ls "$@"
+                ;;
+            show)
+                [[ $# -lt 3 ]] && { q_error "Usage: q logs show TOOL [TARGET]"; exit 1; }
+                q_log_show "$3" "${4:-}"
+                ;;
+            prune)
+                shift 2
+                q_log_prune "$@"
+                ;;
+            *)
+                q_error "Unknown logs subcommand: ${2}"
+                q_error "Valid: ls, show, prune"
+                exit 1
+                ;;
+        esac
+        exit $?
+        ;;
+
+    # -- Cheatsheet sync from upstream repos ------------------------------
+    sync)
+        source "${Q_ROOT}/lib/session.sh"
+        source "${Q_ROOT}/lib/sync.sh"
+        q_ensure_dirs
+        q_config_load
+        case "${2:-run}" in
+            list)
+                q_sync_list
+                ;;
+            add)
+                [[ $# -lt 4 ]] && { q_error "Usage: q sync add NAME URL"; exit 1; }
+                q_sync_add "$3" "$4"
+                ;;
+            disable)
+                [[ $# -lt 3 ]] && { q_error "Usage: q sync disable NAME"; exit 1; }
+                q_sync_disable "$3"
+                ;;
+            remove|rm)
+                [[ $# -lt 3 ]] && { q_error "Usage: q sync remove NAME [--force]"; exit 1; }
+                q_sync_remove "$3" "${4:-}"
+                ;;
+            run|"")
+                q_sync_run "${3:-}"
+                ;;
+            *)
+                # If second arg looks like a source name, treat it as `q sync run NAME`
+                q_sync_run "$2"
+                ;;
+        esac
+        # After a successful sync, drop the index checksum so the next `q`
+        # invocation re-indexes including new external sheets.
+        rm -f "${Q_CACHE_DIR}/checksum"
+        exit $?
         ;;
 
     # -- Default: main search flow ----------------------------------------

@@ -12,3 +12,6 @@ Thumbs.db
 *.tmp
 *.bak
 cache/
+
+# Runtime data — synced upstream cheatsheets land here, not source
+cheatsheets/external/

@@ -1,0 +1,16 @@
+name: example_recon
+description: Quick recon flow against a target host
+vars:
+  PORTS: "1-1000"
+steps:
+  - title: Initial port scan
+    command: nmap -sV -p {{PORTS}} {{TARGET}}
+    continue_on_error: false
+  - title: HTTP probe (if port 80 open)
+    command: curl -s -o /dev/null -w '%{http_code}\n' http://{{TARGET}}
+    when: "PORT_80"
+    continue_on_error: true
+  - title: Directory brute force (if HTTP probe found something)
+    command: ffuf -w {{WORDLIST}} -u http://{{TARGET}}/FUZZ
+    when: "HTTP_OK"
+    continue_on_error: true

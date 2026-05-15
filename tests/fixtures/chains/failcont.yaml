@@ -1,0 +1,12 @@
+name: failcont
+description: Continue past failure when allowed
+steps:
+  - title: Pass first
+    command: echo first ok
+    continue_on_error: false
+  - title: Fail but continue
+    command: false
+    continue_on_error: true
+  - title: Last
+    command: echo last runs
+    continue_on_error: false

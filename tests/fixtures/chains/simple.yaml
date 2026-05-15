@@ -1,0 +1,9 @@
+name: simple
+description: Two-step echo chain
+steps:
+  - title: Say hello
+    command: echo hello {{TARGET}}
+    continue_on_error: false
+  - title: Say goodbye
+    command: echo goodbye {{TARGET}}
+    continue_on_error: false

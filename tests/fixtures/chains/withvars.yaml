@@ -1,0 +1,9 @@
+name: withvars
+description: Chain that defines its own vars
+vars:
+  PORTS: "1-1000"
+  RATE: "fast"
+steps:
+  - title: Echo ports
+    command: echo scanning {{PORTS}} on {{TARGET}} at {{RATE}}
+    continue_on_error: false

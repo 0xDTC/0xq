@@ -173,26 +173,37 @@ _q_execute() {
     # Log to history
     q_history_log "$command"
 
-    # Execute and capture output for discovery parsing.
-    # tee to a temp file so the user sees output in real-time AND we can parse it.
-    local tmpout
-    tmpout="$(mktemp /tmp/q_output_XXXXXX)"
+    # Resolve a persistent per-target log path under sessions/<name>/runs/.
+    # q_log_start returns a fresh timestamped path with its parent dir created.
+    # If logger.sh isn't sourced (defensive), fall back to a temp file.
+    local logfile
+    if declare -f q_log_start >/dev/null 2>&1; then
+        logfile="$(q_log_start "$command")"
+    else
+        logfile="$(mktemp /tmp/q_output_XXXXXX)"
+    fi
 
     printf '%s--- Executing ---%s\n' "$Q_DIM" "$Q_RESET" >&2
-    eval "$command" 2>&1 | tee "$tmpout"
+    printf '%slog: %s%s\n' "$Q_DIM" "$logfile" "$Q_RESET" >&2
+    eval "$command" 2>&1 | tee "$logfile"
     local exit_code=${PIPESTATUS[0]}
     printf '%s--- Finished (exit %d) ---%s\n' "$Q_DIM" "$exit_code" "$Q_RESET" >&2
 
-    # Parse output for discoverable data (ports, IPs, domains, URLs)
-    # Runs synchronously — parsing is fast (<50ms for typical output)
-    if [[ -s "$tmpout" ]]; then
+    # Parse output for discoverable data and promote high-confidence findings
+    # (IPs, domains, URLs) into the session's target list. q_promote_after_run
+    # invokes the base parser, the extra parsers (hashes, JWTs, SMB shares,
+    # LDAP DNs, titles), then the discovery→target bridge.
+    if [[ -s "$logfile" ]]; then
         local captured
-        captured="$(cat "$tmpout")"
-        q_parse_output "$captured" "$command" 2>/dev/null || true
+        captured="$(cat "$logfile")"
+        if declare -f q_promote_after_run >/dev/null 2>&1; then
+            q_promote_after_run "$captured" "$command" 2>/dev/null || true
+        else
+            q_parse_output "$captured" "$command" 2>/dev/null || true
+        fi
     fi
-    rm -f "$tmpout"
 
-    return $exit_code
+    return "$exit_code"
 }
 
 # ===========================================================================

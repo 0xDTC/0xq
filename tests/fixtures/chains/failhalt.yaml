@@ -1,0 +1,12 @@
+name: failhalt
+description: Halt on first failure
+steps:
+  - title: Pass
+    command: echo first ok
+    continue_on_error: false
+  - title: Fail
+    command: false
+    continue_on_error: false
+  - title: Never
+    command: echo never runs
+    continue_on_error: false

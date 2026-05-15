@@ -1,0 +1,13 @@
+name: gated
+description: Step gated by a session var
+steps:
+  - title: Always runs
+    command: echo always
+    continue_on_error: false
+  - title: Only if PORT_80 set
+    command: echo http
+    when: "PORT_80"
+    continue_on_error: false
+  - title: After gate
+    command: echo end
+    continue_on_error: false

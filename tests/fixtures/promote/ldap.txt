@@ -1,0 +1,26 @@
+ldapsearch -x -H ldap://dc01.lab.local -b "DC=lab,DC=local" "(objectClass=user)"
+# extended LDIF
+#
+# LDAPv3
+# base <DC=lab,DC=local> with scope subtree
+# filter: (objectClass=user)
+# requesting: ALL
+#
+
+# Administrator, Users, lab.local
+dn: CN=Administrator,CN=Users,DC=lab,DC=local
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: Administrator
+sAMAccountName: Administrator
+memberOf: CN=Domain Admins,CN=Users,DC=lab,DC=local
+
+# jdoe, Users, lab.local
+dn: CN=John Doe,OU=Engineering,DC=lab,DC=local
+objectClass: user
+cn: John Doe
+sAMAccountName: jdoe
+
+# results: 2

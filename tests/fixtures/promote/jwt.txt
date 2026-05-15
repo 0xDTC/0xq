@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+Server: nginx
+Content-Type: application/json
+Set-Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c; Path=/; HttpOnly
+
+{"token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2lkLmV4YW1wbGUuY29tIiwic3ViIjoiYWxpY2VAbGFiLmxvY2FsIiwiYXVkIjoiYXBpIiwiZXhwIjoxNzQwMDAwMDAwLCJpYXQiOjE3Mzk5OTkwMDAsImp0aSI6ImFiY2QxMjM0NTY3ODkwIn0.fakeSignaturePartHereThatIsLongEnoughToPassLengthGate","status":"ok"}

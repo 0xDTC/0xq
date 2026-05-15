@@ -204,6 +204,31 @@ ${Q_BOLD}FAST SHORTCUTS${Q_RESET}
     q c                         Clear all targets in session
     q ls                        List everything (vars + targets)
 
+${Q_BOLD}DISCOVERY & PROMOTION${Q_RESET}
+    q promote                   Promote discovered IPs/domains/URLs to targets
+
+${Q_BOLD}CHAINS${Q_RESET}
+    q chain list                List available command chains
+    q chain show NAME           Show steps in a chain
+    q chain run NAME [--dry-run] Run a chain (yaml under chains/)
+
+${Q_BOLD}PARALLEL EXECUTION${Q_RESET}
+    q run [-j N] CMD            Run CMD against every session target in parallel
+    q run show TARGET           Show last output for TARGET
+    q run clean                 Wipe parallel-run output dir
+
+${Q_BOLD}OUTPUT LOGS${Q_RESET}
+    q logs ls [--tool T] [--target V]   List per-target log files
+    q logs show TOOL [TARGET]   Cat most recent log for tool/target
+    q logs prune [--older-than DAYS] [--keep N]   Trim old logs
+
+${Q_BOLD}CHEATSHEET SYNC${Q_RESET}
+    q sync list                 List cheatsheet sources and status
+    q sync run [NAME]           Pull cheatsheets from upstream
+    q sync add NAME URL         Register a custom source
+    q sync disable NAME         Skip a source on sync-all
+    q sync remove NAME [--force] Remove a synced source
+
 ${Q_BOLD}UTILITY${Q_RESET}
     q history                   Show command execution history
     q rebuild                   Force-rebuild the cheatsheet index cache
