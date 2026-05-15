@@ -1,0 +1,544 @@
+#!/usr/bin/env bash
+# variables.sh — Variable extraction, interactive fill, and substitution
+# Sourced by the main `q` script; not meant to be executed directly.
+
+# ===========================================================================
+# q_extract_vars — parse {{VAR:type:default}} placeholders from a command
+# ===========================================================================
+# Outputs one line per placeholder: NAME<TAB>TYPE<TAB>DEFAULT
+# TYPE defaults to "str", DEFAULT defaults to "". Tab-delimited to handle colons in defaults.
+q_extract_vars() {
+    local cmd="$1"
+
+    # Extract all {{...}} tokens
+    grep -oP '\{\{[^}]+\}\}' <<< "$cmd" | while IFS= read -r placeholder; do
+        # Strip the {{ and }}
+        local inner="${placeholder#\{\{}"
+        inner="${inner%\}\}}"
+
+        # Split on : with care — only the first two colons are delimiters.
+        # Everything after the second colon is the default value (which may contain colons).
+        local name vtype vdefault
+        name="${inner%%:*}"
+
+        local rest="${inner#"$name"}"
+        rest="${rest#:}"  # remove leading colon if present
+
+        if [[ -n "$rest" ]]; then
+            vtype="${rest%%:*}"
+            local rest2="${rest#"$vtype"}"
+            rest2="${rest2#:}"
+            vdefault="$rest2"
+        else
+            vtype="str"
+            vdefault=""
+        fi
+
+        vtype="${vtype:-str}"
+
+        # Use tab as delimiter to avoid conflicts with colons in default values
+        printf '%s\t%s\t%s\n' "$name" "$vtype" "$vdefault"
+    done
+}
+
+# ===========================================================================
+# q_fill_vars — main entry point: fill all placeholders in a command string
+# ===========================================================================
+q_fill_vars() {
+    local cmd="$1"
+    local -A filled_vars    # associative array: VAR_NAME -> value
+
+    # Extract unique variable names (preserve order of first occurrence)
+    local vars_raw
+    vars_raw="$(q_extract_vars "$cmd")"
+
+    if [[ -z "$vars_raw" ]]; then
+        printf '%s' "$cmd"
+        return 0
+    fi
+
+    local seen_names=""
+    local name vtype vdefault
+    while IFS=$'\t' read -r name vtype vdefault; do
+        [[ -z "$name" ]] && continue
+
+        # Skip duplicates — only process each variable name once
+        if [[ " $seen_names " == *" $name "* ]]; then
+            continue
+        fi
+        seen_names="$seen_names $name"
+
+        # 1. Special handling for LHOST — auto-detect
+        if [[ "${name^^}" == "LHOST" ]]; then
+            local auto_lhost=""
+            auto_lhost="$(_q_detect_lhost)"
+            if [[ -n "$auto_lhost" ]] && [[ -z "$vdefault" ]]; then
+                vdefault="$auto_lhost"
+            fi
+        fi
+
+        # 2. If there's a session value, pass it as the default (shown as top
+        #    candidate in fzf) instead of silently auto-filling
+        local session_val=""
+        session_val="$(q_session_get "$name" 2>/dev/null)" || true
+        if [[ -n "$session_val" ]]; then
+            vdefault="$session_val"
+        fi
+
+        # 3. Interactive fill — always prompt via fzf
+        local value=""
+        value="$(q_fill_single_var "$name" "$vtype" "$vdefault")"
+
+        if [[ -z "$value" ]] && [[ -n "$vdefault" ]]; then
+            value="$vdefault"
+        fi
+
+        filled_vars["$name"]="$value"
+
+        # 4. Persist: add to var history and targets if applicable
+        if [[ -n "$value" ]]; then
+            local upper_type="${vtype^^}"
+            q_var_history_add "$upper_type" "$value"
+
+            # Auto-add to targets if it looks like a target
+            case "$upper_type" in
+                IP|URL|DOMAIN|TARGET|HOST|RHOST)
+                    q_target_add "$value" "fill" 2>/dev/null || true
+                    ;;
+            esac
+            # Also save to session var so it's the top suggestion next time
+            q_session_set "$name" "$value" >/dev/null 2>&1 || true
+        fi
+    done <<< "$vars_raw"
+
+    # Substitute all placeholders with their resolved values
+    local result="$cmd"
+    for name in "${!filled_vars[@]}"; do
+        local value="${filled_vars[$name]}"
+        # Replace all variations: {{NAME}}, {{NAME:type}}, {{NAME:type:default}}
+        # Use a loop to handle all patterns for this variable name
+        # Single-pass replacement via awk to avoid re-scanning substituted text
+        result="$(printf '%s' "$result" | \
+            awk -v n="$name" -v v="$value" '{ gsub("\\{\\{" n "(:[^}]*)?" "\\}\\}", v); print }')"
+    done
+
+    printf '%s' "$result"
+}
+
+# ===========================================================================
+# q_fill_vars_auto — non-interactive fill using session values only
+# ===========================================================================
+# Returns the command with all {{VAR}} placeholders substituted from session
+# values (plus LHOST auto-detect and declared defaults). If ANY variable cannot
+# be resolved, returns exit code 1 so the caller can fall back to interactive
+# q_fill_vars. No fzf prompts are ever shown.
+q_fill_vars_auto() {
+    local cmd="$1"
+    local result="$cmd"
+
+    local vars_raw
+    vars_raw="$(q_extract_vars "$cmd")"
+
+    if [[ -z "$vars_raw" ]]; then
+        printf '%s' "$cmd"
+        return 0
+    fi
+
+    local seen_names=""
+    local name vtype vdefault
+    while IFS=$'\t' read -r name vtype vdefault; do
+        [[ -z "$name" ]] && continue
+
+        # Skip duplicates — only process each variable name once
+        if [[ " $seen_names " == *" $name "* ]]; then
+            continue
+        fi
+        seen_names="$seen_names $name"
+
+        # 1. Session value takes priority
+        local value=""
+        value="$(q_session_get "$name" 2>/dev/null)" || value=""
+
+        # 2. LHOST auto-detect if still empty
+        if [[ -z "$value" ]] && [[ "${name^^}" == "LHOST" ]]; then
+            value="$(_q_detect_lhost 2>/dev/null)" || value=""
+        fi
+
+        # 3. Fall back to declared default
+        if [[ -z "$value" ]] && [[ -n "$vdefault" ]]; then
+            value="$vdefault"
+        fi
+
+        # 4. Still empty — signal the caller to go interactive
+        [[ -z "$value" ]] && return 1
+
+        # Substitute all occurrences of this variable via awk
+        result="$(printf '%s' "$result" | \
+            awk -v n="$name" -v v="$value" '{ gsub("\\{\\{" n "(:[^}]*)?" "\\}\\}", v); print }')"
+    done <<< "$vars_raw"
+
+    printf '%s' "$result"
+}
+
+# ===========================================================================
+# _q_detect_lhost — auto-detect local IP (prefer tun0, then eth0, fallback)
+# ===========================================================================
+_q_detect_lhost() {
+    local ip=""
+    ip="$(ip -4 addr show tun0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+    ip="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+    ip="$(ip -4 route get 1 2>/dev/null | grep -oP 'src \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+    return 1
+}
+
+# ===========================================================================
+# _q_compatible_target_types — map variable type to compatible target types
+# ===========================================================================
+_q_compatible_target_types() {
+    local vtype="$1"
+    case "${vtype^^}" in
+        URL)                    echo "url" ;;
+        IP)                     echo "ip" ;;
+        DOMAIN)                 echo "url domain" ;;
+        TARGET|HOST|RHOST)      echo "ip url domain" ;;
+        SUBNET|CIDR)            echo "cidr" ;;
+        FILE|OUTFILE|OUTPUT_FILE) echo "file" ;;
+        *)                      echo "" ;;
+    esac
+}
+
+# ===========================================================================
+# _q_build_candidates — assemble the candidate list for fzf selection
+# ===========================================================================
+_q_build_candidates() {
+    local name="$1" vtype="$2" vdefault="$3"
+    local upper_type="${vtype^^}"
+    local upper_name="${name^^}"
+    local candidates=""
+
+    # --- Pre-compute paths once to avoid repeated subshell forks ---
+    # Each $(q_session_dir) call forks a subshell (~2ms). Computing paths
+    # inline once and reading files directly saves ~30ms total.
+    local sdir
+    sdir="$(q_session_dir)"
+    local vars_file="${sdir}/vars"
+    local targets_file="${sdir}/targets"
+    local disc_dir="${sdir}/discovered"
+
+    # --- Session value (top priority — first in list) ---
+    # Inline q_session_get to avoid a subshell fork
+    local session_val=""
+    if [[ -f "$vars_file" ]]; then
+        local _sline
+        _sline="$(awk -F= -v k="$name" '$1 == k { sub(/^[^=]*=/, ""); print; exit }' "$vars_file")" || true
+        [[ -n "$_sline" ]] && session_val="$_sline"
+    fi
+    if [[ -n "$session_val" ]]; then
+        candidates="[session] ${session_val}"$'\n'
+    fi
+
+    # --- Clipboard entry (if available and type-compatible) ---
+    if q_clipboard_available; then
+        local clip=""
+        clip="$(q_clipboard_read 2>/dev/null)" || true
+        if [[ -n "$clip" ]] && [[ "$clip" != "$session_val" ]]; then
+            local clip_compatible=0
+            case "$upper_type" in
+                STR|TARGET|HOST|RHOST) clip_compatible=1 ;;
+                IP)     [[ "$clip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && clip_compatible=1 ;;
+                URL)    [[ "$clip" =~ ^https?:// ]] && clip_compatible=1 ;;
+                DOMAIN) [[ "$clip" =~ ^[a-zA-Z0-9] ]] && clip_compatible=1 ;;
+                PORT|RPORT|LPORT) [[ "$clip" =~ ^[0-9]+$ ]] && clip_compatible=1 ;;
+                *)      clip_compatible=1 ;;
+            esac
+            if [[ "$clip_compatible" -eq 1 ]]; then
+                candidates="${candidates}[clipboard] ${clip}"$'\n'
+            fi
+        fi
+    fi
+
+    # --- Default value entry (only if different from session) ---
+    if [[ -n "$vdefault" ]] && [[ "$vdefault" != "$session_val" ]]; then
+        candidates="${candidates}[default] ${vdefault}"$'\n'
+    fi
+
+    # --- Session targets filtered by compatible types ---
+    # Inline _q_compatible_target_types to avoid 2 subshell forks
+    local compat_types=""
+    case "${vtype^^}" in
+        URL)                        compat_types="url" ;;
+        IP)                         compat_types="ip" ;;
+        DOMAIN)                     compat_types="url domain" ;;
+        TARGET|HOST|RHOST)          compat_types="ip url domain" ;;
+        SUBNET|CIDR)                compat_types="cidr" ;;
+        FILE|OUTFILE|OUTPUT_FILE)   compat_types="file" ;;
+    esac
+    case "$upper_name" in
+        URL)                        compat_types="${compat_types} url" ;;
+        IP)                         compat_types="${compat_types} ip" ;;
+        DOMAIN)                     compat_types="${compat_types} url domain" ;;
+        TARGET|HOST|RHOST)          compat_types="${compat_types} ip url domain" ;;
+        SUBNET|CIDR)                compat_types="${compat_types} cidr" ;;
+        FILE|OUTFILE|OUTPUT_FILE)   compat_types="${compat_types} file" ;;
+    esac
+
+    if [[ -n "$compat_types" ]]; then
+        if [[ -f "$targets_file" ]] && [[ -s "$targets_file" ]]; then
+            while IFS= read -r _tline; do
+                [[ -z "$_tline" ]] && continue
+                local ttype="${_tline%%:*}"
+                local tvalue="${_tline#*:}"
+                local ct
+                for ct in $compat_types; do
+                    if [[ "$ttype" == "$ct" ]]; then
+                        candidates="${candidates}[used] ${tvalue}"$'\n'
+                        break
+                    fi
+                done
+            done < "$targets_file"
+        fi
+    fi
+
+    # --- Discovered data from previous command outputs ---
+    # Read discovery files directly instead of calling q_discover_get per type.
+    # Each q_discover_get call forks 2 nested subshells (_q_discovery_dir ->
+    # q_session_dir). Reading files inline saves ~4ms per discovery type.
+
+    # Collect discovery types needed based on variable type AND name
+    local -a disc_types=()
+    case "$upper_type" in
+        PORT)   disc_types+=(ports) ;;
+        IP)     disc_types+=(ips) ;;
+        URL)    disc_types+=(urls) ;;
+        DOMAIN) disc_types+=(domains) ;;
+    esac
+    case "$upper_name" in
+        *PORT*|RPORT|LPORT)                       disc_types+=(ports port_lists) ;;
+        *URL*|*ENDPOINT*)                          disc_types+=(urls) ;;
+        *DOMAIN*|*SUBDOMAIN*|*HOST*|TARGET|RHOST)  disc_types+=(domains ips) ;;
+        *USER*|*USERNAME*)                         disc_types+=(users) ;;
+        *PASS*|*PASSWORD*)                         disc_types+=(passwords) ;;
+    esac
+
+    # Read all needed discovery files directly, tag each line with [new]
+    if [[ ${#disc_types[@]} -gt 0 ]]; then
+        local dtype dfile
+        for dtype in "${disc_types[@]}"; do
+            dfile="${disc_dir}/${dtype}"
+            if [[ -f "$dfile" ]] && [[ -s "$dfile" ]]; then
+                while IFS= read -r _dline; do
+                    [[ -n "$_dline" ]] && candidates="${candidates}[new] ${_dline}"$'\n'
+                done < "$dfile"
+            fi
+        done
+    fi
+
+    # --- Variable history (tagged [recent]) ---
+    # Read history files directly instead of calling q_var_history_get
+    local hist_file_type="${Q_VAR_HISTORY_DIR}/${upper_type}"
+    local hist_file_name="${Q_VAR_HISTORY_DIR}/${upper_name}"
+
+    if [[ -f "$hist_file_type" ]] && [[ -s "$hist_file_type" ]]; then
+        while IFS= read -r _hline; do
+            [[ -z "$_hline" ]] && continue
+            candidates="${candidates}[recent] ${_hline}"$'\n'
+        done < "$hist_file_type"
+    fi
+    if [[ "$upper_name" != "$upper_type" ]] && [[ -f "$hist_file_name" ]] && [[ -s "$hist_file_name" ]]; then
+        while IFS= read -r _hline; do
+            [[ -z "$_hline" ]] && continue
+            candidates="${candidates}[recent] ${_hline}"$'\n'
+        done < "$hist_file_name"
+    fi
+
+    # --- Type-specific additions ---
+    # Wordlist candidates
+    if [[ "$upper_type" == "WORDLIST" ]] || [[ "$upper_name" == *WORDLIST* ]]; then
+        local -a wordlist_paths=(
+            "/usr/share/seclists/Discovery/Web-Content/common.txt"
+            "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"
+            "/usr/share/seclists/Discovery/Web-Content/raft-medium-words.txt"
+            "/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt"
+            "/usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt"
+            "/usr/share/seclists/Usernames/top-usernames-shortlist.txt"
+            "/usr/share/wordlists/rockyou.txt"
+            "/usr/share/wordlists/dirb/common.txt"
+            "/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
+        )
+        local wp
+        for wp in "${wordlist_paths[@]}"; do
+            [[ -f "$wp" ]] && candidates="${candidates}${wp}"$'\n'
+        done
+    fi
+
+    # Network interface candidates
+    if [[ "$upper_type" == "IFACE" ]] || [[ "$upper_name" == *IFACE* ]] || [[ "$upper_name" == *INTERFACE* ]]; then
+        local ifaces
+        ifaces="$(ip -o link show 2>/dev/null | awk -F': ' '{print $2}' | tr -d ' ')" || true
+        if [[ -n "$ifaces" ]]; then
+            candidates="${candidates}${ifaces}"$'\n'
+        fi
+    fi
+
+    # Port candidates
+    if [[ "$upper_type" == "PORT" ]] || [[ "$upper_name" == *PORT* ]]; then
+        local -a common_ports=(
+            "80" "443" "8080" "8443"
+            "21" "22" "23" "25" "53"
+            "135" "139" "445" "3389"
+            "3306" "5432" "1433" "27017"
+            "6379" "11211" "1-1000"
+        )
+        local p
+        for p in "${common_ports[@]}"; do
+            candidates="${candidates}${p}"$'\n'
+        done
+    fi
+
+    # Also handle LHOST auto-detection in candidates
+    if [[ "$upper_name" == "LHOST" ]]; then
+        local auto_ip
+        auto_ip="$(_q_detect_lhost 2>/dev/null)" || true
+        if [[ -n "$auto_ip" ]]; then
+            candidates="[auto] ${auto_ip}"$'\n'"${candidates}"
+        fi
+    fi
+
+    # Deduplicate while preserving order
+    if [[ -n "$candidates" ]]; then
+        printf '%s' "$candidates" | awk '!seen[$0]++ && NF'
+    fi
+}
+
+# ===========================================================================
+# _q_path_reload — dynamic filesystem completion helper for fzf
+# ===========================================================================
+# When the user types a path-like prefix (starts with /, ./, ~/, or contains
+# /), emit matching filesystem entries for fzf to display. Otherwise echo the
+# original candidate list (stashed in _Q_PATH_RELOAD_CANDIDATES) so fzf keeps
+# filtering normal candidates.
+_q_path_reload() {
+    local q="$1"
+
+    # Non-path query — restore the original candidate list
+    if [[ "$q" != /* && "$q" != ./* && "$q" != \~/* && "$q" != */* ]]; then
+        printf '%s' "${_Q_PATH_RELOAD_CANDIDATES-}"
+        return 0
+    fi
+
+    # Expand leading ~ to $HOME
+    local expanded="${q/#\~/$HOME}"
+
+    local dir base
+    if [[ "$expanded" == */ ]]; then
+        dir="${expanded%/}"
+        base=""
+    else
+        dir="$(dirname "$expanded")"
+        base="$(basename "$expanded")"
+    fi
+    [[ -z "$dir" ]] && dir="."
+
+    find "$dir" -maxdepth 1 -name "${base}*" 2>/dev/null | sort | head -50
+}
+export -f _q_path_reload
+
+# ===========================================================================
+# q_fill_single_var — interactive single variable fill via fzf
+# ===========================================================================
+q_fill_single_var() {
+    local name="$1" vtype="$2" vdefault="$3"
+    local upper_type="${vtype^^}"
+
+    # Build candidate list
+    local candidates
+    candidates="$(_q_build_candidates "$name" "$vtype" "$vdefault")"
+
+    # Determine if this is a file/path type (needs browse binding)
+    local is_file_type=0
+    case "$upper_type" in
+        FILE|WORDLIST|DIR|OUTFILE|OUTPUT_FILE) is_file_type=1 ;;
+    esac
+
+    # Also check by variable name
+    case "${name^^}" in
+        *FILE*|*WORDLIST*|*PATH*|*DIR*) is_file_type=1 ;;
+    esac
+
+    # Build fzf command
+    local fzf_args=()
+    fzf_args+=(--prompt="  {{${name}}}> ")
+    fzf_args+=(--print-query)
+    fzf_args+=(--height=14)
+    fzf_args+=(--layout=reverse)
+    fzf_args+=(--border)
+    fzf_args+=(--no-info)
+    fzf_args+=(--no-multi)
+
+    # Don't pre-fill query — let the user see all candidates and pick.
+    # The session/default value is already the top item in the list.
+
+    # Header: context-sensitive help text
+    local header_text="Enter: select | Type: custom value"
+
+    # Add file browse keybinding for file-like types
+    if [[ "$is_file_type" -eq 1 ]]; then
+        case "$upper_type" in
+            WORDLIST)
+                fzf_args+=(--bind "ctrl-f:become(find /usr/share/seclists /usr/share/wordlists -type f 2>/dev/null | fzf --prompt='Browse wordlists> ' --height=80% --layout=reverse --border)")
+                ;;
+            DIR)
+                fzf_args+=(--bind "ctrl-f:become(find . -maxdepth 4 -type d 2>/dev/null | fzf --prompt='Browse dirs> ' --height=80% --layout=reverse --border)")
+                ;;
+            *)
+                fzf_args+=(--bind "ctrl-f:become(find . -maxdepth 4 -type f 2>/dev/null | fzf --prompt='Browse files> ' --height=80% --layout=reverse --border)")
+                ;;
+        esac
+        # Dynamic path completion: as the user types a path-like prefix
+        # (/, ./, ~/, or anything containing /), reload the list with
+        # matching filesystem entries. Non-path queries restore the original
+        # candidate list so normal fuzzy filtering keeps working.
+        export _Q_PATH_RELOAD_CANDIDATES="$candidates"
+        fzf_args+=(--bind "change:reload:_q_path_reload {q} || true")
+        header_text="${header_text} | Ctrl+F: browse | Type path for tab-completion"
+    fi
+
+    fzf_args+=(--header="$header_text")
+
+    # Run fzf
+    local fzf_output
+    if [[ -n "$candidates" ]]; then
+        fzf_output="$(printf '%s\n' "$candidates" | fzf "${fzf_args[@]}" 2>/dev/tty)" || true
+    else
+        fzf_output="$(printf '' | fzf "${fzf_args[@]}" 2>/dev/tty)" || true
+    fi
+
+    # Parse fzf output: --print-query gives query on line 1, selection on line 2
+    # Use IFS+read instead of head/sed subshells to avoid 2 fork+exec (~4ms)
+    local typed_query="" selected=""
+    IFS=$'\n' read -r typed_query <<< "$fzf_output" || true
+    selected="${fzf_output#*$'\n'}"
+    # If no newline was present, selected == fzf_output — clear it
+    [[ "$selected" == "$fzf_output" ]] && selected=""
+
+    # Determine final value
+    local value=""
+    if [[ -n "$selected" ]]; then
+        # User selected from the list — strip tag prefixes using parameter expansion
+        value="${selected#\[session\] }"
+        value="${value#\[clipboard\] }"
+        value="${value#\[default\] }"
+        value="${value#\[auto\] }"
+        value="${value#\[new\] }"
+        value="${value#\[recent\] }"
+        value="${value#\[used\] }"
+    elif [[ -n "$typed_query" ]]; then
+        # User typed a custom value
+        value="$typed_query"
+    elif [[ -n "$vdefault" ]]; then
+        # User pressed Enter with nothing — use default
+        value="$vdefault"
+    fi
+
+    printf '%s' "$value"
+}

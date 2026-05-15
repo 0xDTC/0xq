@@ -1,0 +1,115 @@
+# Nmap
+
+> Network discovery and security auditing with the most versatile port scanner
+
+<!-- tags: nmap, port-scan, network, discovery, recon -->
+
+---
+
+## Ping Sweep
+Discover live hosts on a subnet without port scanning.
+
+```bash
+sudo nmap -sn {{SUBNET:cidr:192.168.1.0/24}} -oG {{OUTFILE:file:ping-sweep.txt}}
+```
+
+<!-- meta: risk=safe | phase=recon | tags=ping,sweep,discovery -->
+
+---
+
+## Quick SYN Scan (Top 1000 Ports)
+Fast stealth SYN scan against the most common ports.
+
+```bash
+sudo nmap -sS {{TARGET:ip}} -oN {{OUTFILE:file:syn-scan.txt}}
+```
+
+<!-- meta: risk=low | phase=recon | tags=syn,stealth,fast -->
+
+---
+
+## Full Port SYN Scan
+Scan all 65535 TCP ports with service detection.
+
+```bash
+sudo nmap -sS -p- -T4 {{TARGET:ip}} -oN {{OUTFILE:file:full-port.txt}}
+```
+
+<!-- meta: risk=low | phase=recon | tags=full,all-ports,tcp -->
+
+---
+
+## UDP Scan (Top 100 Ports)
+Scan common UDP services. Slow but finds DNS, SNMP, TFTP, etc.
+
+```bash
+sudo nmap -sU --top-ports 100 -T4 {{TARGET:ip}} -oN {{OUTFILE:file:udp-scan.txt}}
+```
+
+<!-- meta: risk=low | phase=recon | tags=udp,services -->
+
+---
+
+## Service Version and OS Detection
+Enumerate service versions and attempt OS fingerprinting.
+
+```bash
+sudo nmap -sV -sC -O -p {{PORTS:port:22,80,443}} {{TARGET:ip}} -oN {{OUTFILE:file:version-scan.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=version,os,fingerprint -->
+
+---
+
+## Aggressive Scan
+Full enumeration with OS detection, version scanning, scripts, and traceroute.
+
+```bash
+sudo nmap -A -T4 -p- {{TARGET:ip}} -oA {{OUTFILE:file:aggressive-scan}}
+```
+
+<!-- meta: risk=med | phase=enum | tags=aggressive,comprehensive -->
+
+---
+
+## Vulnerability Script Scan
+Run NSE vulnerability detection scripts against discovered services.
+
+```bash
+sudo nmap --script vuln -p {{PORTS:port:22,80,443,445}} {{TARGET:ip}} -oN {{OUTFILE:file:vuln-scan.txt}}
+```
+
+<!-- meta: risk=med | phase=vuln | tags=nse,vuln,scripts -->
+
+---
+
+## Specific NSE Script Scan
+Run a targeted NSE script against the target.
+
+```bash
+sudo nmap --script {{SCRIPT:str:http-enum}} -p {{PORTS:port:80,443}} {{TARGET:ip}} -oN {{OUTFILE:file:nse-output.txt}}
+```
+
+<!-- meta: risk=med | phase=enum | tags=nse,targeted,scripts -->
+
+---
+
+## Subnet Service Sweep
+Scan an entire subnet for a specific service port.
+
+```bash
+sudo nmap -sS -p {{PORTS:port:445}} {{SUBNET:cidr:192.168.1.0/24}} --open -oG {{OUTFILE:file:subnet-sweep.txt}}
+```
+
+<!-- meta: risk=low | phase=recon | tags=subnet,sweep,service -->
+
+---
+
+## Firewall Evasion Scan
+Fragmented packets with decoy addresses to evade IDS/firewall detection.
+
+```bash
+sudo nmap -sS -f -D RND:5 --data-length 24 -T2 -p {{PORTS:port:80,443}} {{TARGET:ip}} -oN {{OUTFILE:file:evasion-scan.txt}}
+```
+
+<!-- meta: risk=med | phase=recon | tags=evasion,firewall,stealth -->
