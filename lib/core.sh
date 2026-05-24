@@ -6,7 +6,8 @@
 # Directory constants
 # ===========================================================================
 Q_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/q"
-Q_CACHE_DIR="${Q_ROOT}/cache"
+# Honor a pre-set Q_CACHE_DIR (lets tests isolate the cache); default in-repo.
+Q_CACHE_DIR="${Q_CACHE_DIR:-${Q_ROOT}/cache}"
 Q_SHEETS_DIR="${Q_ROOT}/cheatsheets"
 Q_SESSION_DIR="${Q_DATA_DIR}/sessions"
 Q_VAR_HISTORY_DIR="${Q_DATA_DIR}/var_history"

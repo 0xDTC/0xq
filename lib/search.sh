@@ -64,6 +64,12 @@ q_search() {
     local cycle_file="${Q_CACHE_DIR}/.target_cycle"
     : > "$cycle_file"
 
+    # Transient on-screen fill state + current-command stash. Reset per search.
+    local fill_state="${Q_CACHE_DIR}/.fill_state"
+    local cur_cmd_file="${Q_CACHE_DIR}/.cur_cmd"
+    : > "$fill_state"
+    : > "$cur_cmd_file"
+
     # -----------------------------------------------------------------------
     # Preview script — runs under fzf for every highlighted row. Reads the
     # session vars file directly and produces a filled-command rendering.
@@ -74,6 +80,7 @@ q_search() {
         line={}
         vars_file='${vars_file}'
         cycle_file='${cycle_file}'
+        fill_file='${fill_state}'
 
         # Strip ANSI so field parsing is clean
         line="\$(printf '%s' "\$line" | sed 's/\x1b\[[0-9;]*m//g')"
@@ -99,6 +106,7 @@ q_search() {
         awk_out=\$(printf '%s' "\$_cmd" | awk \\
             -v vars_file="\$vars_file" \\
             -v cycle_file="\$cycle_file" \\
+            -v fill_file="\$fill_file" \\
             -v green="\$green" \\
             -v red="\$red" \\
             -v bold="\$bold" \\
@@ -114,6 +122,11 @@ q_search() {
                 if (eq > 0) cycle[substr(ln, 1, eq-1)] = substr(ln, eq+1)
             }
             close(cycle_file)
+            while ((getline ln < fill_file) > 0) {
+                eq = index(ln, "=")
+                if (eq > 0) fill[substr(ln, 1, eq-1)] = substr(ln, eq+1)
+            }
+            close(fill_file)
             missing = 0
         }
         {
@@ -131,7 +144,9 @@ q_search() {
                     c2   = index(rest, ":")
                     dflt = (c2 > 0) ? substr(rest, c2 + 1) : ""
                 }
-                if (name in cycle && cycle[name] != "") {
+                if (name in fill && fill[name] != "") {
+                    out = out pre green fill[name] reset
+                } else if (name in cycle && cycle[name] != "") {
                     out = out pre green cycle[name] reset
                 } else if (name in session && session[name] != "") {
                     out = out pre green session[name] reset
@@ -194,6 +209,11 @@ PREVIEW_EOF
     _q_write_copy_helper "$copy_script"
     _q_write_cycle_helper "$cycle_script"
     _q_write_setvar_helper "$setvar_script"
+
+    local fill_script="${Q_CACHE_DIR}/.q_fill_var.sh"
+    local decide_script="${Q_CACHE_DIR}/.q_decide.sh"
+    _q_write_fill_helper "$fill_script"
+    _q_write_decide_helper "$decide_script"
 
     # -----------------------------------------------------------------------
     # Build the display list and run fzf.
@@ -262,11 +282,13 @@ PREVIEW_EOF
         | fzf \
             --ansi \
             --prompt='q> ' \
-            --header='★ = recent | Enter: run | Ctrl+S: set var | Ctrl+F: fill | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit | Esc: quit' \
+            --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit | Esc: quit' \
             --preview="$preview_cmd" \
             --preview-window="${Q_PREVIEW_POS:-down:30%:wrap}" \
             --query="$initial_query" \
-            --expect="ctrl-f,ctrl-e" \
+            --bind="ctrl-f:execute('${fill_script}' {3} '${fill_state}' '${vars_file}' '${q_bin}' '${Q_ROOT}' all)+refresh-preview" \
+            --bind="enter:transform('${decide_script}' {3} '${fill_state}' '${vars_file}' '${cur_cmd_file}' '${fill_script}' '${q_bin}' '${Q_ROOT}')" \
+            --bind="ctrl-e:execute('${fill_script}' {3} '${fill_state}' '${vars_file}' '${q_bin}' '${Q_ROOT}' missing)+execute-silent(touch '${Q_CACHE_DIR}/.force_edit')+accept" \
             --bind="ctrl-y:execute-silent('${copy_script}' {3} '${vars_file}')+abort" \
             --bind="ctrl-t:execute-silent('${cycle_script}' '${targets_file}' '${cycle_file}')+refresh-preview" \
             --bind="ctrl-s:execute('${setvar_script}' {3} '${vars_file}' '${q_bin}')+refresh-preview" \
@@ -285,26 +307,9 @@ PREVIEW_EOF
         return 1
     fi
 
-    # -----------------------------------------------------------------------
-    # --expect output layout:
-    #   line 1 — pressed key (empty when Enter was used)
-    #   line 2 — selected row
-    # -----------------------------------------------------------------------
-    local expect_key selection_line
-    IFS=$'\n' read -r expect_key <<< "$selected" || true
-    selection_line="${selected#*$'\n'}"
-    if [[ "$selection_line" == "$selected" ]]; then
-        # No newline present — treat the whole blob as the selection
-        selection_line="$selected"
-        expect_key=""
-    fi
-
-    # Ctrl+F: force interactive fill (skip autofill attempt).
-    # Ctrl+E: force interactive fill + edit the filled command before exec.
-    case "$expect_key" in
-        ctrl-f) touch "${Q_CACHE_DIR}/.force_interactive" ;;
-        ctrl-e) touch "${Q_CACHE_DIR}/.force_interactive" "${Q_CACHE_DIR}/.force_edit" ;;
-    esac
+    # With live binds (no --expect), fzf prints only the accepted row.
+    # Ctrl+E sets .force_edit via its bind; .force_interactive is unused now.
+    local selection_line="$selected"
 
     # -----------------------------------------------------------------------
     # Emit 3-field TSV expected by q_main: DISPLAY, TITLE, COMMAND.
@@ -490,5 +495,138 @@ fi
 "$q_bin" set "$name" "$value" > /dev/tty 2>&1
 sleep 0.3
 SETVAREOF
+    chmod +x "$path"
+}
+
+# ===========================================================================
+# _q_write_fill_helper — emit the on-screen variable fill picker
+# ===========================================================================
+# Runtime args: ($1 cmd  | --file $2 path-to-cmd) then
+#   fill_state vars_file q_bin q_root mode(all|missing)
+# For each placeholder needing a value, builds candidates via _q_build_candidates
+# and opens a picker: a tmux popup overlay when $TMUX is set, else a nested fzf.
+# Writes NAME=value to fill_state and persists via `q set`.
+_q_write_fill_helper() {
+    local path="$1"
+    cat > "$path" <<'FILLEOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+if [[ "${1:-}" == "--file" ]]; then
+    cmd="$(cat "$2" 2>/dev/null)"; shift 2
+else
+    cmd="${1:-}"; shift 1
+fi
+fill_state="$1"; vars_file="$2"; q_bin="$3"; q_root="$4"; mode="${5:-all}"
+
+# Strip ANSI from the command field.
+cmd="$(printf '%s' "$cmd" | sed 's/\x1b\[[0-9;]*m//g')"
+
+# Source libs so we can reuse _q_build_candidates + extraction helpers.
+export Q_ROOT="$q_root"
+# shellcheck disable=SC1091
+source "$q_root/lib/core.sh"
+# shellcheck disable=SC1091
+source "$q_root/lib/session.sh"
+# shellcheck disable=SC1091
+source "$q_root/lib/variables.sh"
+q_config_load 2>/dev/null || true
+
+tmpdir="$(mktemp -d /tmp/q_fill_XXXXXX)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+# In "missing" mode, skip vars already resolvable.
+declare -A resolved=()
+if [[ "$mode" == "missing" ]]; then
+    while IFS= read -r n; do [[ -n "$n" ]] && resolved["$n"]=1; done \
+        < <(comm -23 \
+              <(q_extract_vars "$cmd" | cut -f1 | awk 'NF && !s[$0]++' | sort) \
+              <(q_unresolved_vars "$cmd" | sort) 2>/dev/null)
+fi
+
+seen=""
+while IFS=$'\t' read -r name vtype vdefault; do
+    [[ -z "$name" ]] && continue
+    case " $seen " in *" $name "*) continue ;; esac
+    seen="$seen $name"
+    [[ "$mode" == "missing" && -n "${resolved[$name]:-}" ]] && continue
+
+    cands="$(_q_build_candidates "$name" "$vtype" "$vdefault")"
+    prompt="  {{${name}}}> "
+    header="Enter: select | Type: custom value | Esc: skip"
+    out="$tmpdir/out"; : > "$out"
+
+    if [[ -n "${TMUX:-}" ]]; then
+        printf '%s\n' "$cands" > "$tmpdir/cands"
+        tmux display-popup -E -w '75%' -h '45%' \
+          "fzf --print-query --reverse --border --no-info --no-multi --prompt='$prompt' --header='$header' < '$tmpdir/cands' > '$out'" || true
+    else
+        printf '%s\n' "$cands" \
+          | fzf --print-query --reverse --border --no-info --no-multi \
+                --height=14 --prompt="$prompt" --header="$header" > "$out" 2>/dev/tty || true
+    fi
+
+    # --print-query: line 1 = query, line 2 = selection (if any).
+    typed=""; sel=""
+    IFS= read -r typed < "$out" || true
+    sel="$(sed -n '2p' "$out")"
+
+    value=""
+    if [[ -n "$sel" ]]; then
+        value="$sel"
+        for tag in '[session] ' '[clipboard] ' '[default] ' '[auto] ' '[new] ' '[recent] ' '[used] '; do
+            value="${value#"$tag"}"
+        done
+    elif [[ -n "$typed" ]]; then
+        value="$typed"
+    fi
+    [[ -z "$value" ]] && continue   # Esc / empty → leave unfilled
+
+    # Persist: fill_state (transient, top priority) + session (next-time hint).
+    if [[ -f "$fill_state" ]]; then
+        grep -v -E "^${name}=" "$fill_state" > "$fill_state.tmp" 2>/dev/null || true
+        mv "$fill_state.tmp" "$fill_state"
+    fi
+    printf '%s=%s\n' "$name" "$value" >> "$fill_state"
+    "$q_bin" set "$name" "$value" >/dev/null 2>&1 || true
+done < <(q_extract_vars "$cmd")
+FILLEOF
+    chmod +x "$path"
+}
+
+# ===========================================================================
+# _q_write_decide_helper — emit the Enter "decider" used by fzf transform
+# ===========================================================================
+# Args: $1 cmd  $2 fill_state  $3 vars_file  $4 cur_cmd_file  $5 fill_script
+#       $6 q_bin  $7 q_root
+# Prints fzf actions: "accept" when fully resolved, else stash the command in
+# cur_cmd_file and print an execute() that runs the fill picker (missing mode).
+_q_write_decide_helper() {
+    local path="$1"
+    cat > "$path" <<'DECEOF'
+#!/usr/bin/env bash
+set -uo pipefail
+cmd="$1"; fill_state="$2"; vars_file="$3"; cur_cmd_file="$4"
+fill_script="$5"; q_bin="$6"; q_root="$7"
+
+cmd="$(printf '%s' "$cmd" | sed 's/\x1b\[[0-9;]*m//g')"
+
+export Q_ROOT="$q_root"
+# shellcheck disable=SC1091
+source "$q_root/lib/core.sh"
+# shellcheck disable=SC1091
+source "$q_root/lib/session.sh"
+# shellcheck disable=SC1091
+source "$q_root/lib/variables.sh"
+q_config_load 2>/dev/null || true
+
+if [[ -z "$(q_unresolved_vars "$cmd")" ]]; then
+    printf 'accept'
+else
+    printf '%s' "$cmd" > "$cur_cmd_file"
+    printf "execute(%q --file %q %q %q %q %q missing)+refresh-preview" \
+        "$fill_script" "$cur_cmd_file" "$fill_state" "$vars_file" "$q_bin" "$q_root"
+fi
+DECEOF
     chmod +x "$path"
 }

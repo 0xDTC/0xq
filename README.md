@@ -13,6 +13,7 @@ q> nmap full     enum     Aggressive scan with default scripts
 
 - **Sub-millisecond fuzzy search** over ~130 curated cheatsheets (recon, web, AD, post-exploit, passwords, system, network, vulnerability, wireless).
 - **Session-aware variable fill** — `{{TARGET}}`, `{{RHOST}}`, `{{WORDLIST}}` resolve from session state, clipboard, target list, prior values, or discovered data. Path-typed vars get filesystem completion. `{{LHOST}}` auto-detects from `tun0`/`eth0`.
+- **On-screen variable fill** — unresolved placeholders are filled right on the search screen via a candidate popup (`Ctrl+F`, or just `Enter` to fill-then-review), overlaid with `tmux display-popup` (nested-fzf fallback outside tmux). No jump to a separate prompt; the `FILLED` preview updates live.
 - **Output capture and auto-promote** — every command's stdout is parsed for IPs, domains, URLs, open ports, services, SMB shares, NTLM/Kerberos hashes, JWTs, LDAP DNs, and HTTP titles. High-confidence findings become targets automatically.
 - **Per-target timestamped logs** — every run is captured to `sessions/<name>/runs/<target>/<tool>-<ts>.log`. List, show, prune.
 - **YAML command chains** — `q chain run NAME` walks declared steps with `{{var}}` substitution, conditional gates, `continue_on_error`, and `--dry-run`.
@@ -159,7 +160,7 @@ flowchart TD
     Rebuild --> Pick[fzf picker<br/>+ live preview]
     Pick --> Auto{All vars<br/>resolvable<br/>from session?}
     Auto -- yes --> Confirm[Confirm prompt<br/>Enter / Edit / Copy / Cancel]
-    Auto -- no --> Fill[fzf per-var fill<br/>session, clipboard, history,<br/>discovered, defaults]
+    Auto -- no --> Fill[on-screen popup fill<br/>Ctrl+F or Enter walks vars<br/>session, clipboard, discovered]
     Fill --> Confirm
     Confirm -- Enter --> PreCheck[binary<br/>exists?]
     PreCheck -- yes --> LogPath[logger.sh<br/>compute log path]
@@ -460,7 +461,7 @@ Environment overrides:
 
 ```bash
 sudo apt install bats shellcheck
-bats tests/                     # 73 unit + integration tests
+bats tests/                     # 91 unit + integration tests
 shellcheck -S warning lib/*.sh q
 ```
 

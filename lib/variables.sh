@@ -3,6 +3,11 @@
 # Sourced by the main `q` script; not meant to be executed directly.
 
 # ===========================================================================
+# q_fill_state_path — transient interactive-fill state file (KEY=value/line)
+# ===========================================================================
+q_fill_state_path() { printf '%s/.fill_state' "${Q_CACHE_DIR}"; }
+
+# ===========================================================================
 # q_extract_vars — parse {{VAR:type:default}} placeholders from a command
 # ===========================================================================
 # Outputs one line per placeholder: NAME<TAB>TYPE<TAB>DEFAULT
@@ -144,6 +149,26 @@ q_fill_vars_auto() {
         return 0
     fi
 
+    # Load transient state files into assoc arrays (highest priority first):
+    # .fill_state (on-screen interactive picks) then .target_cycle (Ctrl+T).
+    local -A fstate=() cyc=()
+    local _sf; _sf="$(q_fill_state_path)"
+    if [[ -f "$_sf" ]]; then
+        local _l
+        while IFS= read -r _l; do
+            [[ "$_l" == *=* ]] || continue
+            fstate["${_l%%=*}"]="${_l#*=}"
+        done < "$_sf"
+    fi
+    local _cf="${Q_CACHE_DIR}/.target_cycle"
+    if [[ -f "$_cf" ]]; then
+        local _l
+        while IFS= read -r _l; do
+            [[ "$_l" == *=* ]] || continue
+            cyc["${_l%%=*}"]="${_l#*=}"
+        done < "$_cf"
+    fi
+
     local seen_names=""
     local name vtype vdefault
     while IFS=$'\t' read -r name vtype vdefault; do
@@ -155,21 +180,23 @@ q_fill_vars_auto() {
         fi
         seen_names="$seen_names $name"
 
-        # 1. Session value takes priority
+        # Resolution order: fill_state > cycle > session > LHOST auto > default
         local value=""
-        value="$(q_session_get "$name" 2>/dev/null)" || value=""
-
-        # 2. LHOST auto-detect if still empty
-        if [[ -z "$value" ]] && [[ "${name^^}" == "LHOST" ]]; then
-            value="$(_q_detect_lhost 2>/dev/null)" || value=""
+        if [[ -n "${fstate[$name]:-}" ]]; then
+            value="${fstate[$name]}"
+        elif [[ -n "${cyc[$name]:-}" ]]; then
+            value="${cyc[$name]}"
+        else
+            value="$(q_session_get "$name" 2>/dev/null)" || value=""
+            if [[ -z "$value" ]] && [[ "${name^^}" == "LHOST" ]]; then
+                value="$(_q_detect_lhost 2>/dev/null)" || value=""
+            fi
+            if [[ -z "$value" ]] && [[ -n "$vdefault" ]]; then
+                value="$vdefault"
+            fi
         fi
 
-        # 3. Fall back to declared default
-        if [[ -z "$value" ]] && [[ -n "$vdefault" ]]; then
-            value="$vdefault"
-        fi
-
-        # 4. Still empty — signal the caller to go interactive
+        # Still empty — signal the caller to go interactive
         [[ -z "$value" ]] && return 1
 
         # Substitute all occurrences of this variable via awk
@@ -178,6 +205,43 @@ q_fill_vars_auto() {
     done <<< "$vars_raw"
 
     printf '%s' "$result"
+}
+
+# ===========================================================================
+# q_unresolved_vars — print names (one per line) of placeholders in CMD that
+# cannot be resolved from .fill_state / .target_cycle / session / LHOST /
+# default. Empty output means the command is fully resolvable. Used to gate
+# the Enter action (run vs. open the fill picker).
+# ===========================================================================
+q_unresolved_vars() {
+    local cmd="$1"
+    local vars_raw; vars_raw="$(q_extract_vars "$cmd")"
+    [[ -z "$vars_raw" ]] && return 0
+
+    local -A fstate=() cyc=()
+    local _sf; _sf="$(q_fill_state_path)"
+    if [[ -f "$_sf" ]]; then
+        local _l; while IFS= read -r _l; do [[ "$_l" == *=* ]] && fstate["${_l%%=*}"]="${_l#*=}"; done < "$_sf"
+    fi
+    local _cf="${Q_CACHE_DIR}/.target_cycle"
+    if [[ -f "$_cf" ]]; then
+        local _l; while IFS= read -r _l; do [[ "$_l" == *=* ]] && cyc["${_l%%=*}"]="${_l#*=}"; done < "$_cf"
+    fi
+
+    local seen="" name vtype vdefault
+    while IFS=$'\t' read -r name vtype vdefault; do
+        [[ -z "$name" ]] && continue
+        if [[ " $seen " == *" $name "* ]]; then continue; fi
+        seen="$seen $name"
+
+        [[ -n "${fstate[$name]:-}" ]] && continue
+        [[ -n "${cyc[$name]:-}" ]] && continue
+        local sv; sv="$(q_session_get "$name" 2>/dev/null)" || sv=""
+        [[ -n "$sv" ]] && continue
+        [[ "${name^^}" == "LHOST" ]] && _q_detect_lhost &>/dev/null && continue
+        [[ -n "$vdefault" ]] && continue
+        printf '%s\n' "$name"
+    done <<< "$vars_raw"
 }
 
 # ===========================================================================
@@ -313,11 +377,11 @@ _q_build_candidates() {
         DOMAIN) disc_types+=(domains) ;;
     esac
     case "$upper_name" in
-        *PORT*|RPORT|LPORT)                       disc_types+=(ports port_lists) ;;
+        *PORT*)                                   disc_types+=(ports port_lists) ;;
         *URL*|*ENDPOINT*)                          disc_types+=(urls) ;;
-        *DOMAIN*|*SUBDOMAIN*|*HOST*|TARGET|RHOST)  disc_types+=(domains ips) ;;
-        *USER*|*USERNAME*)                         disc_types+=(users) ;;
-        *PASS*|*PASSWORD*)                         disc_types+=(passwords) ;;
+        *DOMAIN*|*HOST*|TARGET)                   disc_types+=(domains ips) ;;
+        *USER*)                                   disc_types+=(users) ;;
+        *PASS*)                                   disc_types+=(passwords) ;;
     esac
 
     # Read all needed discovery files directly, tag each line with [new]
