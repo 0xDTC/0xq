@@ -32,7 +32,7 @@ sudo nmap -sS {{TARGET:ip}} -oN {{OUTFILE:file:syn-scan.txt}}
 Scan all 65535 TCP ports with service detection.
 
 ```bash
-sudo nmap -sS -p- -T4 {{TARGET:ip}} -oN {{OUTFILE:file:full-port.txt}}
+sudo nmap -A -sC -sS -v -p- {{TARGET:ip}} -oN {{OUTFILE:file:full-port.txt}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=full,all-ports,tcp -->
@@ -43,7 +43,7 @@ sudo nmap -sS -p- -T4 {{TARGET:ip}} -oN {{OUTFILE:file:full-port.txt}}
 Scan common UDP services. Slow but finds DNS, SNMP, TFTP, etc.
 
 ```bash
-sudo nmap -sU --top-ports 100 -T4 {{TARGET:ip}} -oN {{OUTFILE:file:udp-scan.txt}}
+sudo nmap -sU -sS -v {{TARGET:ip}} -oN {{OUTFILE:file:udp-scan.txt}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=udp,services -->
