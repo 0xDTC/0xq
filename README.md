@@ -3,17 +3,22 @@
 Fast, keyboard-driven command launcher for pentesters. Searches a local cheatsheet index with `fzf`, fills in `{{placeholders}}` from session state, executes, parses the output, and promotes findings back into the session for the next command.
 
 ```
-q> nmap full     enum     Aggressive scan with default scripts
-                          $ nmap -sC -sV -A -T4 {{TARGET}}
+q> nmap scan full        recon    Aggressive full scan: OS, version, scripts, verbose
+   ──────────────────────────────────────────────────────────────────
+   TEMPLATE   sudo nmap -A -sC -sS -v {{TARGET:ip}} -oN nmap
+   VARIABLES  TARGET — target host or IP
+   FILLED     sudo nmap -A -sC -sS -v 10.10.11.42 -oN nmap
 ```
 
 ---
 
 ## Features
 
-- **Sub-millisecond fuzzy search** over ~130 curated cheatsheets (recon, web, AD, post-exploit, passwords, system, network, vulnerability, wireless).
+- **Sub-millisecond fuzzy search** over 1,600+ commands across 123 curated cheatsheets (recon, web, AD, post-exploit, passwords, system, network, vuln, wireless). Titles read like search queries — type `nmap scan full`, `list users windows`, or `spray passwords smb`.
 - **Session-aware variable fill** — `{{TARGET}}`, `{{RHOST}}`, `{{WORDLIST}}` resolve from session state, clipboard, target list, prior values, or discovered data. Path-typed vars get filesystem completion. `{{LHOST}}` auto-detects from `tun0`/`eth0`.
 - **On-screen variable fill** — unresolved placeholders are filled right on the search screen via a candidate popup (`Ctrl+F`, or just `Enter` to fill-then-review), overlaid with `tmux display-popup` (nested-fzf fallback outside tmux). No jump to a separate prompt; the `FILLED` preview updates live.
+- **Variable legend** — the preview spells out what every `{{placeholder}}` is for (e.g. `LHOST — your attacker IP`, `DC_IP — domain controller IP`) from a built-in glossary, so you never guess what to type.
+- **Launch from any session** — in tmux, `Ctrl+Q` opens q in a popup over *any* pane — even inside `ssh`, `evil-winrm`, `ftp`, or a container shell — and pastes the chosen command into that session. q never has to exist on the target.
 - **Output capture and auto-promote** — every command's stdout is parsed for IPs, domains, URLs, open ports, services, SMB shares, NTLM/Kerberos hashes, JWTs, LDAP DNs, and HTTP titles. High-confidence findings become targets automatically.
 - **Per-target timestamped logs** — every run is captured to `sessions/<name>/runs/<target>/<tool>-<ts>.log`. List, show, prune.
 - **YAML command chains** — `q chain run NAME` walks declared steps with `{{var}}` substitution, conditional gates, `continue_on_error`, and `--dry-run`.
@@ -69,7 +74,11 @@ cd 0xq
 ./install.sh
 ```
 
-The installer registers a `q` shim on your `$PATH` and wires up the `Ctrl+Q` shell widget for inline mode.
+The installer (idempotent — re-run it any time):
+
+- symlinks a `q` shim onto your `$PATH`;
+- wires the `Ctrl+Q` shell widget (zsh/bash) for inline use in a plain shell;
+- writes a tmux config block to `~/.tmux.conf` — prefix `Ctrl+A`, mouse scrolling + 50k scrollback, and a `Ctrl+Q` binding that summons q in *any* tmux pane (see [Use q from any session](#use-q-from-any-session)).
 
 ### Runtime dependencies (auto-installed on Kali/Debian)
 
@@ -182,15 +191,39 @@ flowchart TD
 
 ---
 
+## Search screen
+
+The picker shows three preview blocks for the highlighted command:
+
+- **TEMPLATE** — the raw command with `{{placeholders}}` highlighted.
+- **VARIABLES** — what each placeholder is for (built-in glossary; unknown names are humanized, e.g. `DC_HOST → dc host`).
+- **FILLED** — values resolved from the session; anything still missing shows as `<?VAR?>`.
+
+| Key | Action |
+| --- | ------ |
+| `Enter` | Fill any missing variables on-screen (popup), then `Enter` again to run |
+| `Ctrl+F` | Fill / change variables via the candidate popup |
+| `Ctrl+S` | Set a session variable inline |
+| `Ctrl+T` | Cycle `TARGET` through the session's targets (preview updates live) |
+| `Ctrl+Y` | Copy the filled command to the clipboard |
+| `Ctrl+E` | Fill, then open in `$EDITOR` before running |
+| `Tab` / `Esc` | Toggle preview / quit |
+
+Values resolve in priority order: on-screen pick → `Ctrl+T` cycle → session var → `LHOST` auto-detect → declared default.
+
+---
+
 ## Cheatsheet format
 
 Each cheatsheet is a markdown file under `cheatsheets/<category>/<tool>.md`. The parser indexes every H2 with a fenced `bash` block.
+
+**Titles are search queries, not documentation** — action first, keyword-rich, platform/qualifier trailing, lowercase (acronyms kept upper): `list users windows`, `nmap scan full`, `spray passwords kerberos`, `dump ntds smb dcsync`. Variants (fast / stealth / anonymous) are separate entries with the keyword in the title, so they surface when you type it.
 
 ````markdown
 <!-- tags: smb,enum -->
 # crackmapexec
 
-## Enumerate shares
+## list shares smb anonymous
 <!-- meta: risk=low | phase=enum | tags=smb -->
 Anonymous share listing on the SMB target.
 
@@ -198,7 +231,7 @@ Anonymous share listing on the SMB target.
 crackmapexec smb {{TARGET}} -u '' -p '' --shares
 ```
 
-## Password spray
+## spray passwords smb
 <!-- meta: risk=medium | phase=exploit | tags=auth -->
 Spray one password across a user list.
 
@@ -354,6 +387,14 @@ Placeholders honored per target: `{{TARGET}}`, `{{IP}}`, `{{URL}}`, `{{HOST}}`, 
 
 ## Tmux workflow
 
+The installer drops a tmux config block in `~/.tmux.conf`: prefix `Ctrl+A`, mouse scrolling + 50k scrollback, and the headline binding below.
+
+### Use q from any session
+
+Inside tmux, **`Ctrl+Q` in any pane** opens q in a popup; you pick + fill a command, and it's **pasted into the current pane** to review and run. tmux intercepts the key before the pane's program sees it, so it works no matter what's running there — `ssh`, `evil-winrm`, `ftp`, a `docker exec` shell, anything. q and `fzf` stay on your box; only the chosen command text crosses into the session. A plain shell can't reach into a remote session, so this needs tmux — outside tmux the `Ctrl+Q` widget still drives your local prompt.
+
+### Per-session layout (`q tmux start`)
+
 `q tmux start` creates a detached tmux session named for the active `q` session. The window has three panes: a work shell in the active `q` session, a live `q ls` viewer, and a tail of `history.log`. Detach with `prefix d`, come back later with `q tmux attach` — your work shell, target list, vars, and discovered data are all where you left them.
 
 ```mermaid
@@ -376,7 +417,7 @@ flowchart TB
     class Hist log
 ```
 
-### Key bindings (prefix = `C-b`)
+### Key bindings (prefix = `C-a`)
 
 | Binding      | Action                                                                |
 | ------------ | --------------------------------------------------------------------- |
@@ -474,7 +515,7 @@ Tests run in isolated `BATS_TEST_TMPDIR` and never touch real user data.
 ```
 .
 ├── q                        # entry point + subcommand dispatch
-├── install.sh               # PATH + Ctrl+Q widget setup
+├── install.sh               # PATH, Ctrl+Q widget + tmux config setup
 ├── lib/
 │   ├── core.sh              # constants, colors, dep check, help
 │   ├── session.sh           # sessions, targets, parser, discovery store
@@ -488,7 +529,7 @@ Tests run in isolated `BATS_TEST_TMPDIR` and never touch real user data.
 │   ├── logger.sh            # per-target timestamped logs
 │   ├── sync.sh              # upstream cheatsheet sync
 │   └── tmux.sh              # tmux session + per-target panes + bindings
-├── cheatsheets/             # built-in markdown library (~130 sheets)
+├── cheatsheets/             # built-in markdown library (123 sheets · 1,600+ commands)
 ├── chains/                  # built-in chain YAML files
 └── tests/                   # bats suite + fixtures
 ```
