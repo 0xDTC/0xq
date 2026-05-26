@@ -223,3 +223,14 @@ mkdir -p {{OUTDIR:dir:./rootfs}} && docker create --name tmp_extract {{IMAGE:str
 ```
 
 <!-- meta: risk=low | phase=post | tags=image,extract,filesystem,unpack,files -->
+
+---
+
+## run image shell override entrypoint
+Get an interactive shell inside an image even when it has an ENTRYPOINT that would otherwise auto-start an app. Run Linux commands locally in the container.
+
+```bash
+docker run -it --rm --entrypoint {{SHELL:str:bash}} {{IMAGE:str:target:latest}}
+```
+
+<!-- meta: risk=low | phase=post | tags=run,shell,entrypoint,interactive,inside,bash -->
