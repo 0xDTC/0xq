@@ -81,6 +81,7 @@ q_search() {
         vars_file='${vars_file}'
         cycle_file='${cycle_file}'
         fill_file='${fill_state}'
+        varhint='${varhint_script}'
 
         # Strip ANSI so field parsing is clean
         line="\$(printf '%s' "\$line" | sed 's/\x1b\[[0-9;]*m//g')"
@@ -179,6 +180,13 @@ q_search() {
         printf '%s\n'     "\${bold}\${cyan}TEMPLATE\${reset}"
         printf '  %s\n\n' "\${dim}\${highlighted_cmd}\${reset}"
 
+        # Variable legend — what each {{placeholder}} is for
+        vars_legend="\$("\$varhint" "\$_cmd" 2>/dev/null)"
+        if [[ -n "\$vars_legend" ]]; then
+            printf '%s\n'   "\${bold}\${cyan}VARIABLES\${reset}"
+            printf '%s\n\n' "\${dim}\${vars_legend}\${reset}"
+        fi
+
         if [[ "\$missing_count" -eq 0 ]]; then
             printf '%s %s\n' "\${bold}\${cyan}FILLED\${reset}" "\${green}[ready — Enter to run]\${reset}"
         else
@@ -214,6 +222,9 @@ PREVIEW_EOF
     local decide_script="${Q_CACHE_DIR}/.q_decide.sh"
     _q_write_fill_helper "$fill_script"
     _q_write_decide_helper "$decide_script"
+
+    local varhint_script="${Q_CACHE_DIR}/.q_varhint.sh"
+    _q_write_varhint_helper "$varhint_script"
 
     # -----------------------------------------------------------------------
     # Build the display list and run fzf.
@@ -628,5 +639,74 @@ else
         "$fill_script" "$cur_cmd_file" "$fill_state" "$vars_file" "$q_bin" "$q_root"
 fi
 DECEOF
+    chmod +x "$path"
+}
+
+# ===========================================================================
+# _q_write_varhint_helper — emit the variable-legend helper
+# ===========================================================================
+# Given a command string ($1), prints "  NAME   purpose" for each unique
+# {{placeholder}}, using a built-in glossary with an auto-humanize fallback
+# (DC_HOST -> "dc host"). Non-identifier tokens (e.g. SSTI {{7*7}}) are skipped.
+_q_write_varhint_helper() {
+    local path="$1"
+    cat > "$path" <<'VHEOF'
+#!/usr/bin/env bash
+cmd="$1"
+cmd="$(printf '%s' "$cmd" | sed 's/\x1b\[[0-9;]*m//g')"
+printf '%s' "$cmd" | grep -oE '\{\{[^}]+\}\}' | awk '
+BEGIN {
+  g["TARGET"]="target host or IP"; g["RHOST"]="target / remote host"
+  g["IP"]="target IP"; g["HOST"]="target hostname"; g["HOSTNAME"]="target hostname"
+  g["LHOST"]="your (attacker) IP"; g["LPORT"]="your listening port"
+  g["RPORT"]="remote port"; g["PORT"]="port"; g["PORTS"]="port list or range"
+  g["URL"]="target URL"; g["DOMAIN"]="AD / DNS domain"
+  g["DC_IP"]="domain controller IP"; g["DC_HOST"]="domain controller hostname"
+  g["SUBNET"]="network range (CIDR)"; g["CIDR"]="network range (CIDR)"
+  g["USERNAME"]="username"; g["USER"]="username"; g["PASSWORD"]="password"
+  g["USERLIST"]="username wordlist file"; g["USERS_FILE"]="username wordlist file"
+  g["PASSLIST"]="password wordlist file"; g["WORDLIST"]="wordlist file path"
+  g["HASH"]="hash to crack"; g["HASHFILE"]="file of hashes"; g["NTHASH"]="NTLM hash"
+  g["KEY"]="key (SSH / API / etc.)"; g["API_KEY"]="API key"
+  g["FILE"]="file path"; g["INFILE"]="input file"; g["OUTFILE"]="output file"
+  g["OUTDIR"]="output directory"; g["DIR"]="directory"; g["PATH"]="path"
+  g["LFILE"]="target file to read/write"; g["MOUNT_POINT"]="mount point"
+  g["SHARE"]="share name"; g["CMD"]="command to run"; g["COMMAND"]="command to run"
+  g["THREADS"]="thread count"; g["RATE"]="packet / request rate"
+  g["PARAM"]="parameter name"; g["PATTERN"]="search pattern / regex"
+  g["QUERY"]="query string"; g["DATABASE"]="database name"; g["SERVICE"]="service name"
+  g["PID"]="process ID"; g["NAME"]="name"; g["IMAGE"]="image (repo:tag)"
+  g["CONTAINER"]="container name or ID"; g["TAG"]="tag"; g["PROFILE"]="profile name"
+  g["IFACE"]="network interface"; g["INTERFACE"]="network interface"
+  g["CCACHE"]="Kerberos ccache file"; g["SPN"]="service principal name"
+  g["KEYPATH"]="registry key path"; g["VALUE"]="registry value name"
+  g["DATA"]="data / value"; g["DISK"]="disk / partition (e.g. sda1)"
+  g["SOCKET"]="unix socket path"; g["BUCKET"]="S3 bucket name"
+  g["COOKIE"]="session cookie"; g["TOKEN"]="auth token"; g["JWT"]="JWT token"
+  g["HOSTPATH"]="host directory to mount"; g["CONTPATH"]="path inside container"
+  g["HPORT"]="host port"; g["CPORT"]="container port"; g["LOCAL_PORT"]="local port"
+  g["REMOTE"]="remote host / path"; g["DEST"]="destination"; g["LOCAL"]="local path"
+  g["BINARY"]="binary / executable"; g["MODE"]="mode"
+  g["COMMUNITY"]="SNMP community string"; g["TEMPLATE"]="certificate template name"
+  g["CA"]="certificate authority name"; g["CA_NAME"]="certificate authority name"
+  g["URLLIST"]="file of URLs"; g["HOSTLIST"]="file of hosts"; g["SID"]="domain SID"
+  g["GROUP"]="group name"; g["ENDPOINT"]="API endpoint"; g["PAYLOAD"]="payload"
+  g["SSID"]="wireless network name"; g["BSSID"]="access point MAC"
+  g["CHANNEL"]="wireless channel"; g["ATTACKER"]="attacker host / IP"
+}
+function purpose(n,   h) {
+  if (n in g) return g[n]
+  h = tolower(n); gsub(/_/, " ", h); return h
+}
+{
+  tok=$0; inner=substr(tok, 3, length(tok)-4)
+  ci=index(inner, ":"); name=(ci>0)?substr(inner,1,ci-1):inner
+  uname=toupper(name)
+  if (uname !~ /^[A-Z][A-Z0-9_]*$/) next
+  if (uname in seen) next
+  seen[uname]=1
+  printf "  %-12s %s\n", name, purpose(uname)
+}'
+VHEOF
     chmod +x "$path"
 }
