@@ -69,6 +69,7 @@ q_search() {
     local cur_cmd_file="${Q_CACHE_DIR}/.cur_cmd"
     : > "$fill_state"
     : > "$cur_cmd_file"
+    local varhint_script="${Q_CACHE_DIR}/.q_varhint.sh"
 
     # -----------------------------------------------------------------------
     # Preview script — runs under fzf for every highlighted row. Reads the
@@ -223,7 +224,6 @@ PREVIEW_EOF
     _q_write_fill_helper "$fill_script"
     _q_write_decide_helper "$decide_script"
 
-    local varhint_script="${Q_CACHE_DIR}/.q_varhint.sh"
     _q_write_varhint_helper "$varhint_script"
 
     # -----------------------------------------------------------------------
