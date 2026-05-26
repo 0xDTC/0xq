@@ -468,6 +468,30 @@ _q_build_candidates() {
         fi
     fi
 
+    # Live system entities (docker) for container / image / network vars.
+    # docker uses Go-template --format here; this is q's own code, not a
+    # cheatsheet command, so the {{...}} is never seen by the placeholder parser.
+    if command -v docker >/dev/null 2>&1; then
+        local _de
+        case "$upper_name" in
+            *CONTAINER*)
+                while IFS= read -r _de; do
+                    [[ -n "$_de" ]] && candidates="${candidates}[docker] ${_de}"$'\n'
+                done < <(docker ps -a --format '{{.Names}}' 2>/dev/null)
+                ;;
+            *IMAGE*)
+                while IFS= read -r _de; do
+                    [[ -n "$_de" && "$_de" != *'<none>'* ]] && candidates="${candidates}[docker] ${_de}"$'\n'
+                done < <(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null)
+                ;;
+            *NETWORK*)
+                while IFS= read -r _de; do
+                    [[ -n "$_de" ]] && candidates="${candidates}[docker] ${_de}"$'\n'
+                done < <(docker network ls --format '{{.Name}}' 2>/dev/null)
+                ;;
+        esac
+    fi
+
     # Deduplicate while preserving order
     if [[ -n "$candidates" ]]; then
         printf '%s' "$candidates" | awk '!seen[$0]++ && NF'
@@ -593,6 +617,7 @@ q_fill_single_var() {
         value="${value#\[clipboard\] }"
         value="${value#\[default\] }"
         value="${value#\[auto\] }"
+        value="${value#\[docker\] }"
         value="${value#\[new\] }"
         value="${value#\[recent\] }"
         value="${value#\[used\] }"

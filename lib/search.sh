@@ -585,7 +585,7 @@ while IFS=$'\t' read -r name vtype vdefault; do
     value=""
     if [[ -n "$sel" ]]; then
         value="$sel"
-        for tag in '[session] ' '[clipboard] ' '[default] ' '[auto] ' '[new] ' '[recent] ' '[used] '; do
+        for tag in '[session] ' '[clipboard] ' '[default] ' '[auto] ' '[docker] ' '[new] ' '[recent] ' '[used] '; do
             value="${value#"$tag"}"
         done
     elif [[ -n "$typed" ]]; then
