@@ -190,3 +190,36 @@ docker inspect {{CONTAINER:str:webapp}} | grep -A40 '"Env"'
 ```
 
 <!-- meta: risk=low | phase=enum | tags=secrets,env,inspect,creds -->
+
+---
+
+## mount container rootfs browse
+A running container's root filesystem is already mounted on the host (overlay merged dir). Resolve its path and browse the files as root — no exec needed.
+
+```bash
+d=$(docker inspect {{CONTAINER:str:webapp}} | grep -oP '"MergedDir":\s*"\K[^"]+'); echo "$d"; sudo ls -la "$d"
+```
+
+<!-- meta: risk=low | phase=post | tags=mount,rootfs,overlay,mergeddir,files,inside -->
+
+---
+
+## extract container filesystem
+Export a container's entire filesystem into a local directory you can cd into and browse (works on stopped containers too).
+
+```bash
+mkdir -p {{OUTDIR:dir:./rootfs}} && docker export {{CONTAINER:str:webapp}} | tar -C {{OUTDIR:dir:./rootfs}} -xf - && ls -la {{OUTDIR:dir:./rootfs}}
+```
+
+<!-- meta: risk=low | phase=post | tags=export,extract,filesystem,files,mount,inside -->
+
+---
+
+## extract image filesystem
+Unpack an image's filesystem without running it: create a throwaway container, export it, extract, clean up.
+
+```bash
+mkdir -p {{OUTDIR:dir:./rootfs}} && docker create --name tmp_extract {{IMAGE:str:target:latest}} && docker export tmp_extract | tar -C {{OUTDIR:dir:./rootfs}} -xf - ; docker rm tmp_extract
+```
+
+<!-- meta: risk=low | phase=post | tags=image,extract,filesystem,unpack,files -->
