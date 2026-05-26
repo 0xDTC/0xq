@@ -6,7 +6,7 @@
 
 ---
 
-## Install tldr
+## install tldr
 Install the tldr client from apt.
 
 ```bash
@@ -17,7 +17,7 @@ sudo apt install tldr -y
 
 ---
 
-## Update Local Cache
+## update tldr cache
 Refresh the local tldr page cache.
 
 ```bash
@@ -28,7 +28,7 @@ tldr -u
 
 ---
 
-## Show Examples for a Tool
+## show examples tldr
 Print the tldr examples for a given command.
 
 ```bash
@@ -39,7 +39,7 @@ tldr {{TOOL:str:nmap}}
 
 ---
 
-## Render in Markdown
+## render tldr markdown
 Output the page as raw Markdown for piping/editing.
 
 ```bash

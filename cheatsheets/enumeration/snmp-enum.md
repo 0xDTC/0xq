@@ -6,7 +6,7 @@
 
 ---
 
-## Community String Brute Force (onesixtyone)
+## brute snmp community onesixtyone
 Brute force SNMP community strings against a target.
 
 ```bash
@@ -17,7 +17,7 @@ onesixtyone -c {{WORDLIST:wordlist:/usr/share/seclists/Discovery/SNMP/snmp.txt}}
 
 ---
 
-## Bulk Community String Scan (onesixtyone)
+## scan snmp community bulk onesixtyone
 Spray community strings across a list of targets for large-scale discovery.
 
 ```bash
@@ -28,7 +28,7 @@ onesixtyone -c {{WORDLIST:wordlist:/usr/share/seclists/Discovery/SNMP/snmp.txt}}
 
 ---
 
-## Full SNMP Walk (SNMPv2)
+## walk snmp full v2
 Walk the entire SNMP MIB tree using a known community string.
 
 ```bash
@@ -39,7 +39,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} | tee {{OUTFILE:file:snm
 
 ---
 
-## Enumerate Running Processes
+## enum snmp processes
 Query the process list OID to discover running services and software.
 
 ```bash
@@ -50,7 +50,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.25.4.2.1.2 |
 
 ---
 
-## Enumerate System Users
+## enum snmp users
 Query the user account OID to enumerate local user accounts.
 
 ```bash
@@ -61,7 +61,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.4.1.77.1.2.25 | 
 
 ---
 
-## Enumerate Installed Software
+## enum snmp software
 Query the installed software OID to list applications on the target.
 
 ```bash
@@ -72,7 +72,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.25.6.3.1.2 |
 
 ---
 
-## Enumerate Network Interfaces
+## enum snmp interfaces
 Query network interface details including IP addresses and interface names.
 
 ```bash
@@ -83,7 +83,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.2.2.1.2 | te
 
 ---
 
-## Enumerate TCP Open Ports
+## enum snmp tcp ports
 Query the TCP connection table to discover open ports and connections.
 
 ```bash
@@ -94,7 +94,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.6.13.1.3 | t
 
 ---
 
-## SNMPv3 Authenticated Walk
+## walk snmp v3 authenticated
 Walk SNMP MIB using SNMPv3 with authentication and encryption.
 
 ```bash

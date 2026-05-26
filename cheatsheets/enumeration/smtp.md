@@ -6,7 +6,7 @@
 
 ---
 
-## Banner Grab with Netcat
+## grab banner smtp netcat
 Connect to SMTP and read the welcome banner for version info.
 
 ```bash
@@ -17,7 +17,7 @@ nc -nv {{TARGET:ip}} {{PORT:port:25}}
 
 ---
 
-## Banner Grab with Telnet
+## grab banner smtp telnet
 Use telnet for interactive SMTP command testing.
 
 ```bash
@@ -28,7 +28,7 @@ telnet {{TARGET:ip}} {{PORT:port:25}}
 
 ---
 
-## Nmap SMTP Commands Script
+## enum smtp commands nmap
 Enumerate available SMTP commands supported by the server.
 
 ```bash
@@ -39,7 +39,7 @@ nmap -p {{PORT:port:25}} --script smtp-commands {{TARGET:ip}} -oN {{OUTFILE:file
 
 ---
 
-## Nmap SMTP Vuln Scripts
+## scan smtp vuln nmap
 Run all SMTP NSE scripts including known vulnerabilities and open relay checks.
 
 ```bash
@@ -50,7 +50,7 @@ nmap -p {{PORT:port:25}} --script "smtp-*" {{TARGET:ip}} -oN {{OUTFILE:file:smtp
 
 ---
 
-## smtp-user-enum (VRFY)
+## enum users smtp vrfy
 Enumerate valid users via VRFY command using a username list.
 
 ```bash
@@ -61,7 +61,7 @@ smtp-user-enum -M VRFY -U {{USERLIST:wordlist:/usr/share/wordlists/seclists/User
 
 ---
 
-## smtp-user-enum (EXPN)
+## enum users smtp expn
 Enumerate users via EXPN method when VRFY is filtered.
 
 ```bash
@@ -72,7 +72,7 @@ smtp-user-enum -M EXPN -U {{USERLIST:wordlist}} -t {{TARGET:ip}}
 
 ---
 
-## smtp-user-enum (RCPT)
+## enum users smtp rcpt
 Use RCPT TO method when both VRFY and EXPN are disabled.
 
 ```bash
@@ -83,7 +83,7 @@ smtp-user-enum -M RCPT -U {{USERLIST:wordlist}} -t {{TARGET:ip}} -D {{DOMAIN:dom
 
 ---
 
-## Metasploit smtp_enum
+## enum smtp metasploit
 Enumerate SMTP users with the auxiliary scanner.
 
 ```bash
@@ -94,7 +94,7 @@ msfconsole -q -x "use auxiliary/scanner/smtp/smtp_enum; set RHOSTS {{TARGET:ip}}
 
 ---
 
-## SMTPS / TLS Test (OpenSSL)
+## test smtp tls openssl
 Test the implicit-TLS port and inspect the certificate chain.
 
 ```bash
@@ -105,7 +105,7 @@ openssl s_client -connect {{TARGET:ip}}:{{PORT:port:465}} -crlf
 
 ---
 
-## STARTTLS Probe
+## probe smtp starttls
 Negotiate STARTTLS on submission ports for cipher and cert inspection.
 
 ```bash
@@ -116,7 +116,7 @@ openssl s_client -starttls smtp -connect {{TARGET:ip}}:{{PORT:port:587}} -crlf
 
 ---
 
-## Manual VRFY User Probe (One-Liner)
+## enum users smtp vrfy manual
 Send VRFY commands non-interactively to test user existence.
 
 ```bash
@@ -127,7 +127,7 @@ echo -e "VRFY {{USERNAME:str:root}}\nQUIT" | nc -nv {{TARGET:ip}} {{PORT:port:25
 
 ---
 
-## Open Relay Test
+## test smtp open relay
 Probe whether the server relays mail for arbitrary external recipients.
 
 ```bash

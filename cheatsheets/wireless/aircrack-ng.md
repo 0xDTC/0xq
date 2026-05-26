@@ -6,7 +6,7 @@
 
 ---
 
-## Enable Monitor Mode
+## enable monitor mode
 Put the wireless interface into monitor mode for packet capture.
 
 ```bash
@@ -17,7 +17,7 @@ sudo airmon-ng start {{IFACE:iface:wlan0}}
 
 ---
 
-## Scan for Wireless Networks
+## scan wifi networks
 Discover nearby wireless networks and connected clients.
 
 ```bash
@@ -28,7 +28,7 @@ sudo airodump-ng {{IFACE:iface:wlan0mon}}
 
 ---
 
-## Capture WPA Handshake
+## capture wpa handshake
 Target a specific AP and channel to capture a WPA 4-way handshake.
 
 ```bash
@@ -39,7 +39,7 @@ sudo airodump-ng -c {{CHANNEL:int:6}} --bssid {{BSSID:str:AA:BB:CC:DD:EE:FF}} -w
 
 ---
 
-## Deauthentication Attack
+## deauth attack wifi
 Send deauth frames to force clients to reconnect and capture the handshake.
 
 ```bash
@@ -50,7 +50,7 @@ sudo aireplay-ng -0 {{COUNT:int:5}} -a {{BSSID:str:AA:BB:CC:DD:EE:FF}} -c {{CLIE
 
 ---
 
-## ARP Replay Attack (WEP)
+## arp replay wep
 Inject ARP requests to generate traffic and speed up WEP IV collection.
 
 ```bash
@@ -61,7 +61,7 @@ sudo aireplay-ng -3 -b {{BSSID:str:AA:BB:CC:DD:EE:FF}} -h {{CLIENT:str:11:22:33:
 
 ---
 
-## Crack WPA Handshake
+## crack wpa handshake
 Crack a captured WPA handshake using a wordlist.
 
 ```bash
@@ -72,7 +72,7 @@ aircrack-ng {{CAPFILE:file:capture-01.cap}} -w {{WORDLIST:wordlist:/usr/share/wo
 
 ---
 
-## Crack WEP Key
+## crack wep key
 Crack a WEP key from a capture file with enough IVs collected.
 
 ```bash
@@ -83,7 +83,7 @@ aircrack-ng {{CAPFILE:file:capture-01.cap}} -b {{BSSID:str:AA:BB:CC:DD:EE:FF}}
 
 ---
 
-## Disable Monitor Mode
+## disable monitor mode
 Restore the wireless interface to managed mode when finished.
 
 ```bash
@@ -94,7 +94,7 @@ sudo airmon-ng stop {{IFACE:iface:wlan0mon}}
 
 ---
 
-## Reaver - WPS PIN Brute Force
+## brute wps pin reaver
 Brute-force the WPS PIN to recover the WPA passphrase.
 
 ```bash

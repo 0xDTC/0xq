@@ -6,7 +6,7 @@
 
 ---
 
-## Basic SNMPv2c Walk
+## walk snmp v2c
 Retrieve every SNMP object using community string `public`.
 
 ```bash
@@ -17,7 +17,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}}
 
 ---
 
-## Walk Specific MIB Subtree
+## walk snmp mib subtree
 Limit walk to a specific OID or named subtree (e.g., system).
 
 ```bash
@@ -28,7 +28,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} {{OID:str:1.3.6.1.2.1.1}
 
 ---
 
-## SNMPv1 Walk
+## walk snmp v1
 Use SNMP version 1 for legacy devices that reject v2c.
 
 ```bash
@@ -39,7 +39,7 @@ snmpwalk -v1 -c {{COMMUNITY:str:public}} {{TARGET:ip}}
 
 ---
 
-## SNMPv3 Authenticated Walk
+## walk snmp v3 authenticated
 Walk with SNMPv3 authentication and privacy enabled.
 
 ```bash
@@ -50,7 +50,7 @@ snmpwalk -v3 -u {{USERNAME:str}} -l authPriv -a MD5 -A {{AUTHPASS:str}} -x DES -
 
 ---
 
-## Network Interfaces (ifTable)
+## walk snmp interfaces iftable
 Enumerate network interface details.
 
 ```bash
@@ -61,7 +61,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} ifTable
 
 ---
 
-## ARP Table
+## walk snmp arp table
 Retrieve the device ARP cache via ipNetToMediaTable.
 
 ```bash
@@ -72,7 +72,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} ipNetToMediaTable
 
 ---
 
-## System Uptime
+## walk snmp uptime
 Read just the system uptime OID.
 
 ```bash
@@ -83,7 +83,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.1.3
 
 ---
 
-## Walk with Custom Timeout / Retries
+## walk snmp timeout retries
 Tune timeout and retry count for slow or unreliable devices.
 
 ```bash
@@ -94,7 +94,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} -t {{TIMEOUT:int:10}} -r {{RETRIES:int
 
 ---
 
-## Custom UDP Port
+## walk snmp custom port
 Walk SNMP exposed on a non-standard port.
 
 ```bash
@@ -105,7 +105,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}}:{{PORT:port:161}}
 
 ---
 
-## Bulk Walk (Faster)
+## walk snmp bulk fast
 Use snmpbulkwalk for faster mass enumeration. Don't forget the trailing dot.
 
 ```bash
@@ -116,7 +116,7 @@ snmpbulkwalk -c {{COMMUNITY:str:public}} -v2c {{TARGET:ip}} .
 
 ---
 
-## Extended Output (NET-SNMP-EXTEND-MIB)
+## walk snmp extend mib
 Retrieve extended objects, often containing custom command output on misconfigured agents.
 
 ```bash
@@ -127,7 +127,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} NET-SNMP-EXTEND-MIB::nsE
 
 ---
 
-## Install MIBs for Friendlier Output
+## install snmp mibs
 Download MIB definitions so OIDs resolve to human-readable names.
 
 ```bash
@@ -138,7 +138,7 @@ sudo apt-get install snmp-mibs-downloader -y && sudo download-mibs
 
 ---
 
-## Brute-Force Community Strings (onesixtyone)
+## brute snmp community onesixtyone
 Spray community strings against many hosts in parallel.
 
 ```bash
@@ -149,7 +149,7 @@ onesixtyone -c {{COMMLIST:wordlist:/usr/share/wordlists/seclists/Discovery/SNMP/
 
 ---
 
-## Mass SNMP Scan (braa)
+## scan snmp mass braa
 Mass-query OIDs across many hosts using braa's own SNMP stack.
 
 ```bash

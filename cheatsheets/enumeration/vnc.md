@@ -6,7 +6,7 @@
 
 ---
 
-## Connect with vncviewer
+## connect vnc vncviewer
 Connect to a VNC service using a password file.
 
 ```bash
@@ -17,7 +17,7 @@ vncviewer {{TARGET:ip}}:{{PORT:port:5901}} -passwd {{PASSFILE:file:vnc.passwd}}
 
 ---
 
-## Connect without Password File
+## connect vnc no password
 Connect interactively prompting for the password.
 
 ```bash
@@ -28,7 +28,7 @@ vncviewer {{TARGET:ip}}:{{PORT:port:5900}}
 
 ---
 
-## Decrypt Stored VNC Password
+## decrypt vnc password
 Decrypt a captured VNC `passwd` file using vncpwd or python.
 
 ```bash
@@ -39,7 +39,7 @@ python3 -c "from Crypto.Cipher import DES; key=bytes.fromhex('e84ad660c4721ae0')
 
 ---
 
-## Nmap VNC NSE
+## scan vnc nmap nse
 Scan and enumerate VNC server info, security types, and brute force support.
 
 ```bash
@@ -50,7 +50,7 @@ nmap -p {{PORT:port:5900}} --script vnc-info,vnc-title,realvnc-auth-bypass {{TAR
 
 ---
 
-## Hydra VNC Brute Force
+## brute vnc hydra
 Brute force VNC password authentication.
 
 ```bash
@@ -61,7 +61,7 @@ hydra -P {{PASSLIST:wordlist}} -s {{PORT:port:5900}} {{TARGET:ip}} vnc
 
 ---
 
-## Metasploit VNC Login Scanner
+## brute vnc metasploit
 Spray passwords against VNC with Metasploit.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Exploit Search
+## search exploits
 Search for exploits matching keywords in title and path.
 
 ```bash
@@ -17,7 +17,7 @@ searchsploit {{QUERY:str:apache 2.4}}
 
 ---
 
-## Exact Match Search
+## search exploits exact
 Search using exact match to reduce false positives.
 
 ```bash
@@ -28,7 +28,7 @@ searchsploit -e "{{QUERY:str:Microsoft IIS 10.0}}"
 
 ---
 
-## Title-Only Search
+## search exploits title
 Search only exploit titles, excluding file paths from results.
 
 ```bash
@@ -39,7 +39,7 @@ searchsploit -t "{{QUERY:str:privilege escalation}}"
 
 ---
 
-## Show Exploit-DB URL
+## show exploit url
 Display the Exploit-DB URL for each result for online viewing.
 
 ```bash
@@ -50,7 +50,7 @@ searchsploit -w {{QUERY:str:wordpress 5}}
 
 ---
 
-## Mirror (Copy) Exploit to Current Directory
+## mirror exploit local
 Copy an exploit file to the current working directory for review or modification.
 
 ```bash
@@ -61,7 +61,7 @@ searchsploit -m {{EXPLOIT_ID:str:50383}}
 
 ---
 
-## Examine Exploit Source Code
+## examine exploit source
 Display the full source code of an exploit for analysis.
 
 ```bash
@@ -72,7 +72,7 @@ searchsploit -x {{EXPLOIT_ID:str:50383}}
 
 ---
 
-## Parse Nmap XML for Exploits
+## search exploits nmap xml
 Automatically search for exploits matching services found in an nmap XML scan.
 
 ```bash
@@ -83,7 +83,7 @@ searchsploit --nmap {{NMAPXML:file:scan-results.xml}}
 
 ---
 
-## JSON Output
+## search exploits json
 Output search results in JSON format for scripting and automation.
 
 ```bash
@@ -94,7 +94,7 @@ searchsploit -j {{QUERY:str:ssh}} | tee {{OUTFILE:file:searchsploit.json}}
 
 ---
 
-## Update Exploit Database
+## update exploitdb
 Update the local Exploit-DB database to the latest version.
 
 ```bash
@@ -105,7 +105,7 @@ searchsploit -u
 
 ---
 
-## Exclude Denial of Service Results
+## search exploits exclude dos
 Search for exploits while filtering out DoS-only results.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## View File
+## view file
 Open a file in less.
 
 ```bash
@@ -17,7 +17,7 @@ less {{INFILE:file}}
 
 ---
 
-## With Line Numbers
+## view file line numbers
 Display line numbers while paging.
 
 ```bash
@@ -28,7 +28,7 @@ less -N {{INFILE:file}}
 
 ---
 
-## Truncate Long Lines
+## view file truncate lines
 Disable line wrapping for tabular data.
 
 ```bash
@@ -39,7 +39,7 @@ less -S {{INFILE:file}}
 
 ---
 
-## Honor Color Codes
+## view file color
 Render ANSI color escapes.
 
 ```bash
@@ -50,7 +50,7 @@ less -R {{INFILE:file}}
 
 ---
 
-## View Compressed File
+## view compressed file
 Page a gzipped file without manual decompression.
 
 ```bash
@@ -61,7 +61,7 @@ less -z {{INFILE:file}}
 
 ---
 
-## CSV as Columns
+## view csv columns
 Combine column with less to view CSVs.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Find by Name
+## find file by name
 Search for files by name in the locate DB.
 
 ```bash
@@ -17,7 +17,7 @@ locate {{NAME:str}}
 
 ---
 
-## Update Database
+## update locate database
 Refresh the locate database (may need sudo).
 
 ```bash
@@ -28,7 +28,7 @@ sudo updatedb
 
 ---
 
-## Case-Insensitive Match
+## find file case insensitive
 Ignore case while searching.
 
 ```bash
@@ -39,7 +39,7 @@ locate -i {{NAME:str}}
 
 ---
 
-## Limit Results
+## find file limit results
 Cap the number of returned matches.
 
 ```bash

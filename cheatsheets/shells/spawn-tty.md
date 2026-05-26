@@ -6,7 +6,7 @@
 
 ---
 
-## Set TERM to xterm
+## set term xterm
 Make the remote shell render colors and clear screen properly.
 
 ```bash
@@ -17,7 +17,7 @@ export TERM=xterm
 
 ---
 
-## Stty Raw + Foreground (Local)
+## upgrade tty stty raw
 Disable echo locally and bring the backgrounded shell back. Run after Ctrl+Z.
 
 ```bash
@@ -28,7 +28,7 @@ stty raw -echo && fg
 
 ---
 
-## Python3 PTY Spawn
+## spawn tty python3
 Spawn /bin/bash via Python's pty module on the target.
 
 ```bash
@@ -39,7 +39,7 @@ python3 -c 'import pty;pty.spawn("/bin/bash")'
 
 ---
 
-## Python2 PTY Spawn
+## spawn tty python2
 Same upgrade using Python 2 when 3 is unavailable.
 
 ```bash
@@ -50,7 +50,7 @@ python -c 'import pty;pty.spawn("/bin/bash")'
 
 ---
 
-## Perl PTY Spawn
+## spawn tty perl
 Drop into bash via Perl's exec.
 
 ```bash
@@ -61,7 +61,7 @@ perl -e 'exec "/bin/bash";'
 
 ---
 
-## Ruby PTY Spawn
+## spawn tty ruby
 Drop into bash via Ruby's exec.
 
 ```bash
@@ -72,7 +72,7 @@ ruby -e 'exec "/bin/bash"'
 
 ---
 
-## Lua os.execute Spawn
+## spawn tty lua
 Spawn /bin/sh via Lua interpreters.
 
 ```bash
@@ -83,7 +83,7 @@ lua -e 'os.execute("/bin/sh")'
 
 ---
 
-## Vi/Vim Shell Escape
+## spawn tty vim escape
 Escape into a shell from inside vi/vim.
 
 ```bash
@@ -94,7 +94,7 @@ vi -c ':!bash'
 
 ---
 
-## Script Trick (util-linux)
+## spawn tty script
 Drop the dumb shell into `script` to allocate a real PTY.
 
 ```bash
@@ -105,7 +105,7 @@ script -qc /bin/bash /dev/null
 
 ---
 
-## Set Window Size After Upgrade
+## set window size tty
 After stty raw, set rows and cols to match local terminal.
 
 ```bash

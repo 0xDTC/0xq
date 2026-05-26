@@ -6,7 +6,7 @@
 
 ---
 
-## FTP Brute Force
+## brute ftp
 Brute force FTP credentials.
 
 ```bash
@@ -17,7 +17,7 @@ medusa -h {{TARGET:ip}} -u {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/sh
 
 ---
 
-## SSH Brute Force
+## brute ssh
 Brute force SSH credentials.
 
 ```bash
@@ -28,7 +28,7 @@ medusa -h {{TARGET:ip}} -U {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/u
 
 ---
 
-## HTTP Form Brute Force
+## brute http form
 Brute force a directory protected by HTTP basic auth.
 
 ```bash
@@ -39,7 +39,7 @@ medusa -h {{TARGET:ip}} -u {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/sh
 
 ---
 
-## SMB Brute Force
+## brute smb
 Brute force SMB credentials.
 
 ```bash
@@ -50,7 +50,7 @@ medusa -h {{TARGET:ip}} -U {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/u
 
 ---
 
-## IMAP Brute Force
+## brute imap
 Brute force IMAP login.
 
 ```bash
@@ -61,7 +61,7 @@ medusa -h {{TARGET:ip}} -U {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/u
 
 ---
 
-## RDP Brute Force
+## brute rdp
 Brute force RDP credentials.
 
 ```bash

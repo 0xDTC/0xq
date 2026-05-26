@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Scan
+## scan ssl tls
 Scan a target host's TLS configuration.
 
 ```bash
@@ -17,7 +17,7 @@ sslscan {{TARGET:str:example.com:443}}
 
 ---
 
-## Lean Scan (Skip Heartbleed/Compression)
+## scan ssl lean
 Skip heavy checks for fast iteration.
 
 ```bash
@@ -28,7 +28,7 @@ sslscan --no-ciphersuites --no-heartbleed --no-groups --no-fallback --no-compres
 
 ---
 
-## Show Certificate Only
+## show ssl certificate
 Print the server certificate chain without cipher enumeration.
 
 ```bash
@@ -39,7 +39,7 @@ sslscan --no-ciphersuites --no-renegotiation --no-compression --no-fallback --no
 
 ---
 
-## Force STARTTLS Probe
+## scan ssl starttls
 Probe a service that uses STARTTLS (smtp, ftp, imap, pop3, ldap).
 
 ```bash
@@ -50,7 +50,7 @@ sslscan --starttls-{{PROTO:str:smtp}} {{TARGET:str:mail.example.com:25}}
 
 ---
 
-## XML Output
+## scan ssl xml
 Save full results to XML for parsing.
 
 ```bash

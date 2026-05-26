@@ -6,7 +6,7 @@
 
 ---
 
-## Pretty Print
+## pretty print json
 Format JSON for readability.
 
 ```bash
@@ -17,7 +17,7 @@ jq . {{INFILE:file:data.json}}
 
 ---
 
-## Extract Top-Level Fields
+## extract fields json
 Pull a subset of top-level keys from each object.
 
 ```bash
@@ -28,7 +28,7 @@ jq '. | {{{FIELDS:str:timestamp,report}}}' {{INFILE:file:data.json}}
 
 ---
 
-## Iterate Over Array
+## iterate array json
 Iterate items in an array and project fields.
 
 ```bash
@@ -39,7 +39,7 @@ jq '.{{ARRAY:str:results}}[] | {name, age}' {{INFILE:file:data.json}}
 
 ---
 
-## Filter by Equality
+## filter json equality
 Select objects where a field matches a value.
 
 ```bash
@@ -50,7 +50,7 @@ jq '.{{ARRAY:str:results}}[] | select(.{{KEY:str:name}} == "{{VALUE:str:John}}")
 
 ---
 
-## Filter by Substring
+## filter json substring
 Select objects whose field contains a substring.
 
 ```bash
@@ -61,7 +61,7 @@ jq '.{{ARRAY:str:results}}[] | select(.{{KEY:str:name}} | contains("{{NEEDLE:str
 
 ---
 
-## Raw Strings (No Quotes)
+## raw strings json
 Output raw strings without JSON quoting.
 
 ```bash
@@ -72,7 +72,7 @@ jq -r '.{{ARRAY:str:results}}[].{{KEY:str:name}}' {{INFILE:file:data.json}}
 
 ---
 
-## Get Object Keys
+## get keys json
 Get an array of keys from a JSON object.
 
 ```bash
@@ -83,7 +83,7 @@ jq '.{{KEY:str:items}} | keys' {{INFILE:file:data.json}}
 
 ---
 
-## Delete a Key
+## delete key json
 Remove a key from JSON objects.
 
 ```bash
@@ -94,7 +94,7 @@ jq 'del(.{{KEY:str:secret}})' {{INFILE:file:data.json}}
 
 ---
 
-## Merge Two Files
+## merge json files
 Deep-merge two JSON files.
 
 ```bash
@@ -105,7 +105,7 @@ jq -s '.[0] * .[1]' {{FILE1:file:a.json}} {{FILE2:file:b.json}}
 
 ---
 
-## URL-Encode Input
+## url encode json
 Quick URL-encoding helper.
 
 ```bash
@@ -116,7 +116,7 @@ echo -n "{{INPUT:str}}" | jq -sRr @uri
 
 ---
 
-## Extract via to_entries
+## extract to_entries json
 Walk dynamic keys via to_entries.
 
 ```bash

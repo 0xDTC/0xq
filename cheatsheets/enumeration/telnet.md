@@ -6,7 +6,7 @@
 
 ---
 
-## Connect to Telnet Service
+## connect telnet
 Open an interactive Telnet session to the target.
 
 ```bash
@@ -17,7 +17,7 @@ telnet {{TARGET:ip}} {{PORT:port:23}}
 
 ---
 
-## Banner Grab via Telnet
+## grab banner telnet
 Identify a service by reading its initial banner.
 
 ```bash
@@ -28,7 +28,7 @@ telnet {{TARGET:ip}} {{PORT:port:21}}
 
 ---
 
-## Nmap Telnet Brute Force
+## brute telnet nmap
 Brute force telnet credentials with the Nmap NSE script.
 
 ```bash
@@ -39,7 +39,7 @@ nmap -p {{PORT:port:23}} --script telnet-brute --script-args userdb={{USERLIST:w
 
 ---
 
-## Hydra Telnet Brute Force
+## brute telnet hydra
 Brute force telnet logins with Hydra.
 
 ```bash

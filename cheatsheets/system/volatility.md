@@ -6,7 +6,7 @@
 
 ---
 
-## v2 - Image Info
+## image info volatility v2
 Detect the OS profile from a memory dump.
 
 ```bash
@@ -17,7 +17,7 @@ volatility -f {{DUMP:file:memory.raw}} imageinfo
 
 ---
 
-## v2 - KDBG Scan
+## kdbg scan volatility v2
 Find KDBG when imageinfo is inconclusive.
 
 ```bash
@@ -28,7 +28,7 @@ volatility -f {{DUMP:file:memory.raw}} kdbgscan
 
 ---
 
-## v2 - Process List
+## list processes volatility v2
 List processes (pslist), hidden (psscan), and the tree (pstree).
 
 ```bash
@@ -39,7 +39,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str:Win7SP1x64}} psli
 
 ---
 
-## v2 - Process Scan (Hidden)
+## scan hidden processes volatility v2
 Find processes hidden via DKOM by scanning physical memory.
 
 ```bash
@@ -50,7 +50,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str:Win7SP1x64}} pssc
 
 ---
 
-## v2 - Procdump
+## dump process volatility v2
 Dump an executable for a given PID with associated DLLs.
 
 ```bash
@@ -61,7 +61,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} procdump -p {{P
 
 ---
 
-## v2 - Memdump (Process Memory)
+## dump process memory volatility v2
 Dump full process memory for analysis.
 
 ```bash
@@ -72,7 +72,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} memdump -p {{PI
 
 ---
 
-## v2 - Cmdline / Cmdscan / Consoles
+## dump cmdline volatility v2
 Show process command lines and historical console buffers.
 
 ```bash
@@ -83,7 +83,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} cmdline
 
 ---
 
-## v2 - Network Connections (Netscan)
+## list connections volatility v2 netscan
 Show TCP/UDP endpoints captured in the memory image.
 
 ```bash
@@ -94,7 +94,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} netscan
 
 ---
 
-## v2 - Registry Hives & Printkey
+## dump registry volatility v2 printkey
 List loaded registry hives and dump a key by path.
 
 ```bash
@@ -105,7 +105,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} printkey -K "{{
 
 ---
 
-## v2 - Filescan
+## scan files volatility v2
 List files referenced in physical memory.
 
 ```bash
@@ -116,7 +116,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} filescan
 
 ---
 
-## v2 - Dump File by Offset
+## dump file offset volatility v2
 Recover a specific file from memory by virtual offset.
 
 ```bash
@@ -127,7 +127,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} dumpfiles --dum
 
 ---
 
-## v2 - Malfind
+## find malware volatility v2 malfind
 Detect injected/hollowed code regions in process memory.
 
 ```bash
@@ -138,7 +138,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} malfind
 
 ---
 
-## v2 - YARA Scan
+## yara scan volatility v2
 Apply YARA rules across memory regions.
 
 ```bash
@@ -149,7 +149,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} yarascan -y {{R
 
 ---
 
-## v2 - Clipboard Contents
+## dump clipboard volatility v2
 Extract clipboard data captured at dump time.
 
 ```bash
@@ -160,7 +160,7 @@ volatility --profile={{PROFILE:str:Win7SP1x64}} -f {{DUMP:file:memory.raw}} clip
 
 ---
 
-## v3 - Image Info (Windows)
+## image info volatility v3
 Modern Windows image info with arch, version, and KDBG.
 
 ```bash
@@ -171,7 +171,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} windows.info
 
 ---
 
-## v3 - Process List
+## list processes volatility v3
 List processes using Volatility 3 (no profile required).
 
 ```bash
@@ -182,7 +182,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} windows.pslist
 
 ---
 
-## v3 - Process Tree
+## process tree volatility v3
 Show process parent/child relationships.
 
 ```bash
@@ -193,7 +193,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} windows.pstree
 
 ---
 
-## v3 - Dump Files
+## dump files volatility v3
 Dump executable and DLLs for a PID with output directory.
 
 ```bash
@@ -204,7 +204,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} -o {{OUTDIR:dir:./out}} windows.dumpf
 
 ---
 
-## v3 - File Scan + Grep
+## scan files volatility v3 grep
 Scan for files and grep for an interesting filename.
 
 ```bash
@@ -215,7 +215,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} windows.filescan | grep -i "{{NEEDLE:
 
 ---
 
-## v3 - Memmap Dump
+## dump memmap volatility v3
 Dump complete process memory mappings.
 
 ```bash
@@ -226,7 +226,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} -o {{OUTDIR:dir:./out}} windows.memma
 
 ---
 
-## v3 - Network State
+## list connections volatility v3
 Modern netscan/netstat plugin for active connections.
 
 ```bash
@@ -237,7 +237,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} windows.netscan
 
 ---
 
-## v3 - Registry Printkey
+## dump registry volatility v3 printkey
 Dump a registry key directly from the hive in memory.
 
 ```bash
@@ -248,7 +248,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} windows.registry.printkey --key "{{KE
 
 ---
 
-## v3 - Malfind
+## find malware volatility v3 malfind
 Detect suspicious memory pages (RWX, hollowing).
 
 ```bash
@@ -259,7 +259,7 @@ python3 vol.py -f {{DUMP:file:memory.raw}} windows.malfind
 
 ---
 
-## v3 - YARA Scan (VAD)
+## yara scan volatility v3 vad
 Run YARA against process VAD regions.
 
 ```bash

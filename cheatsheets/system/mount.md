@@ -4,7 +4,7 @@
 
 ---
 
-## Mount NFS Share
+## mount nfs share
 Mount NFS export to local mount point.
 
 ```bash
@@ -15,7 +15,7 @@ sudo mount -t nfs {{TARGET:ip}}:{{REMOTE_PATH:str:/share}} {{MOUNT_POINT:dir:/mn
 
 ---
 
-## Mount CIFS/SMB Share
+## mount smb cifs share
 Mount Windows SMB share with credentials.
 
 ```bash
@@ -26,7 +26,7 @@ sudo mount -t cifs //{{TARGET:ip}}/{{SHARE:str:share}} {{MOUNT_POINT:dir:/mnt/sm
 
 ---
 
-## Mount EXT4 Partition
+## mount ext4 partition
 Mount local EXT4 disk partition.
 
 ```bash
@@ -37,7 +37,7 @@ sudo mount /dev/{{DEVICE:str:sda1}} {{MOUNT_POINT:dir:/mnt/disk}}
 
 ---
 
-## Mount FAT32 USB Drive
+## mount fat32 usb
 Mount USB drive with FAT32 filesystem.
 
 ```bash
@@ -48,7 +48,7 @@ sudo mount /dev/{{DEVICE:str:sdb1}} {{MOUNT_POINT:dir:/mnt/usb}} -t vfat
 
 ---
 
-## Mount ISO Image (Loop)
+## mount iso image
 Mount ISO file via loop device.
 
 ```bash
@@ -59,7 +59,7 @@ sudo mount -o loop {{ISO:file:image.iso}} {{MOUNT_POINT:dir:/mnt/iso}}
 
 ---
 
-## Mount Tmpfs
+## mount tmpfs
 Create in-memory tmpfs mount.
 
 ```bash
@@ -70,7 +70,7 @@ sudo mount -t tmpfs tmpfs {{MOUNT_POINT:dir:/mnt/tmp}}
 
 ---
 
-## SSHFS Remote Mount
+## mount sshfs remote
 Mount remote directory over SSH using sshfs.
 
 ```bash
@@ -81,7 +81,7 @@ sshfs {{USERNAME:str}}@{{TARGET:ip}}:{{REMOTE_PATH:str:/home/user}} {{MOUNT_POIN
 
 ---
 
-## Bind Mount
+## mount bind
 Bind one directory to another mount point.
 
 ```bash
@@ -92,7 +92,7 @@ sudo mount --bind {{SOURCE:dir:/source}} {{TARGET_DIR:dir:/mnt/bind}}
 
 ---
 
-## Activate Swap Partition
+## activate swap
 Enable a swap partition for use.
 
 ```bash
