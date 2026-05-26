@@ -402,16 +402,6 @@ q_var_history_add() {
     _q_file_prepend "$hist_file" "$value" 20
 }
 
-# Output the history for a given type (one value per line).
-q_var_history_get() {
-    local vtype="$1"
-    local hist_file="${Q_VAR_HISTORY_DIR}/${vtype}"
-
-    if [[ -f "$hist_file" ]] && [[ -s "$hist_file" ]]; then
-        cat "$hist_file"
-    fi
-}
-
 # ===========================================================================
 # MRU — most-recently-used command titles (cross-session, global)
 # ===========================================================================

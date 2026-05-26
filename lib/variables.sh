@@ -398,7 +398,7 @@ _q_build_candidates() {
     fi
 
     # --- Variable history (tagged [recent]) ---
-    # Read history files directly instead of calling q_var_history_get
+    # Read the var-history files directly (tagged [recent])
     local hist_file_type="${Q_VAR_HISTORY_DIR}/${upper_type}"
     local hist_file_name="${Q_VAR_HISTORY_DIR}/${upper_name}"
 
@@ -490,6 +490,37 @@ _q_build_candidates() {
                 done < <(docker network ls --format '{{.Name}}' 2>/dev/null)
                 ;;
         esac
+    fi
+
+    # Live network hosts — ARP neighbours + /etc/hosts (target/host/ip/domain vars)
+    case "$upper_name" in
+        TARGET|RHOST|RHOSTS|IP|HOST|HOSTNAME|DC_IP|DC_HOST|DOMAIN)
+            local _h
+            while IFS= read -r _h; do
+                [[ -n "$_h" ]] && candidates="${candidates}[arp] ${_h}"$'\n'
+            done < <(ip neigh 2>/dev/null | awk '$1 ~ /^[0-9]+(\.[0-9]+){3}$/ && $0 !~ /FAILED|INCOMPLETE/ {print $1}' | sort -u)
+            while IFS= read -r _h; do
+                [[ -n "$_h" ]] && candidates="${candidates}[hosts] ${_h}"$'\n'
+            done < <(awk 'NF>=2 && $1 !~ /^#/ && $1 !~ /^(127\.|255\.|0\.0\.0\.0|::1|ff0|fe00)/ { for (i=1;i<=NF;i++) { if ($i ~ /^#/) break; print $i } }' /etc/hosts 2>/dev/null | sort -u)
+            ;;
+    esac
+
+    # Local login users (user/username vars)
+    case "$upper_name" in
+        USER|USERNAME)
+            local _u
+            while IFS= read -r _u; do
+                [[ -n "$_u" ]] && candidates="${candidates}[user] ${_u}"$'\n'
+            done < <(awk -F: '$3>=1000 && $3<65534 {print $1}' /etc/passwd 2>/dev/null)
+            ;;
+    esac
+
+    # Live local listening ports (port vars) — augments the common-ports list
+    if [[ "$upper_name" == *PORT* ]] && command -v ss >/dev/null 2>&1; then
+        local _lp
+        while IFS= read -r _lp; do
+            [[ -n "$_lp" ]] && candidates="${candidates}[listen] ${_lp}"$'\n'
+        done < <(ss -H -tln 2>/dev/null | awk '{n=split($4,a,":"); if (a[n] ~ /^[0-9]+$/) print a[n]}' | sort -un)
     fi
 
     # Deduplicate while preserving order
@@ -613,14 +644,7 @@ q_fill_single_var() {
     local value=""
     if [[ -n "$selected" ]]; then
         # User selected from the list — strip tag prefixes using parameter expansion
-        value="${selected#\[session\] }"
-        value="${value#\[clipboard\] }"
-        value="${value#\[default\] }"
-        value="${value#\[auto\] }"
-        value="${value#\[docker\] }"
-        value="${value#\[new\] }"
-        value="${value#\[recent\] }"
-        value="${value#\[used\] }"
+        value="${selected#\[*\] }"
     elif [[ -n "$typed_query" ]]; then
         # User typed a custom value
         value="$typed_query"

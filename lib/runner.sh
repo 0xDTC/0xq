@@ -124,8 +124,6 @@ q_run_parallel() {
     # Each line in the queue file is: <safe_target><TAB><filled_cmd>
     local queue
     queue="$(mktemp)"
-    local skipped_file
-    skipped_file="$(mktemp)"
 
     local ts
     printf -v ts '%(%Y%m%d-%H%M%S)T' -1
@@ -141,7 +139,6 @@ q_run_parallel() {
         # Pass 1: type-aware target substitution
         if ! filled="$(_q_runner_fill_target "$ttype" "$tvalue" "$cmd")"; then
             q_warn "Skipping target (type mismatch): ${ttype}:${tvalue}"
-            printf '%s\n' "$tvalue" >> "$skipped_file"
             skipped=$((skipped + 1))
             continue
         fi
@@ -153,7 +150,6 @@ q_run_parallel() {
                 filled="$resolved"
             else
                 q_warn "Skipping target (unresolved variable): ${tvalue}"
-                printf '%s\n' "$tvalue" >> "$skipped_file"
                 skipped=$((skipped + 1))
                 continue
             fi
@@ -168,7 +164,7 @@ q_run_parallel() {
     if [[ "$queued" -eq 0 ]]; then
         q_warn "Nothing to run. Total: ${total}, skipped: ${skipped}"
         printf '[%d] succeeded  [%d] failed  [%d] skipped\n' 0 0 "$skipped"
-        rm -f "$queue" "$skipped_file"
+        rm -f "$queue"
         return 0
     fi
 
@@ -176,8 +172,9 @@ q_run_parallel() {
 
     # --- Run with xargs -P ---------------------------------------------------
     # We need to pass: safe_name, ts, runs_dir, and the filled command to a
-    # worker. Use NUL-delimited inputs to be safe with weird characters.
-    # Each queue line ends up as: SAFE\tCMD — we encode with newline at end.
+    # worker. Each queue line is SAFE<TAB>CMD; pass it as "$1" (data, never
+    # interpolated into the worker-script text) so quotes/$()/backticks in a
+    # target value can't break or inject into the worker.
     local results_file
     results_file="$(mktemp)"
 
@@ -186,15 +183,15 @@ q_run_parallel() {
     export _Q_RUNS_DIR="$runs_dir" _Q_TS="$ts" _Q_RESULTS="$results_file"
 
     # shellcheck disable=SC2016
-    xargs -d '\n' -P "$jobs" -I {} bash -c '
-        line="{}"
+    xargs -d '\n' -P "$jobs" -n 1 bash -c '
+        line="$1"
         safe="${line%%	*}"
         cmd="${line#*	}"
         out="${_Q_RUNS_DIR}/${safe}-${_Q_TS}.out"
         bash -c "$cmd" >"$out" 2>&1
         rc=$?
         printf "%s\t%d\n" "$safe" "$rc" >> "$_Q_RESULTS"
-    ' < "$queue"
+    ' _ < "$queue"
 
     # --- Tabulate results ----------------------------------------------------
     local succeeded=0 failed=0
@@ -224,7 +221,7 @@ q_run_parallel() {
         "$succeeded" "$failed" "$skipped"
 
     # --- Cleanup -------------------------------------------------------------
-    rm -f "$queue" "$skipped_file" "$results_file"
+    rm -f "$queue" "$results_file"
     unset _Q_RUNS_DIR _Q_TS _Q_RESULTS
 
     # Log to history

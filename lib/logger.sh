@@ -132,7 +132,8 @@ q_log_extract_target() {
 
     # 3) Domain-looking token (has dot, no slash, not bare numeric)
     local tok
-    for tok in $cmd; do
+    local -a _toks=(); read -ra _toks <<< "$cmd"
+    for tok in "${_toks[@]}"; do
         # Skip flags and assignments
         [[ "$tok" == -* ]] && continue
         [[ "$tok" == *=* ]] && continue
@@ -208,7 +209,7 @@ q_log_ls() {
         # rel = <target_slug>/<tool>-<ts>.log
         target_dir="${rel%%/*}"
         tool_name="${rel##*/}"           # <tool>-<ts>.log
-        tool_name="${tool_name%%-*.log}" # strip from first '-' through '.log'
+        tool_name="${tool_name%-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].log}" # strip trailing -YYYYMMDD-HHMMSS.log
         # Edge case: <tool>.log (no timestamp) — fall back to stripping just .log
         if [[ "$tool_name" == "${rel##*/}" ]]; then
             tool_name="${tool_name%.log}"
@@ -319,7 +320,7 @@ q_log_prune() {
             for f in "$target_dir"*.log; do
                 [[ -f "$f" ]] || continue
                 tool_name="${f##*/}"
-                tool_name="${tool_name%%-*.log}"
+                tool_name="${tool_name%-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9].log}"
                 _tools_seen[$tool_name]=1
             done
 

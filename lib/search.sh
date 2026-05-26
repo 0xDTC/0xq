@@ -11,16 +11,14 @@
 # of the selected command so the user can see exactly what will execute.
 # Unresolved placeholders are rendered as <?NAME?> in red.
 #
-# When the user hits Enter and every placeholder resolves from the current
-# session, q_main's call to q_fill_vars_auto succeeds and the secondary
-# per-variable fzf prompts are skipped entirely. If the user hits Ctrl+F
-# instead, a sideband file (${Q_CACHE_DIR}/.force_interactive) is created
-# so q_main can be told to skip the autofill attempt.
+# Variables are filled on-screen: Ctrl+F (and Enter, when placeholders are
+# still missing) open a candidate popup per variable and update the FILLED
+# preview live, so the per-variable picker never leaves this screen.
 #
 # Keybindings in the main fzf:
-#   Enter     run (autofill if session has everything, else old fill flow)
-#   Ctrl+F    force interactive variable fill (old flow)
-#   Ctrl+E    force interactive fill then open in $EDITOR before exec
+#   Enter     fill any missing vars on-screen, then (next Enter) run
+#   Ctrl+F    fill / change variables via the candidate popup
+#   Ctrl+E    fill, then open in $EDITOR before exec (.force_edit sideband)
 #   Ctrl+T    cycle TARGET through session targets; preview updates live
 #   Ctrl+Y    copy the session-filled command to the clipboard
 #   Tab       toggle preview
@@ -33,18 +31,17 @@
 # Stdout:    TSV line  CATEGORY/TOOL \t TITLE \t COMMAND  (for the selection)
 # Exit 1 if no selection (Escape / Ctrl+C).
 #
-# Sideband flag files (consumed by q_main, run in a command substitution so
+# Sideband flag file (consumed by q_main, run in a command substitution so
 # env exports don't propagate):
-#   ${Q_CACHE_DIR}/.force_interactive  exists  -> skip q_fill_vars_auto
-#   ${Q_CACHE_DIR}/.force_edit         exists  -> after fill, open in editor
+#   ${Q_CACHE_DIR}/.force_edit  exists  -> after fill, open in $EDITOR
 q_search() {
     local index_file="${Q_CACHE_DIR}/index.tsv"
     local initial_query="${*}"
 
     # -----------------------------------------------------------------------
-    # Reset sideband flags for this invocation
+    # Reset the .force_edit sideband flag for this invocation
     # -----------------------------------------------------------------------
-    rm -f "${Q_CACHE_DIR}/.force_interactive" "${Q_CACHE_DIR}/.force_edit"
+    rm -f "${Q_CACHE_DIR}/.force_edit"
 
     # -----------------------------------------------------------------------
     # Guard: index must exist and have content
@@ -169,14 +166,6 @@ q_search() {
         filled_cmd="\${awk_out%\$'\n'*}"
         missing_line="\${awk_out##*\$'\n'}"
         missing_count="\${missing_line#__MISSING__=}"
-
-        # Risk color
-        case "\$_risk" in
-            safe|low)       risk_color="\${green}" ;;
-            med|medium)     risk_color="\${yellow}" ;;
-            high|critical)  risk_color="\${red}" ;;
-            *)              risk_color="\${dim}" ;;
-        esac
 
         printf '%s\n'     "\${bold}\${cyan}TEMPLATE\${reset}"
         printf '  %s\n\n' "\${dim}\${highlighted_cmd}\${reset}"
@@ -319,7 +308,7 @@ PREVIEW_EOF
     fi
 
     # With live binds (no --expect), fzf prints only the accepted row.
-    # Ctrl+E sets .force_edit via its bind; .force_interactive is unused now.
+    # Ctrl+E sets .force_edit via its bind; q_main opens $EDITOR after fill.
     local selection_line="$selected"
 
     # -----------------------------------------------------------------------
@@ -404,7 +393,7 @@ cycle_file="$2"
 [[ -s "$targets_file" ]] || exit 0
 
 # Strip "type:" prefix from each target line to get bare values
-mapfile -t all < <(awk -F: 'NF>1 { $1=""; sub(/^ /, ""); print }' "$targets_file")
+mapfile -t all < <(cut -s -d: -f2- "$targets_file")
 [[ ${#all[@]} -gt 0 ]] || exit 0
 
 current=""
@@ -585,9 +574,7 @@ while IFS=$'\t' read -r name vtype vdefault; do
     value=""
     if [[ -n "$sel" ]]; then
         value="$sel"
-        for tag in '[session] ' '[clipboard] ' '[default] ' '[auto] ' '[docker] ' '[new] ' '[recent] ' '[used] '; do
-            value="${value#"$tag"}"
-        done
+        value="${value#\[*\] }"
     elif [[ -n "$typed" ]]; then
         value="$typed"
     fi

@@ -356,6 +356,8 @@ powershell -c "Get-EventLog -LogName Security -Newest {{COUNT:int:50}}"
 
 <!-- meta: risk=safe | phase=enum | tags=eventlog,security,audit -->
 
+---
+
 ## add registry key or value
 Create or set a registry value (persistence or config tampering).
 

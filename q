@@ -41,21 +41,20 @@ q_main() {
     # Track this title in the MRU so it floats to top next time
     q_mru_add "$title" 2>/dev/null || true
 
-    # 4. Try auto-fill from session first; fall back to interactive if
-    #    any variable can't be resolved, or if the user pressed Ctrl+F /
-    #    Ctrl+E in the main fzf (sideband flags written by q_search).
+    # 4. Auto-fill from session / on-screen picks; fall back to the interactive
+    #    fill flow only if a variable still can't be resolved. Ctrl+E in the
+    #    main fzf writes the .force_edit sideband flag (handled below).
     local filled_command
-    local force_interactive="${Q_CACHE_DIR}/.force_interactive"
     local force_edit="${Q_CACHE_DIR}/.force_edit"
 
-    if [[ -f "$force_interactive" ]] || ! filled_command="$(q_fill_vars_auto "$command" 2>/dev/null)"; then
+    if ! filled_command="$(q_fill_vars_auto "$command" 2>/dev/null)"; then
         filled_command="$(q_fill_vars "$command")"
     fi
 
     # 5a. Inline mode: print the filled command for shell widget consumption
     if [[ "$inline" == "yes" ]]; then
         printf '%s' "$filled_command"
-        rm -f "$force_interactive" "$force_edit"
+        rm -f "$force_edit"
         return 0
     fi
 
@@ -69,8 +68,8 @@ q_main() {
         rm -f "$tmpfile"
     fi
 
-    # Clear sideband flags so they don't leak into the next invocation
-    rm -f "$force_interactive" "$force_edit"
+    # Clear the sideband flag so it doesn't leak into the next invocation
+    rm -f "$force_edit"
 
     # 5c. Normal mode: confirm and execute
     q_confirm_and_run "$filled_command"

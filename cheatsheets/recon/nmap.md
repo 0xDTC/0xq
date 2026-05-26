@@ -114,6 +114,8 @@ sudo nmap -sS -f -D RND:5 --data-length 24 -T2 -p {{PORTS:port:80,443}} {{TARGET
 
 <!-- meta: risk=med | phase=recon | tags=evasion,firewall,stealth -->
 
+---
+
 ## scan full
 Aggressive full scan: OS, version detection, default scripts, verbose.
 

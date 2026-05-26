@@ -185,8 +185,14 @@ _q_execute() {
 
     printf '%s--- Executing ---%s\n' "$Q_DIM" "$Q_RESET" >&2
     printf '%slog: %s%s\n' "$Q_DIM" "$logfile" "$Q_RESET" >&2
+    # Disable errexit around the user command — many tools legitimately exit
+    # non-zero (no results, failed auth); that must NOT abort q before the
+    # output is parsed/promoted and the exit code is returned.
+    local exit_code
+    set +e
     eval "$command" 2>&1 | tee "$logfile"
-    local exit_code=${PIPESTATUS[0]}
+    exit_code=${PIPESTATUS[0]}
+    set -e
     printf '%s--- Finished (exit %d) ---%s\n' "$Q_DIM" "$exit_code" "$Q_RESET" >&2
 
     # Parse output for discoverable data and promote high-confidence findings

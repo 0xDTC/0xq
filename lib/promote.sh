@@ -66,7 +66,9 @@ q_promote_discoveries() {
         done <<< "$content"
     done
 
-    q_info "Promoted ${count} targets"
+    if [[ "${count:-0}" -gt 0 ]]; then
+        q_info "Promoted ${count} target(s)"
+    fi
 }
 
 # ===========================================================================

@@ -135,6 +135,12 @@ q_sync_add() {
         q_error "usage: q_sync_add NAME URL"
         return 1
     fi
+    # Constrain the source name to a safe identifier so it can't act as a
+    # regex metacharacter in the grep -E patterns below (or escape its dir).
+    if [[ ! "$name" =~ ^[A-Za-z0-9_-]+$ ]]; then
+        q_error "Invalid source name '${name}' — use letters, digits, '_' or '-' only."
+        return 1
+    fi
     mkdir -p "$Q_DATA_DIR"
     local file
     file="$(_q_sync_user_file)"
@@ -208,7 +214,7 @@ q_sync_remove() {
     if [[ "$force" != true ]]; then
         printf 'Remove %s? [y/N] ' "$target" >&2
         local reply
-        read -r reply
+        IFS= read -r reply || reply=""
         [[ "$reply" =~ ^[Yy]$ ]] || { q_info "Aborted"; return 0; }
     fi
     rm -rf "$target"

