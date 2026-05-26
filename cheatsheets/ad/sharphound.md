@@ -6,7 +6,7 @@
 
 ---
 
-## Default Collection
+## collect default AD
 Collect group membership, domain trust, local admin, and session information.
 
 ```bash
@@ -17,7 +17,7 @@ SharpHound --CollectionMethod Default --OutputDirectory {{OUTDIR:dir:./output}} 
 
 ---
 
-## All Collection Methods (Windows EXE)
+## collect all methods windows
 Collect everything BloodHound supports in a single run.
 
 ```bash
@@ -28,7 +28,7 @@ Collect everything BloodHound supports in a single run.
 
 ---
 
-## PowerShell Module Ingestor
+## collect powershell ingestor
 Run SharpHound from the PowerShell wrapper script with explicit credentials.
 
 ```bash
@@ -39,7 +39,7 @@ powershell -ep bypass -c ". .\SharpHound.ps1; Invoke-BloodHound -CollectionMetho
 
 ---
 
-## Computer-Only Collection
+## collect computers sessions
 Collect local admin, RDP, DCOM, and session information from machines.
 
 ```bash
@@ -50,7 +50,7 @@ SharpHound --CollectionMethod ComputerOnly --OutputDirectory {{OUTDIR:dir:./outp
 
 ---
 
-## Domain Trust Collection
+## collect domain trusts
 Map domain trust relationships across the forest.
 
 ```bash
@@ -61,7 +61,7 @@ SharpHound --CollectionMethod Trusts --OutputDirectory {{OUTDIR:dir:./output}} -
 
 ---
 
-## Targeted Domain Collection
+## collect targeted domain
 Collect default information for a specific domain.
 
 ```bash
@@ -72,7 +72,7 @@ SharpHound --CollectionMethod Default -d {{DOMAIN:domain}} --OutputDirectory {{O
 
 ---
 
-## Stealth Mode (Skip DCs)
+## collect stealth skip DCs
 Run in stealth mode while excluding domain controllers to avoid ATA detection.
 
 ```bash
@@ -83,7 +83,7 @@ SharpHound --CollectionMethod Default --Stealth --ExcludeDomainControllers --Out
 
 ---
 
-## Limit by Search Base (OU)
+## collect by searchbase OU
 Restrict collection to a specific organizational unit.
 
 ```bash
@@ -94,7 +94,7 @@ SharpHound.exe --SearchBase "{{OU:str:OU=New York,DC=Contoso,DC=Local}}"
 
 ---
 
-## Custom LDAP Filter
+## collect custom ldap filter
 Collect only objects matching an LDAP filter expression.
 
 ```bash
@@ -105,7 +105,7 @@ SharpHound.exe --LDAPFilter "{{FILTER:str:(CN=*,OU=New York,DC=Contoso,DC=Local)
 
 ---
 
-## Loop Session Collection
+## collect sessions loop
 Repeatedly collect session info over a duration with intervals between loops.
 
 ```bash
@@ -116,7 +116,7 @@ SharpHound.exe --CollectionMethods Session --Loop --LoopDuration {{DURATION:str:
 
 ---
 
-## Alternate LDAP Credentials
+## collect alternate ldap creds
 Bind with explicit username/password rather than current user context.
 
 ```bash
@@ -127,7 +127,7 @@ SharpHound.exe --LdapUsername {{USERNAME:str}} --LdapPassword {{PASSWORD:str}}
 
 ---
 
-## Real DNS Name Override
+## override DNS name
 Provide a DNS suffix when DNS is not synchronized with AD.
 
 ```bash
@@ -138,7 +138,7 @@ SharpHound.exe --RealDNSName {{DNS_NAME:domain:COMPANY.COM}}
 
 ---
 
-## List Domain Trusts (nltest)
+## list domain trusts nltest
 Replacement for the deprecated --SearchForest flag.
 
 ```bash

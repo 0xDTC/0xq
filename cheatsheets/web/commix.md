@@ -6,7 +6,7 @@
 
 ---
 
-## Basic GET Parameter Test
+## test GET param command injection
 Test a URL parameter for command injection.
 
 ```bash
@@ -17,7 +17,7 @@ commix -u "{{URL:url:http://target.com/page.php?id=1}}"
 
 ---
 
-## POST Data Injection
+## inject POST data command
 Test injectable parameters in POST body data.
 
 ```bash
@@ -28,7 +28,7 @@ commix -u "{{URL:url:http://target.com/execute}}" --data "{{PARAM:str:cmd}}={{VA
 
 ---
 
-## Cookie-Based Injection
+## inject command via cookie
 Test command injection via Cookie header values.
 
 ```bash
@@ -39,7 +39,7 @@ commix -u "{{URL:url:http://target.com/page}}" --cookie "{{COOKIE:str:tracking=t
 
 ---
 
-## Get Reverse Shell via OS Shell
+## spawn os shell rce
 Spawn an interactive OS shell on a confirmed-vulnerable target.
 
 ```bash
@@ -50,7 +50,7 @@ commix -u "{{URL:url:http://target.com/page.php?id=1}}" --os-shell
 
 ---
 
-## Specify Technique
+## force injection technique
 Force a specific injection technique (e.g., classic, eval, time-based, file-based).
 
 ```bash
@@ -61,7 +61,7 @@ commix -u "{{URL:url:http://target.com/page.php?id=1}}" --technique={{TECHNIQUE:
 
 ---
 
-## Authenticated Scan with Headers
+## scan authenticated endpoint headers
 Scan a protected endpoint passing auth headers and bearer tokens.
 
 ```bash

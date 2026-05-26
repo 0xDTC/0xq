@@ -6,7 +6,7 @@
 
 ---
 
-## Scan Single URL
+## scan url xss reflected
 Test a single URL for XSS, including DOM and reflected variants.
 
 ```bash
@@ -17,7 +17,7 @@ dalfox url {{URL:url:http://target.com/search?q=test}}
 
 ---
 
-## Scan URL List from File
+## scan xss url list file
 Run XSS detection across many URLs in a file.
 
 ```bash
@@ -28,7 +28,7 @@ dalfox file {{URLLIST:file:urls.txt}} -o {{OUTFILE:file:dalfox-results.txt}}
 
 ---
 
-## Pipe from Other Tools (gau / hakrawler)
+## scan xss piped from gau
 Stream URLs from another tool directly into dalfox.
 
 ```bash
@@ -39,7 +39,7 @@ gau {{DOMAIN:domain}} | dalfox pipe -o {{OUTFILE:file:dalfox-pipe.txt}}
 
 ---
 
-## With Custom Headers / Cookie
+## scan xss authenticated cookie headers
 Inject headers or cookies for authenticated scans.
 
 ```bash
@@ -50,7 +50,7 @@ dalfox url {{URL:url}} --cookie "{{COOKIE:str:session=abc123}}" --header "{{HEAD
 
 ---
 
-## Blind XSS with Callback
+## scan xss blind callback
 Test for blind XSS using an out-of-band callback URL (e.g., XSSHunter).
 
 ```bash

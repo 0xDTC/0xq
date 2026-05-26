@@ -6,7 +6,7 @@
 
 ---
 
-## Basic IKE Scan
+## scan ike responders
 Enumerate IKE responders.
 
 ```bash
@@ -17,7 +17,7 @@ ike-scan {{TARGET:ip}}
 
 ---
 
-## IKE Version Detection
+## detect ike version
 Detect IKE version on the target.
 
 ```bash
@@ -28,7 +28,7 @@ ike-scan -M {{TARGET:ip}}
 
 ---
 
-## Aggressive Mode Test
+## probe ike aggressive mode
 Probe for IKE Aggressive Mode (often weak).
 
 ```bash
@@ -39,7 +39,7 @@ ike-scan -A {{TARGET:ip}}
 
 ---
 
-## Extract PSK Hash
+## capture ike psk hash
 Capture an Aggressive Mode PSK hash for offline cracking.
 
 ```bash
@@ -50,7 +50,7 @@ ike-scan -A {{TARGET:ip}} --pskcrack={{OUTFILE:file:ike_hash.txt}}
 
 ---
 
-## Crack PSK Hash
+## crack ike psk wordlist
 Crack an extracted PSK with psk-crack.
 
 ```bash
@@ -61,7 +61,7 @@ psk-crack {{HASHFILE:file:ike_hash.txt}} {{WORDLIST:wordlist:/usr/share/wordlist
 
 ---
 
-## Custom Transform
+## scan ike custom transform
 Test specific encryption/hash/auth/group transforms (enc,hash,auth,group).
 
 ```bash
@@ -72,7 +72,7 @@ ike-scan --trans={{TRANSFORM:str:5,2,1,2}} {{TARGET:ip}}
 
 ---
 
-## Vendor Fingerprinting
+## fingerprint ike vendor
 Probe for vendor IDs to identify implementation.
 
 ```bash
@@ -83,7 +83,7 @@ ike-scan --vendor-id {{TARGET:ip}}
 
 ---
 
-## strongSwan Connect
+## connect ipsec tunnel
 Bring up an IPSec connection (after editing /etc/ipsec.conf).
 
 ```bash
@@ -94,7 +94,7 @@ strongswan up {{CONN:str:target}}
 
 ---
 
-## strongSwan Status
+## show ipsec tunnel status
 Check tunnel status.
 
 ```bash
@@ -105,7 +105,7 @@ strongswan status
 
 ---
 
-## strongSwan Down
+## teardown ipsec tunnel
 Tear down a tunnel.
 
 ```bash

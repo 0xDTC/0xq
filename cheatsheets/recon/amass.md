@@ -6,7 +6,7 @@
 
 ---
 
-## Passive Enumeration
+## enum subdomains passive
 Discover subdomains using only passive data sources (no direct target contact).
 
 ```bash
@@ -17,7 +17,7 @@ amass enum -passive -d {{DOMAIN:domain}} -o {{OUTFILE:file:amass-passive.txt}}
 
 ---
 
-## Active Enumeration
+## enum subdomains active dns
 Perform DNS resolution and actively verify discovered subdomains.
 
 ```bash
@@ -28,7 +28,7 @@ amass enum -active -d {{DOMAIN:domain}} -o {{OUTFILE:file:amass-active.txt}}
 
 ---
 
-## Brute Force Subdomain Discovery
+## brute subdomains wordlist
 Combine passive sources with DNS brute forcing for deeper coverage.
 
 ```bash
@@ -39,7 +39,7 @@ amass enum -brute -d {{DOMAIN:domain}} -w {{WORDLIST:wordlist:/usr/share/seclist
 
 ---
 
-## Intel Whois Reverse Lookup
+## find org domains reverse whois
 Discover domains owned by an organization using reverse whois data.
 
 ```bash
@@ -50,7 +50,7 @@ amass intel -whois -d {{DOMAIN:domain}} -o {{OUTFILE:file:amass-intel.txt}}
 
 ---
 
-## Intel ASN Enumeration
+## enum domains by ASN
 Find domains associated with an autonomous system number.
 
 ```bash
@@ -61,7 +61,7 @@ amass intel -asn {{ASN:int}} -o {{OUTFILE:file:asn-domains.txt}}
 
 ---
 
-## Enumeration with Rate Limiting
+## enum active rate limited stealth
 Run active enumeration with controlled DNS query rate to avoid detection.
 
 ```bash
@@ -72,7 +72,7 @@ amass enum -active -d {{DOMAIN:domain}} -max-dns-queries {{RATE:int:200}} -o {{O
 
 ---
 
-## Database Query — Show Results
+## query local database results
 Query the local Amass database for previously discovered assets.
 
 ```bash
@@ -83,7 +83,7 @@ amass db -names -d {{DOMAIN:domain}}
 
 ---
 
-## Enumeration with Config File
+## enum active config api keys
 Run enumeration using a custom configuration file with API keys and settings.
 
 ```bash
@@ -94,7 +94,7 @@ amass enum -active -d {{DOMAIN:domain}} -config {{CONFIG:file:~/.config/amass/co
 
 ---
 
-## Recursive Subdomain Enumeration
+## enum subdomains recursive
 Recursively discover sub-subdomains under previously found names.
 
 ```bash
@@ -105,7 +105,7 @@ amass enum -recursive -d {{DOMAIN:domain}} -o {{OUTFILE:file:amass-recursive.txt
 
 ---
 
-## Custom DNS Resolvers
+## enum custom dns resolvers
 Use specific DNS resolvers to avoid logging or rate limiting on the default ones.
 
 ```bash
@@ -116,7 +116,7 @@ amass enum -active -d {{DOMAIN:domain}} -r {{RESOLVERS:str:1.1.1.1,8.8.8.8}} -o 
 
 ---
 
-## Enumerate Through SOCKS Proxy
+## enum through socks proxy tor
 Route Amass traffic through a SOCKS5 proxy (e.g., Tor).
 
 ```bash
@@ -127,7 +127,7 @@ amass enum -active -d {{DOMAIN:domain}} -proxy {{PROXY:str:socks5://127.0.0.1:90
 
 ---
 
-## CIDR-Based Discovery
+## find domains by CIDR
 Find domains hosted within a specific IP range.
 
 ```bash
@@ -138,7 +138,7 @@ amass intel -cidr {{SUBNET:cidr:192.168.0.0/24}}
 
 ---
 
-## Output Both TXT and JSON
+## enum output txt and json
 Save enumeration results in human and machine-readable formats simultaneously.
 
 ```bash

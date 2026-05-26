@@ -6,7 +6,7 @@
 
 ---
 
-## List All Processes
+## list all processes
 Show all running processes with full details.
 
 ```bash
@@ -17,7 +17,7 @@ ps auxf
 
 ---
 
-## Find Process by Name
+## find process by name
 Search for processes matching a pattern.
 
 ```bash
@@ -28,7 +28,7 @@ pgrep -af "{{PATTERN:str:python}}"
 
 ---
 
-## Kill Process by PID
+## kill process by pid
 Send a signal to a process by its PID.
 
 ```bash
@@ -39,7 +39,7 @@ kill -{{SIGNAL:int:9}} {{PID:int:1234}}
 
 ---
 
-## Kill All by Name
+## kill all by name
 Kill all processes matching a name.
 
 ```bash
@@ -50,7 +50,7 @@ killall -{{SIGNAL:int:9}} {{NAME:str:python3}}
 
 ---
 
-## Top One-Shot Snapshot
+## snapshot top cpu usage
 Capture a single snapshot of top processes sorted by CPU usage.
 
 ```bash
@@ -61,7 +61,7 @@ top -bn1 | head -n {{LINES:int:20}}
 
 ---
 
-## Lsof by Port
+## find process by port
 Find which process is listening on a specific port.
 
 ```bash
@@ -72,7 +72,7 @@ sudo lsof -i :{{PORT:port:80}}
 
 ---
 
-## Lsof by Process
+## list open files by pid
 List all files opened by a specific process.
 
 ```bash
@@ -83,7 +83,7 @@ lsof -p {{PID:int:1234}}
 
 ---
 
-## Lsof Open Files by User
+## list open files by user
 Show all files opened by a specific user.
 
 ```bash
@@ -94,7 +94,7 @@ lsof -u {{USER:str:www-data}}
 
 ---
 
-## Fuser by Port
+## identify process using port
 Identify and optionally kill the process using a specific port.
 
 ```bash
@@ -105,7 +105,7 @@ fuser -v {{PORT:port:80}}/tcp
 
 ---
 
-## Run in Background with Nohup
+## run command in background nohup
 Run a command that persists after logout with output logged.
 
 ```bash
@@ -116,7 +116,7 @@ nohup {{CMD:str:./long-running-script.sh}} > {{OUTFILE:file:nohup.out}} 2>&1 &
 
 ---
 
-## Strace System Calls
+## trace system calls strace
 Trace system calls made by a running process.
 
 ```bash
@@ -127,7 +127,7 @@ sudo strace -f -p {{PID:int:1234}} -e {{CALLS:str:open,read,write}}
 
 ---
 
-## Ltrace Library Calls
+## trace library calls ltrace
 Trace library function calls made by a process.
 
 ```bash
@@ -138,7 +138,7 @@ ltrace -p {{PID:int:1234}} -e {{FUNCS:str:malloc,free}}
 
 ---
 
-## Strace Trace File Operations
+## trace file syscalls strace
 Filter strace output to file-related syscalls only.
 
 ```bash
@@ -149,7 +149,7 @@ sudo strace -f -e trace=file -p {{PID:int:1234}}
 
 ---
 
-## Strace Network Syscalls
+## trace network syscalls strace
 Trace network-related syscalls (connect, accept, recvfrom).
 
 ```bash
@@ -160,7 +160,7 @@ sudo strace -f -e trace=network -p {{PID:int:1234}}
 
 ---
 
-## Strace Summary Stats
+## summarize syscall stats strace
 Print a summary of time, calls, and errors per syscall on exit.
 
 ```bash
@@ -171,7 +171,7 @@ strace -c -p {{PID:int:1234}}
 
 ---
 
-## Strace with Syscall Timing
+## time syscalls strace
 Show wall time spent inside each syscall.
 
 ```bash
@@ -182,7 +182,7 @@ strace -T -p {{PID:int:1234}}
 
 ---
 
-## Strace Launch Program with Trace
+## trace program launch strace
 Trace a program from start, logging to a file.
 
 ```bash

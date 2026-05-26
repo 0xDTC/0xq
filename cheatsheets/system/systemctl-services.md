@@ -6,7 +6,7 @@
 
 ---
 
-## Start a Service
+## start service
 Start a stopped service immediately.
 
 ```bash
@@ -17,7 +17,7 @@ sudo systemctl start {{SERVICE:str:apache2}}
 
 ---
 
-## Stop a Service
+## stop service
 Stop a running service immediately.
 
 ```bash
@@ -28,7 +28,7 @@ sudo systemctl stop {{SERVICE:str:apache2}}
 
 ---
 
-## Restart a Service
+## restart service
 Restart a service (stop then start).
 
 ```bash
@@ -39,7 +39,7 @@ sudo systemctl restart {{SERVICE:str:apache2}}
 
 ---
 
-## Enable at Boot
+## enable service at boot
 Enable a service to start automatically on boot.
 
 ```bash
@@ -50,7 +50,7 @@ sudo systemctl enable {{SERVICE:str:ssh}}
 
 ---
 
-## Disable at Boot
+## disable service at boot
 Disable a service from starting on boot.
 
 ```bash
@@ -61,7 +61,7 @@ sudo systemctl disable {{SERVICE:str:apache2}}
 
 ---
 
-## Service Status
+## check service status
 Check the current status and recent logs of a service.
 
 ```bash
@@ -72,7 +72,7 @@ systemctl status {{SERVICE:str:ssh}}
 
 ---
 
-## List All Active Units
+## list active units
 List all active systemd units.
 
 ```bash
@@ -83,7 +83,7 @@ systemctl list-units --type=service --state=running
 
 ---
 
-## List Failed Services
+## list failed services
 Show all services that failed to start.
 
 ```bash
@@ -94,7 +94,7 @@ systemctl --failed
 
 ---
 
-## Journalctl Follow Logs
+## follow service logs journalctl
 Follow real-time logs for a specific service.
 
 ```bash
@@ -105,7 +105,7 @@ sudo journalctl -u {{SERVICE:str:ssh}} -f
 
 ---
 
-## Journalctl Since Time
+## view logs since time journalctl
 View logs since a specific time or date.
 
 ```bash
@@ -116,7 +116,7 @@ sudo journalctl -u {{SERVICE:str:ssh}} --since "{{SINCE:str:1 hour ago}}" --no-p
 
 ---
 
-## Journalctl by Priority
+## filter logs by priority journalctl
 View logs filtered by priority level (0=emerg through 7=debug).
 
 ```bash

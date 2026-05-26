@@ -6,7 +6,7 @@
 
 ---
 
-## Python HTTP Server
+## serve http python
 Start a simple HTTP file server for hosting payloads and tools.
 
 ```bash
@@ -17,7 +17,7 @@ python3 -m http.server {{PORT:port:8000}} --bind {{BIND:ip:0.0.0.0}} --directory
 
 ---
 
-## Python HTTPS Server
+## serve https python ssl
 Start an HTTPS server using a self-signed certificate.
 
 ```bash
@@ -28,7 +28,7 @@ openssl req -new -x509 -keyout key.pem -out cert.pem -days 1 -nodes -subj "/CN={
 
 ---
 
-## Python Upload Server
+## serve upload server python
 Start an HTTP server that accepts file uploads via POST.
 
 ```bash
@@ -39,7 +39,7 @@ python3 -m uploadserver {{PORT:port:8000}} --bind {{BIND:ip:0.0.0.0}} --director
 
 ---
 
-## Impacket SMB Server
+## serve smb impacket windows
 Start an SMB server to share files (great for Windows file transfers).
 
 ```bash
@@ -50,7 +50,7 @@ sudo impacket-smbserver {{SHARE:str:share}} {{DIR:dir:.}} -smb2support -username
 
 ---
 
-## Impacket SMB Server (Anonymous)
+## serve anonymous smb impacket
 Start an anonymous SMB share with no authentication required.
 
 ```bash
@@ -61,7 +61,7 @@ sudo impacket-smbserver {{SHARE:str:share}} {{DIR:dir:.}} -smb2support
 
 ---
 
-## Python FTP Server
+## serve ftp python
 Start an FTP server using pyftpdlib for file transfers.
 
 ```bash
@@ -72,7 +72,7 @@ python3 -m pyftpdlib -p {{PORT:port:21}} -w -d {{DIR:dir:.}} -u {{USER:str:anony
 
 ---
 
-## PHP Built-in Server
+## serve web php
 Start a PHP development server for testing web applications.
 
 ```bash
@@ -83,7 +83,7 @@ php -S {{BIND:ip:0.0.0.0}}:{{PORT:port:8080}} -t {{DIR:dir:.}}
 
 ---
 
-## Ruby HTTP Server
+## serve http ruby
 Start a simple HTTP server using Ruby.
 
 ```bash
@@ -94,7 +94,7 @@ ruby -run -e httpd {{DIR:dir:.}} -p {{PORT:port:8000}} -b {{BIND:ip:0.0.0.0}}
 
 ---
 
-## Netcat Listener (File Receive)
+## receive file netcat listener
 Listen on a port and write incoming data to a file.
 
 ```bash
@@ -105,7 +105,7 @@ nc -lvnp {{PORT:port:9001}} > {{OUTFILE:file:received_file}}
 
 ---
 
-## Python WebDAV Server
+## serve webdav python
 Start a WebDAV server for file sharing with wsgidav.
 
 ```bash

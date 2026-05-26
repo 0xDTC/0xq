@@ -6,7 +6,7 @@
 
 ---
 
-## Clone the Repo
+## clone repo github
 Pull the enumerate-iam tool from GitHub.
 
 ```bash
@@ -17,7 +17,7 @@ git clone https://github.com/andresriancho/enumerate-iam.git {{OUTDIR:dir:./enum
 
 ---
 
-## Install Dependencies
+## install python dependencies
 Install required Python packages inside the cloned repo.
 
 ```bash
@@ -28,7 +28,7 @@ cd {{REPO:dir:./enumerate-iam}} && pip3 install -r requirements.txt
 
 ---
 
-## Run Against Stolen Keys
+## brute IAM permissions stolen keys
 Discover IAM permissions accessible with a captured access/secret key pair.
 
 ```bash
@@ -39,7 +39,7 @@ Discover IAM permissions accessible with a captured access/secret key pair.
 
 ---
 
-## Run with Session Token (STS)
+## brute IAM permissions session token STS
 Add an STS session token when working with temporary credentials.
 
 ```bash

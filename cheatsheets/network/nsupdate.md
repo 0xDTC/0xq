@@ -4,7 +4,7 @@
 
 ---
 
-## Add A Record (Script Mode)
+## add dns a record
 Point a hostname to attacker IP with heredoc input.
 
 ```bash
@@ -21,7 +21,7 @@ EOF
 
 ---
 
-## Interactive nsupdate Session
+## dns interactive session
 Manually enter commands in interactive session.
 
 ```bash
@@ -32,7 +32,7 @@ nsupdate
 
 ---
 
-## Delete DNS Record
+## delete dns a record
 Remove existing DNS A record from target zone.
 
 ```bash
@@ -49,7 +49,7 @@ EOF
 
 ---
 
-## Replace DNS Record (Delete + Add)
+## replace dns record hijack
 Atomically swap old record with new one.
 
 ```bash
@@ -67,7 +67,7 @@ EOF
 
 ---
 
-## Persistent DNS Poison Loop
+## poison dns persistent loop
 Continuously re-poison DNS to fight cleanup tasks.
 
 ```bash
@@ -88,7 +88,7 @@ done
 
 ---
 
-## Bulk Add Multiple Records
+## add dns records bulk
 Add several DNS records in one batch.
 
 ```bash
@@ -107,7 +107,7 @@ EOF
 
 ---
 
-## Add CNAME Record
+## add dns cname record
 Create alias record pointing one name to another.
 
 ```bash
@@ -124,7 +124,7 @@ EOF
 
 ---
 
-## Add TXT Record
+## add dns txt record
 Add a TXT record for verification or arbitrary data.
 
 ```bash
@@ -141,7 +141,7 @@ EOF
 
 ---
 
-## Hijack MX Record (Email Redirection)
+## hijack dns mx email
 Redirect target's mail to attacker-controlled host.
 
 ```bash
@@ -160,7 +160,7 @@ EOF
 
 ---
 
-## Authenticated Update (TSIG Key)
+## add dns record tsig key
 Use TSIG key file when zone requires authentication.
 
 ```bash
@@ -177,7 +177,7 @@ EOF
 
 ---
 
-## Debug Mode (Verbose)
+## debug dns update verbose
 Verbose output to inspect DNS update wire protocol.
 
 ```bash
@@ -194,7 +194,7 @@ EOF
 
 ---
 
-## Check if DNS Server Accepts Updates
+## probe dns soa updates
 Probe SOA before attempting updates.
 
 ```bash

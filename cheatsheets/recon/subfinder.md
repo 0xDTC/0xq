@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Subdomain Enumeration
+## enum subdomains passive
 Discover subdomains for a target domain using default sources.
 
 ```bash
@@ -17,7 +17,7 @@ subfinder -d {{DOMAIN:domain}} -o {{OUTFILE:file:subdomains.txt}}
 
 ---
 
-## Silent Mode (Clean Output)
+## enum subdomains silent pipe
 Output only discovered subdomains with no banner or status info.
 
 ```bash
@@ -28,7 +28,7 @@ subfinder -d {{DOMAIN:domain}} -silent
 
 ---
 
-## Recursive Subdomain Enumeration
+## enum subdomains recursive
 Recursively enumerate subdomains of discovered subdomains.
 
 ```bash
@@ -39,7 +39,7 @@ subfinder -d {{DOMAIN:domain}} -recursive -o {{OUTFILE:file:recursive-subs.txt}}
 
 ---
 
-## Enumerate from Domain List
+## enum subdomains from domain list
 Run subdomain discovery against multiple domains from a file.
 
 ```bash
@@ -50,7 +50,7 @@ subfinder -dL {{DOMAINLIST:file:domains.txt}} -o {{OUTFILE:file:all-subdomains.t
 
 ---
 
-## With Specific Sources
+## enum subdomains specific sources
 Use only specified data sources for enumeration.
 
 ```bash
@@ -61,7 +61,7 @@ subfinder -d {{DOMAIN:domain}} -sources crtsh,virustotal,shodan,chaos -o {{OUTFI
 
 ---
 
-## High-Performance with Threading
+## enum subdomains fast threads
 Increase concurrency for faster enumeration on large targets.
 
 ```bash
@@ -72,7 +72,7 @@ subfinder -d {{DOMAIN:domain}} -t {{THREADS:int:50}} -timeout {{TIMEOUT:int:30}}
 
 ---
 
-## JSON Output with All Fields
+## enum subdomains json output
 Output results in JSON format including source information.
 
 ```bash
@@ -83,7 +83,7 @@ subfinder -d {{DOMAIN:domain}} -json -o {{OUTFILE:file:subdomains.json}}
 
 ---
 
-## Exclude Specific Sources
+## enum subdomains exclude sources
 Enumerate using all sources except specified ones.
 
 ```bash
@@ -94,7 +94,7 @@ subfinder -d {{DOMAIN:domain}} -es github,rapiddns -o {{OUTFILE:file:filtered-su
 
 ---
 
-## Pipe Through httpx for Live Hosts
+## probe live subdomains httpx
 Probe each discovered subdomain to find live HTTP services.
 
 ```bash

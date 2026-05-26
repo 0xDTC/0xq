@@ -6,7 +6,7 @@
 
 ---
 
-## Configure New Profile
+## configure named profile
 Configure a named AWS profile with access key, secret key, and region.
 
 ```bash
@@ -17,7 +17,7 @@ aws configure --profile {{PROFILE:str:assessment}}
 
 ---
 
-## Caller Identity Check
+## whoami caller identity sts
 Verify which IAM principal is associated with the current credentials.
 
 ```bash
@@ -28,7 +28,7 @@ aws --profile {{PROFILE:str:assessment}} sts get-caller-identity
 
 ---
 
-## List IAM Users
+## list IAM users
 Enumerate all IAM users on the AWS account.
 
 ```bash
@@ -39,7 +39,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-users
 
 ---
 
-## List Groups for a User
+## list IAM groups for user
 Show which IAM groups a user belongs to.
 
 ```bash
@@ -50,7 +50,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-groups-for-user --user-name {{
 
 ---
 
-## List Attached User Policies
+## list attached user policies IAM
 List managed policies attached directly to a user.
 
 ```bash
@@ -61,7 +61,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-attached-user-policies --user-
 
 ---
 
-## List Inline User Policies
+## list inline user policies IAM
 List inline (embedded) policies on a user.
 
 ```bash
@@ -72,7 +72,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-user-policies --user-name {{US
 
 ---
 
-## Check User Login Profile
+## check user console login IAM
 Confirm whether a user has a console password configured.
 
 ```bash
@@ -83,7 +83,7 @@ aws --profile {{PROFILE:str:assessment}} iam get-login-profile --user-name {{USE
 
 ---
 
-## List MFA Devices
+## list MFA devices
 Identify MFA devices configured on the account.
 
 ```bash
@@ -94,7 +94,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-virtual-mfa-devices
 
 ---
 
-## List All IAM Policies (Customer-Managed)
+## list customer managed policies IAM
 List only customer-managed policies for review.
 
 ```bash
@@ -105,7 +105,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-policies --scope Local | grep 
 
 ---
 
-## Get Policy Version Document
+## read policy document permissions
 Retrieve the JSON document for a policy to inspect its permissions.
 
 ```bash
@@ -116,7 +116,7 @@ aws --profile {{PROFILE:str:assessment}} iam get-policy-version --policy-arn {{P
 
 ---
 
-## Enumerate Roles
+## list IAM roles
 List all IAM roles in the account.
 
 ```bash
@@ -127,7 +127,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-roles
 
 ---
 
-## Get Role Trust Policy
+## read role trust policy assumerole
 Inspect the assume-role policy of a role to see who can assume it.
 
 ```bash
@@ -138,7 +138,7 @@ aws --profile {{PROFILE:str:assessment}} iam get-role --role-name {{ROLE:str}}
 
 ---
 
-## List SSH Public Keys for User
+## list user SSH keys codecommit
 Look for IAM users with associated SSH keys (CodeCommit access).
 
 ```bash
@@ -149,7 +149,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-ssh-public-keys --user-name {{
 
 ---
 
-## Get SSH Public Key (PEM)
+## download user SSH key PEM
 Download a user's SSH public key in PEM format.
 
 ```bash

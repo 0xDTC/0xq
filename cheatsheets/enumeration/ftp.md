@@ -6,7 +6,7 @@
 
 ---
 
-## Anonymous Login
+## login anonymous
 Try to access the FTP service as anonymous.
 
 ```bash
@@ -17,7 +17,7 @@ ftp anonymous@{{TARGET:ip}}
 
 ---
 
-## Authenticated Login
+## login authenticated
 Log in with credentials.
 
 ```bash
@@ -28,7 +28,7 @@ ftp {{USERNAME:str}}@{{TARGET:ip}}
 
 ---
 
-## Hydra FTP Brute Force
+## brute login hydra
 Brute force FTP credentials with Hydra.
 
 ```bash
@@ -39,7 +39,7 @@ hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rock
 
 ---
 
-## Nmap FTP Scripts
+## scan nse scripts nmap
 Run FTP NSE scripts for anonymous, brute force, and version info.
 
 ```bash
@@ -50,7 +50,7 @@ nmap -p {{PORT:port:21}} --script=ftp-anon,ftp-syst,ftp-bounce,ftp-brute {{TARGE
 
 ---
 
-## Banner Grab via Netcat
+## grab banner netcat
 Read the FTP banner directly.
 
 ```bash

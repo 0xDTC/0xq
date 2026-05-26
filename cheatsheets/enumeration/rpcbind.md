@@ -4,7 +4,7 @@
 
 ---
 
-## List RPC Services
+## list rpc services rpcinfo
 Show services registered with rpcbind.
 
 ```bash
@@ -15,7 +15,7 @@ rpcinfo -p {{TARGET:ip}}
 
 ---
 
-## Detailed RPC Service Listing
+## list rpc services detailed
 List all RPC programs with versions and protocols.
 
 ```bash
@@ -26,7 +26,7 @@ rpcinfo -s {{TARGET:ip}}
 
 ---
 
-## Nmap RPC Scripts
+## scan rpc nmap nse
 Run NSE scripts for RPC enumeration.
 
 ```bash
@@ -37,7 +37,7 @@ nmap -sV -sC -p 111 --script "rpcinfo,rpcbind-info,rpc-grind" {{TARGET:ip}}
 
 ---
 
-## NFS Discovery via RPC
+## find nfs shares portmap
 Discover NFS shares via portmap.
 
 ```bash
@@ -48,7 +48,7 @@ nmap -p 111 --script "nfs-showmount,nfs-ls,nfs-statfs" {{TARGET:ip}}
 
 ---
 
-## rpcclient Anonymous Bind
+## bind rpcclient anonymous SAMR
 Connect to RPC with NULL session for SAMR enumeration.
 
 ```bash
@@ -59,7 +59,7 @@ rpcclient -U "" -N {{TARGET:ip}}
 
 ---
 
-## rpcclient Authenticated
+## bind rpcclient authenticated
 Authenticate to RPC service with credentials.
 
 ```bash
@@ -70,7 +70,7 @@ rpcclient -U {{USERNAME:str}}%{{PASSWORD:str}} {{TARGET:ip}}
 
 ---
 
-## RPC UDP Scan
+## scan rpc udp
 Scan RPC services over UDP.
 
 ```bash
@@ -81,7 +81,7 @@ sudo nmap -sU -p 111 --script rpcinfo {{TARGET:ip}}
 
 ---
 
-## TCP Connect to Portmap
+## connect portmap tcp netcat
 Manually inspect portmap service via TCP.
 
 ```bash
@@ -92,7 +92,7 @@ nc {{TARGET:ip}} 111
 
 ---
 
-## Enumerate by Program Number
+## query rpc program number
 Query specific RPC program number.
 
 ```bash
@@ -103,7 +103,7 @@ rpcinfo -T tcp {{TARGET:ip}} {{PROG_NUM:int:100000}}
 
 ---
 
-## Capture RPC Traffic
+## capture portmap traffic pcap
 Capture portmap traffic for offline analysis.
 
 ```bash

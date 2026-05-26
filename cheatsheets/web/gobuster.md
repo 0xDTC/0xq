@@ -17,7 +17,7 @@ gobuster dir -u {{URL:url:http://target.com}} -w {{WORDLIST:wordlist:/usr/share/
 
 ---
 
-## Directory Mode with Extensions
+## brute directories with extensions
 Append file extensions to each word in the wordlist.
 
 ```bash
@@ -28,7 +28,7 @@ gobuster dir -u {{URL:url:http://target.com}} -w {{WORDLIST:wordlist:/usr/share/
 
 ---
 
-## DNS Subdomain Mode
+## brute dns subdomains
 Enumerate subdomains via DNS resolution.
 
 ```bash
@@ -39,7 +39,7 @@ gobuster dns -d {{DOMAIN:domain:target.com}} -w {{WORDLIST:wordlist:/usr/share/s
 
 ---
 
-## VHost Mode
+## brute vhosts
 Discover virtual hosts on a target web server.
 
 ```bash
@@ -50,7 +50,7 @@ gobuster vhost -u {{URL:url:http://target.com}} -w {{WORDLIST:wordlist:/usr/shar
 
 ---
 
-## Authenticated Scan
+## brute directories authenticated cookie
 Brute-force directories using a session cookie or auth header.
 
 ```bash
@@ -61,7 +61,7 @@ gobuster dir -u {{URL:url:http://target.com}} -w {{WORDLIST:wordlist:/usr/share/
 
 ---
 
-## Follow Redirects with Status Codes
+## brute directories follow redirects
 Follow redirects and only show specific HTTP status codes.
 
 ```bash
@@ -72,7 +72,7 @@ gobuster dir -u {{URL:url:http://target.com}} -w {{WORDLIST:wordlist:/usr/share/
 
 ---
 
-## Exclude Status Codes and Set Custom User-Agent
+## brute directories exclude codes user-agent
 Hide specific status codes from output and use a custom User-Agent.
 
 ```bash

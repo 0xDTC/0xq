@@ -6,7 +6,7 @@
 
 ---
 
-## Find by Name
+## find files by name
 Locate files by exact or partial name match.
 
 ```bash
@@ -17,7 +17,7 @@ find {{PATH:dir:/}} -name "{{PATTERN:str:*.conf}}" 2>/dev/null
 
 ---
 
-## Find by Extension
+## find files by extension
 Find all files with a specific extension recursively.
 
 ```bash
@@ -28,7 +28,7 @@ find {{PATH:dir:.}} -type f -name "*.{{EXT:str:txt}}" 2>/dev/null
 
 ---
 
-## Find by Size
+## find files by size
 Find files larger or smaller than a given size (use + for larger, - for smaller).
 
 ```bash
@@ -39,7 +39,7 @@ find {{PATH:dir:/}} -type f -size +{{SIZE:str:100M}} 2>/dev/null
 
 ---
 
-## Find by Modification Time
+## find files by modified time
 Find files modified within the last N days (use -mmin for minutes).
 
 ```bash
@@ -50,7 +50,7 @@ find {{PATH:dir:/}} -type f -mtime -{{DAYS:int:7}} 2>/dev/null
 
 ---
 
-## Find SUID Binaries
+## find SUID files linux privesc
 Find all SUID binaries on the system. Critical for privilege escalation.
 
 ```bash
@@ -61,7 +61,7 @@ find / -perm -4000 -type f 2>/dev/null
 
 ---
 
-## Find SGID Binaries
+## find SGID files linux privesc
 Find all SGID binaries on the system.
 
 ```bash
@@ -72,7 +72,7 @@ find / -perm -2000 -type f 2>/dev/null
 
 ---
 
-## Find World-Writable Directories
+## find world-writable directories
 Find directories writable by anyone. Useful for dropping payloads.
 
 ```bash
@@ -83,7 +83,7 @@ find / -type d -writable 2>/dev/null
 
 ---
 
-## Find by Owner
+## find files by owner
 Find all files owned by a specific user.
 
 ```bash
@@ -94,7 +94,7 @@ find {{PATH:dir:/}} -user {{USER:str:root}} -type f 2>/dev/null
 
 ---
 
-## Find and Execute Command
+## find and exec command
 Find files matching a pattern and run a command on each result.
 
 ```bash
@@ -105,7 +105,7 @@ find {{PATH:dir:.}} -name "{{PATTERN:str:*.log}}" -exec {{CMD:str:grep -l "passw
 
 ---
 
-## Find and Delete
+## find and delete files
 Find and remove files matching a pattern. Use with caution.
 
 ```bash
@@ -116,7 +116,7 @@ find {{PATH:dir:.}} -name "{{PATTERN:str:*.tmp}}" -type f -delete
 
 ---
 
-## Find Files Containing Text
+## find files containing text grep
 Find files that contain a specific string (combines find with grep).
 
 ```bash
@@ -127,7 +127,7 @@ find {{PATH:dir:.}} -type f -name "{{PATTERN:str:*.php}}" -exec grep -l "{{TEXT:
 
 ---
 
-## Find Files with No Owner
+## find orphaned files no owner
 Find orphaned files with no valid user or group. May indicate compromise.
 
 ```bash
@@ -138,7 +138,7 @@ find {{PATH:dir:/}} -nouser -o -nogroup 2>/dev/null
 
 ---
 
-## Find by Size Range
+## find files by size range
 Files larger than min and smaller than max size.
 
 ```bash
@@ -149,7 +149,7 @@ find {{PATH:dir:/}} -type f -size +{{MIN:str:100M}} -size -{{MAX:str:500M}} 2>/d
 
 ---
 
-## Files Accessed in Last Hour
+## find recently accessed files
 Find files accessed within the last N minutes.
 
 ```bash
@@ -160,7 +160,7 @@ find {{PATH:dir:/}} -type f -amin -{{MINUTES:int:60}} 2>/dev/null
 
 ---
 
-## Find Conf Files Newer Than Date
+## find conf files newer than date
 Locate root-owned conf files modified after a given date.
 
 ```bash
@@ -171,7 +171,7 @@ find {{PATH:dir:/}} -type f -name "*.{{EXT:str:conf}}" -user {{USER:str:root}} -
 
 ---
 
-## Find Files Modified Between Dates
+## find files modified between dates
 Files modified after one date but not after another.
 
 ```bash
@@ -182,7 +182,7 @@ find {{PATH:dir:/}} -newermt "{{START:str:2025-01-01}}" ! -newermt "{{END:str:20
 
 ---
 
-## Find Files with 777 Permissions
+## find files 777 permissions
 Discover world-writable/executable files.
 
 ```bash

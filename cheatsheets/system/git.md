@@ -6,7 +6,7 @@
 
 ---
 
-## Clone Repository
+## clone repository
 Clone a remote repository to the local machine.
 
 ```bash
@@ -17,7 +17,7 @@ git clone {{URL:url:https://github.com/user/repo.git}} {{DIR:dir:./repo}}
 
 ---
 
-## Status and Diff
+## show status and diff
 Show working tree status and unstaged changes.
 
 ```bash
@@ -28,7 +28,7 @@ git status && git diff
 
 ---
 
-## Add and Commit
+## stage and commit changes
 Stage files and create a commit with a message.
 
 ```bash
@@ -39,7 +39,7 @@ git add {{FILES:str:.}} && git commit -m "{{MSG:str:update}}"
 
 ---
 
-## Push and Pull
+## push and pull branch
 Push local commits to remote or pull latest changes.
 
 ```bash
@@ -50,7 +50,7 @@ git push origin {{BRANCH:str:main}} && git pull origin {{BRANCH:str:main}}
 
 ---
 
-## Branch Management
+## create switch list branches
 Create, switch to, or list branches.
 
 ```bash
@@ -61,7 +61,7 @@ git checkout -b {{BRANCH:str:feature}} && git branch -a
 
 ---
 
-## Log One-Line Graph
+## view commit history graph
 View commit history as a compact graph.
 
 ```bash
@@ -72,7 +72,7 @@ git log --oneline --graph --all -n {{COUNT:int:20}}
 
 ---
 
-## Stash Changes
+## stash uncommitted changes
 Temporarily save uncommitted changes and restore them later.
 
 ```bash
@@ -83,7 +83,7 @@ git stash push -m "{{MSG:str:wip}}" && git stash list
 
 ---
 
-## Reset to Commit
+## reset to commit undo
 Reset the branch to a previous commit (mixed keeps changes unstaged).
 
 ```bash
@@ -94,7 +94,7 @@ git reset --{{MODE:str:mixed}} {{COMMIT:str:HEAD~1}}
 
 ---
 
-## Cherry-Pick Commit
+## cherry-pick commit
 Apply a specific commit from another branch onto the current branch.
 
 ```bash
@@ -105,7 +105,7 @@ git cherry-pick {{COMMIT:str:abc1234}}
 
 ---
 
-## Diff Between Branches
+## diff between branches
 Show the differences between two branches.
 
 ```bash

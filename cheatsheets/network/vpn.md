@@ -6,7 +6,7 @@
 
 ---
 
-## Connect OpenVPN
+## connect openvpn config
 Bring up an OpenVPN connection from a config file.
 
 ```bash
@@ -17,7 +17,7 @@ sudo openvpn {{CONFIG:file:lab.ovpn}}
 
 ---
 
-## Connect OpenVPN (Daemonized + Log)
+## connect openvpn daemon log
 Run OpenVPN in the background and write logs.
 
 ```bash
@@ -28,7 +28,7 @@ sudo openvpn --config {{CONFIG:file:lab.ovpn}} --daemon --log {{LOG:file:vpn.log
 
 ---
 
-## Connect IPsec/IKEv2 (StrongSwan)
+## connect ipsec ikev2 strongswan
 Bring up a named StrongSwan connection.
 
 ```bash
@@ -39,7 +39,7 @@ sudo strongswan up {{CONNECTION:str:lab}}
 
 ---
 
-## Tear Down IPsec Connection
+## teardown ipsec strongswan
 Disconnect a StrongSwan tunnel.
 
 ```bash
@@ -50,7 +50,7 @@ sudo strongswan down {{CONNECTION:str:lab}}
 
 ---
 
-## Show OpenVPN Process Status
+## show openvpn tunnel status
 Verify the tunnel interface and routes are up.
 
 ```bash

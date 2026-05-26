@@ -6,7 +6,7 @@
 
 ---
 
-## Ping Sweep
+## sweep live hosts ping
 Discover live hosts on a subnet without port scanning.
 
 ```bash
@@ -17,7 +17,7 @@ sudo nmap -sn {{SUBNET:cidr:192.168.1.0/24}} -oG {{OUTFILE:file:ping-sweep.txt}}
 
 ---
 
-## Quick SYN Scan (Top 1000 Ports)
+## scan quick SYN stealth
 Fast stealth SYN scan against the most common ports.
 
 ```bash
@@ -28,7 +28,7 @@ sudo nmap -sS {{TARGET:ip}} -oN {{OUTFILE:file:syn-scan.txt}}
 
 ---
 
-## Full Port SYN Scan
+## scan all ports TCP
 Scan all 65535 TCP ports with service detection.
 
 ```bash
@@ -39,7 +39,7 @@ sudo nmap -A -sC -sS -v -p- {{TARGET:ip}} -oN {{OUTFILE:file:full-port.txt}}
 
 ---
 
-## UDP Scan (Top 100 Ports)
+## scan udp services
 Scan common UDP services. Slow but finds DNS, SNMP, TFTP, etc.
 
 ```bash
@@ -50,7 +50,7 @@ sudo nmap -sU -sS -v {{TARGET:ip}} -oN {{OUTFILE:file:udp-scan.txt}}
 
 ---
 
-## Service Version and OS Detection
+## scan service version OS detection
 Enumerate service versions and attempt OS fingerprinting.
 
 ```bash
@@ -61,7 +61,7 @@ sudo nmap -sV -sC -O -p {{PORTS:port:22,80,443}} {{TARGET:ip}} -oN {{OUTFILE:fil
 
 ---
 
-## Aggressive Scan
+## scan aggressive all ports
 Full enumeration with OS detection, version scanning, scripts, and traceroute.
 
 ```bash
@@ -72,7 +72,7 @@ sudo nmap -A -T4 -p- {{TARGET:ip}} -oA {{OUTFILE:file:aggressive-scan}}
 
 ---
 
-## Vulnerability Script Scan
+## scan vuln NSE
 Run NSE vulnerability detection scripts against discovered services.
 
 ```bash
@@ -83,7 +83,7 @@ sudo nmap --script vuln -p {{PORTS:port:22,80,443,445}} {{TARGET:ip}} -oN {{OUTF
 
 ---
 
-## Specific NSE Script Scan
+## scan targeted NSE script
 Run a targeted NSE script against the target.
 
 ```bash
@@ -94,7 +94,7 @@ sudo nmap --script {{SCRIPT:str:http-enum}} -p {{PORTS:port:80,443}} {{TARGET:ip
 
 ---
 
-## Subnet Service Sweep
+## sweep subnet service port
 Scan an entire subnet for a specific service port.
 
 ```bash
@@ -105,7 +105,7 @@ sudo nmap -sS -p {{PORTS:port:445}} {{SUBNET:cidr:192.168.1.0/24}} --open -oG {{
 
 ---
 
-## Firewall Evasion Scan
+## scan firewall evasion stealth
 Fragmented packets with decoy addresses to evade IDS/firewall detection.
 
 ```bash

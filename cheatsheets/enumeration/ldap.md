@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Anonymous Bind
+## bind ldap anonymous
 Anonymously query an LDAP server for the base DN.
 
 ```bash
@@ -17,7 +17,7 @@ ldapsearch -x -h {{TARGET:ip}} -b "DC={{DOMAIN_DC:str:corp}},DC={{DC_TLD:str:loc
 
 ---
 
-## LDAPS Bind
+## bind ldaps ssl
 Query LDAP over SSL on port 636.
 
 ```bash
@@ -28,7 +28,7 @@ ldapsearch -x -h {{TARGET:ip}}:636 -b "DC={{DOMAIN_DC:str:corp}},DC={{DC_TLD:str
 
 ---
 
-## Null Bind Check
+## check null bind
 Test for null bind enumeration with empty credentials.
 
 ```bash
@@ -39,7 +39,7 @@ ldapsearch -x -h {{TARGET:ip}} -D '' -w '' -b "DC={{DOMAIN_DC:str}},DC={{DC_TLD:
 
 ---
 
-## Authenticated Search
+## search ldap authenticated
 Authenticated LDAP query with bind DN and password.
 
 ```bash
@@ -50,7 +50,7 @@ ldapsearch -D '{{BINDDN:str:cn=admin,dc=corp,dc=local}}' -w '{{PASSWORD:str}}' -
 
 ---
 
-## Search by Group Membership
+## search group membership
 Return objects that are members of a target group.
 
 ```bash
@@ -61,7 +61,7 @@ ldapsearch -D '{{BINDDN:str}}' -w '{{PASSWORD:str}}' -h {{TARGET:ip}} -b "{{BASE
 
 ---
 
-## Inverted Group Filter
+## search not in group
 Return objects that are NOT in a particular group.
 
 ```bash
@@ -72,7 +72,7 @@ ldapsearch -D '{{BINDDN:str}}' -w '{{PASSWORD:str}}' -h {{TARGET:ip}} -b "{{BASE
 
 ---
 
-## Multiple Group Membership AND
+## search multiple groups AND
 Return only objects in all specified groups.
 
 ```bash
@@ -83,7 +83,7 @@ ldapsearch -D '{{BINDDN:str}}' -w '{{PASSWORD:str}}' -h {{TARGET:ip}} '(&(member
 
 ---
 
-## SPN Search (Kerberoasting Targets)
+## find SPN kerberoast targets
 Find accounts with Service Principal Names set.
 
 ```bash
@@ -94,7 +94,7 @@ ldapsearch -x -h {{TARGET:ip}} -D '{{USER:str}}@{{DOMAIN:domain}}' -W -b "DC={{D
 
 ---
 
-## Limit Result Size
+## search limit result size
 Return at most N matching entries.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Start Neo4j Service
+## start neo4j service
 Start the Neo4j database service that backs BloodHound.
 
 ```bash
@@ -17,7 +17,7 @@ sudo systemctl start neo4j && sudo systemctl status neo4j --no-pager
 
 ---
 
-## Reset Neo4j Default Password
+## reset neo4j password
 Open the Neo4j browser to set the initial password (default neo4j:neo4j).
 
 ```bash
@@ -28,7 +28,7 @@ xdg-open http://localhost:7474
 
 ---
 
-## Collect with bloodhound-python (Auth)
+## collect AD authenticated linux
 Run remote AD collection from Linux against a domain controller.
 
 ```bash
@@ -39,7 +39,7 @@ bloodhound-python -u {{USERNAME:str}} -p '{{PASSWORD:str}}' -d {{DOMAIN:domain}}
 
 ---
 
-## Collect with bloodhound-python (Disable Autogc)
+## collect AD disable autogc
 Skip global catalog autodiscovery when DNS resolution fails.
 
 ```bash
@@ -50,7 +50,7 @@ bloodhound-python -u {{USERNAME:str}} -p '{{PASSWORD:str}}' -d {{DOMAIN:domain}}
 
 ---
 
-## bloodhound-python Pass-the-Hash
+## collect AD pass-the-hash
 Authenticate to AD using an NT hash instead of a password.
 
 ```bash
@@ -61,7 +61,7 @@ bloodhound-python -u {{USERNAME:str}} --hashes :{{NTHASH:str}} -d {{DOMAIN:domai
 
 ---
 
-## bloodhound-python Kerberos
+## collect AD kerberos ticket
 Authenticate using a cached Kerberos ticket (KRB5CCNAME env var).
 
 ```bash

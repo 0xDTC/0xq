@@ -6,7 +6,7 @@
 
 ---
 
-## Create Gzipped Archive
+## create gzip archive
 Create a tar.gz archive of a directory.
 
 ```bash
@@ -17,7 +17,7 @@ tar czf {{OUTFILE:file:archive.tar.gz}} {{PATH:dir:./target}}
 
 ---
 
-## Extract Gzipped Archive
+## extract gzip archive
 Extract a tar.gz archive to a directory.
 
 ```bash
@@ -28,7 +28,7 @@ tar xzf {{ARCHIVE:file:archive.tar.gz}} -C {{DEST:dir:.}}
 
 ---
 
-## Create Bzip2 Archive
+## create bzip2 archive
 Create a tar.bz2 archive with higher compression.
 
 ```bash
@@ -39,7 +39,7 @@ tar cjf {{OUTFILE:file:archive.tar.bz2}} {{PATH:dir:./target}}
 
 ---
 
-## Create XZ Archive
+## create xz archive
 Create a tar.xz archive with maximum compression.
 
 ```bash
@@ -50,7 +50,7 @@ tar cJf {{OUTFILE:file:archive.tar.xz}} {{PATH:dir:./target}}
 
 ---
 
-## List Archive Contents
+## list archive contents
 List files in a tar archive without extracting.
 
 ```bash
@@ -61,7 +61,7 @@ tar tf {{ARCHIVE:file:archive.tar.gz}}
 
 ---
 
-## Extract Single File from Archive
+## extract single file from archive
 Extract only a specific file from a tar archive.
 
 ```bash
@@ -72,7 +72,7 @@ tar xzf {{ARCHIVE:file:archive.tar.gz}} {{FILEPATH:str:path/to/file.txt}}
 
 ---
 
-## Zip Create
+## create zip archive
 Create a zip archive of a directory.
 
 ```bash
@@ -83,7 +83,7 @@ zip -r {{OUTFILE:file:archive.zip}} {{PATH:dir:./target}}
 
 ---
 
-## Zip Extract
+## extract zip archive
 Extract a zip archive.
 
 ```bash
@@ -94,7 +94,7 @@ unzip {{ARCHIVE:file:archive.zip}} -d {{DEST:dir:.}}
 
 ---
 
-## 7z Compress
+## compress 7z archive
 Create a 7z archive with high compression.
 
 ```bash
@@ -105,7 +105,7 @@ Create a 7z archive with high compression.
 
 ---
 
-## 7z Extract
+## extract 7z archive
 Extract a 7z archive.
 
 ```bash
@@ -116,7 +116,7 @@ Extract a 7z archive.
 
 ---
 
-## Gzip Single File
+## compress single file gzip
 Compress a single file with gzip (replaces original).
 
 ```bash
@@ -127,7 +127,7 @@ gzip -k {{FILE:file:input.txt}}
 
 ---
 
-## Gunzip Decompress
+## decompress gzip file
 Decompress a gzip file.
 
 ```bash

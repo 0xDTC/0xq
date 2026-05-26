@@ -6,7 +6,7 @@
 
 ---
 
-## Crawl Single Domain
+## crawl single domain urls
 Pipe a domain to hakrawler to extract URLs.
 
 ```bash
@@ -17,7 +17,7 @@ echo {{URL:url}} | hakrawler
 
 ---
 
-## Crawl with Depth
+## crawl deep depth
 Crawl deeper into the application.
 
 ```bash
@@ -28,7 +28,7 @@ echo {{URL:url}} | hakrawler -depth {{DEPTH:int:3}}
 
 ---
 
-## Crawl Subdomains in Scope
+## crawl include subdomains
 Include subdomains of the target.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Edit Current User Crontab
+## edit current user crontab
 Open the current user's crontab in $EDITOR for editing.
 
 ```bash
@@ -17,7 +17,7 @@ crontab -e
 
 ---
 
-## List Current User Crontab
+## list current user jobs
 Show the current user's scheduled jobs.
 
 ```bash
@@ -28,7 +28,7 @@ crontab -l
 
 ---
 
-## List Another User's Crontab (root)
+## list another user crontab root
 View another user's crontab (requires root).
 
 ```bash
@@ -39,7 +39,7 @@ sudo crontab -u {{USER:str}} -l
 
 ---
 
-## List All System Cron Jobs
+## list system jobs crontab
 Inspect system-wide cron files for scheduled tasks.
 
 ```bash
@@ -50,7 +50,7 @@ ls -la /etc/cron.* /etc/crontab && cat /etc/crontab
 
 ---
 
-## Find World-Writable Cron Scripts (privesc)
+## find writable scripts privesc
 Hunt for scripts called by cron that any user can modify.
 
 ```bash
@@ -61,7 +61,7 @@ find /etc/cron* /var/spool/cron 2>/dev/null -type f -perm -o+w -ls
 
 ---
 
-## Add One-Liner to Crontab Programmatically
+## add job persistence crontab
 Append a job to the current user's crontab without overwriting existing entries.
 
 ```bash
@@ -72,7 +72,7 @@ Append a job to the current user's crontab without overwriting existing entries.
 
 ---
 
-## Tail Cron Log
+## tail log syslog
 Follow the cron daemon log for execution debugging.
 
 ```bash

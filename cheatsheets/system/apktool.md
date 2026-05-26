@@ -6,7 +6,7 @@
 
 ---
 
-## Decompile APK
+## decompile apk smali
 Decode an APK into smali, resources, and AndroidManifest.
 
 ```bash
@@ -17,7 +17,7 @@ apktool d {{APK:file:app.apk}}
 
 ---
 
-## Decompile to Specific Output Directory
+## decompile apk output directory
 Choose a custom output directory for the decoded APK contents.
 
 ```bash
@@ -28,7 +28,7 @@ apktool d {{APK:file:app.apk}} -o {{OUTDIR:dir:./decoded}}
 
 ---
 
-## Decompile Without Decoding Resources
+## decompile apk skip resources
 Keep the binary resources intact (faster, useful when only reading code).
 
 ```bash
@@ -39,7 +39,7 @@ apktool d {{APK:file:app.apk}} --no-res
 
 ---
 
-## Force Decompile (Overwrite Existing)
+## force decompile apk overwrite
 Overwrite an existing decoded directory and ignore errors.
 
 ```bash
@@ -50,7 +50,7 @@ apktool d {{APK:file:app.apk}} --force
 
 ---
 
-## Rebuild APK
+## rebuild apk
 Recompile a previously decoded APK directory.
 
 ```bash
@@ -61,7 +61,7 @@ apktool b {{DECODED_DIR:dir:./decoded}}
 
 ---
 
-## Rebuild to Specific Output APK
+## rebuild apk output path
 Rebuild and emit the APK to a chosen path.
 
 ```bash
@@ -72,7 +72,7 @@ apktool b {{DECODED_DIR:dir:./decoded}} -o {{OUTAPK:file:./new_app.apk}}
 
 ---
 
-## Install Framework Resource
+## install framework resource rom
 Add a vendor framework (e.g., for Samsung/Xiaomi ROMs).
 
 ```bash
@@ -83,7 +83,7 @@ apktool if {{FRAMEWORK:file:framework-res.apk}}
 
 ---
 
-## Decompile with Specific API Level
+## decompile apk api level
 Decode using a target API level for version-sensitive resources.
 
 ```bash
@@ -94,7 +94,7 @@ apktool d {{APK:file:app.apk}} --api-level {{API:int:28}}
 
 ---
 
-## Rebuild with AAPT2
+## rebuild apk aapt2
 Use AAPT2 during the rebuild for newer Android resource handling.
 
 ```bash
@@ -105,7 +105,7 @@ apktool b {{DECODED_DIR:dir:./decoded}} --use-aapt2
 
 ---
 
-## Empty Framework Directory
+## clear framework directory
 Clear all installed frameworks.
 
 ```bash

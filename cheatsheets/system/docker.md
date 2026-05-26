@@ -6,7 +6,7 @@
 
 ---
 
-## Run Container Interactive
+## run container interactive shell
 Run a container with interactive terminal and auto-remove on exit.
 
 ```bash
@@ -17,7 +17,7 @@ docker run -it --rm --name {{NAME:str:mybox}} {{IMAGE:str:ubuntu:latest}} /bin/b
 
 ---
 
-## Run with Port and Volume Mount
+## run container port volume mount
 Run a container with port mapping and volume mount.
 
 ```bash
@@ -28,7 +28,7 @@ docker run -d --name {{NAME:str:webapp}} -p {{HPORT:port:8080}}:{{CPORT:port:80}
 
 ---
 
-## Exec into Running Container
+## exec shell running container
 Open a shell in an already-running container.
 
 ```bash
@@ -39,7 +39,7 @@ docker exec -it {{CONTAINER:str:webapp}} /bin/bash
 
 ---
 
-## Build Image
+## build image dockerfile
 Build a Docker image from a Dockerfile.
 
 ```bash
@@ -50,7 +50,7 @@ docker build -t {{TAG:str:myimage:latest}} {{PATH:dir:.}}
 
 ---
 
-## List Containers and Images
+## list containers and images
 Show running containers and available images.
 
 ```bash
@@ -61,7 +61,7 @@ docker ps -a && docker images
 
 ---
 
-## View Logs
+## view container logs
 Stream logs from a running container.
 
 ```bash
@@ -72,7 +72,7 @@ docker logs -f --tail {{LINES:int:100}} {{CONTAINER:str:webapp}}
 
 ---
 
-## Stop and Remove Container
+## stop and remove container
 Stop a running container and remove it.
 
 ```bash
@@ -83,7 +83,7 @@ docker stop {{CONTAINER:str:webapp}} && docker rm {{CONTAINER:str:webapp}}
 
 ---
 
-## Docker Compose Up
+## compose up services
 Start all services defined in a compose file.
 
 ```bash
@@ -94,7 +94,7 @@ docker compose -f {{FILE:file:docker-compose.yml}} up -d
 
 ---
 
-## Docker Compose Down
+## compose down volumes
 Stop and remove all containers, networks, and volumes from compose.
 
 ```bash
@@ -105,7 +105,7 @@ docker compose -f {{FILE:file:docker-compose.yml}} down --volumes
 
 ---
 
-## System Prune
+## prune system disk cleanup
 Remove all stopped containers, unused networks, dangling images, and build cache.
 
 ```bash
@@ -116,7 +116,7 @@ docker system prune -af --volumes
 
 ---
 
-## Network Management
+## list inspect networks
 List, create, and inspect Docker networks.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Smart Recursive Scan
+## scan content smart recursive
 Smart scan with auto recursion and only show 200 OK responses.
 
 ```bash
@@ -17,7 +17,7 @@ feroxbuster -u {{URL:url}} --smart -s 200 -r --force-recursion -E -B -g -q -m GE
 
 ---
 
-## Multi-Extension Brute Force
+## brute directories multi extension
 Scan with a wide range of common web file extensions.
 
 ```bash
@@ -28,7 +28,7 @@ feroxbuster -u {{URL:url}} -x .php,.asp,.aspx,.jsp,.cgi,.pl,.py,.rb,.sh,.dll,.ex
 
 ---
 
-## Rate-Limited Method Scan
+## scan directories rate limited methods
 Scan with multiple HTTP methods and a rate limit to avoid detection.
 
 ```bash

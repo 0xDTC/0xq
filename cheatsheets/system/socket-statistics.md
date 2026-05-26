@@ -6,7 +6,7 @@
 
 ---
 
-## List Listening TCP Sockets (Names)
+## list listening tcp sockets names
 Show TCP services listening locally with service names.
 
 ```bash
@@ -17,7 +17,7 @@ ss -tl
 
 ---
 
-## List Listening TCP Sockets (Numeric)
+## list listening tcp sockets numeric
 Show TCP listeners with numeric ports only.
 
 ```bash
@@ -28,7 +28,7 @@ ss -tln
 
 ---
 
-## List All Listeners with Process (TCP+UDP, IPv4)
+## list listeners with process tcp udp
 Show TCP and UDP listeners along with the owning process and PID.
 
 ```bash
@@ -39,7 +39,7 @@ sudo ss -tulnp4
 
 ---
 
-## All Established TCP Connections
+## list established tcp connections
 Show every active TCP connection with both ends.
 
 ```bash
@@ -50,7 +50,7 @@ ss -tan state established
 
 ---
 
-## Filter by Port
+## filter connections by port
 Show connections to or from a specific destination port.
 
 ```bash
@@ -61,7 +61,7 @@ ss -tan dst :{{PORT:port:443}}
 
 ---
 
-## Summary Statistics
+## show socket summary statistics
 Print counts of sockets in each state.
 
 ```bash

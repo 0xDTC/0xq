@@ -6,7 +6,7 @@
 
 ---
 
-## Copy Files Recursively
+## copy files recursively
 Copy a directory and all contents to a new location.
 
 ```bash
@@ -17,7 +17,7 @@ cp -r {{SRC:dir:./source}} {{DEST:dir:./destination}}
 
 ---
 
-## Move or Rename
+## move or rename file
 Move or rename a file or directory.
 
 ```bash
@@ -28,7 +28,7 @@ mv {{SRC:file:oldname.txt}} {{DEST:file:newname.txt}}
 
 ---
 
-## Create Symbolic Link
+## create symlink
 Create a symlink pointing to a target file or directory.
 
 ```bash
@@ -39,7 +39,7 @@ ln -sf {{TARGET:file:/path/to/target}} {{LINK:file:/path/to/link}}
 
 ---
 
-## Set Permissions (chmod)
+## set permissions chmod
 Set standard permissions on files or directories recursively.
 
 ```bash
@@ -50,7 +50,7 @@ chmod -R {{MODE:str:755}} {{PATH:dir:./target}}
 
 ---
 
-## Set SUID Bit
+## set SUID bit privesc
 Set the SUID bit on a binary so it runs as the file owner.
 
 ```bash
@@ -61,7 +61,7 @@ chmod u+s {{FILE:file:/path/to/binary}}
 
 ---
 
-## Change Ownership
+## change ownership chown
 Change the owner and group of a file or directory recursively.
 
 ```bash
@@ -72,7 +72,7 @@ chown -R {{OWNER:str:www-data}}:{{GROUP:str:www-data}} {{PATH:dir:/var/www}}
 
 ---
 
-## File Type Detection
+## detect file type magic
 Identify a file's actual type regardless of extension.
 
 ```bash
@@ -83,7 +83,7 @@ file {{FILE:file:unknown_file}}
 
 ---
 
-## File Metadata (stat)
+## show file metadata stat
 Display detailed metadata about a file including timestamps and permissions.
 
 ```bash
@@ -94,7 +94,7 @@ stat {{FILE:file:target.txt}}
 
 ---
 
-## Disk Usage Summary
+## disk usage directory size
 Show the total size of a directory tree in human-readable format.
 
 ```bash
@@ -105,7 +105,7 @@ du -sh {{PATH:dir:.}}/*
 
 ---
 
-## Filesystem Disk Space
+## show filesystem disk space
 Show available disk space on all mounted filesystems.
 
 ```bash
@@ -116,7 +116,7 @@ df -h
 
 ---
 
-## Rsync Local Copy
+## rsync local copy sync
 Efficiently copy and sync files locally with progress.
 
 ```bash

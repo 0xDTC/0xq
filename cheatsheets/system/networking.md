@@ -6,7 +6,7 @@
 
 ---
 
-## Show IP Addresses
+## list ip addresses
 Display all network interface addresses.
 
 ```bash
@@ -17,7 +17,7 @@ ip -c addr show
 
 ---
 
-## Show Routing Table
+## show routing table
 Display the kernel routing table.
 
 ```bash
@@ -28,7 +28,7 @@ ip route show
 
 ---
 
-## Listening Sockets (ss)
+## list listening sockets
 Show all listening TCP/UDP sockets with process info.
 
 ```bash
@@ -39,7 +39,7 @@ ss -tulnp
 
 ---
 
-## Connections by Port (ss)
+## find process by port
 Find which process is using a specific port.
 
 ```bash
@@ -50,7 +50,7 @@ ss -tlnp sport = :{{PORT:port:80}}
 
 ---
 
-## Add Interface IP
+## add interface ip
 Assign an IP address to a network interface.
 
 ```bash
@@ -61,7 +61,7 @@ sudo ip addr add {{IP:ip:192.168.1.100}}/{{MASK:int:24}} dev {{IFACE:iface:eth0}
 
 ---
 
-## Bring Interface Up/Down
+## bring interface up down
 Enable or disable a network interface.
 
 ```bash
@@ -72,7 +72,7 @@ sudo ip link set {{IFACE:iface:eth0}} {{STATE:str:up}}
 
 ---
 
-## Iptables List Rules
+## list iptables firewall rules
 List all current firewall rules with line numbers.
 
 ```bash
@@ -83,7 +83,7 @@ sudo iptables -L -n -v --line-numbers
 
 ---
 
-## Iptables Allow Port
+## allow port iptables
 Allow incoming traffic on a specific port.
 
 ```bash
@@ -94,7 +94,7 @@ sudo iptables -A INPUT -p {{PROTO:str:tcp}} --dport {{PORT:port:443}} -j ACCEPT
 
 ---
 
-## Iptables Block IP
+## block ip iptables
 Drop all traffic from a specific IP address.
 
 ```bash
@@ -105,7 +105,7 @@ sudo iptables -A INPUT -s {{IP:ip:10.10.10.1}} -j DROP
 
 ---
 
-## Iptables NAT Port Forward
+## nat port forward iptables
 Forward incoming traffic on one port to another host and port.
 
 ```bash
@@ -116,7 +116,7 @@ sudo iptables -t nat -A PREROUTING -p tcp --dport {{SPORT:port:80}} -j DNAT --to
 
 ---
 
-## Iptables Flush All Rules
+## flush iptables rules
 Remove all firewall rules. Use with caution.
 
 ```bash
@@ -127,7 +127,7 @@ sudo iptables -F && sudo iptables -X && sudo iptables -t nat -F
 
 ---
 
-## DNS Resolve
+## resolve dns lookup
 Perform DNS lookups for a domain.
 
 ```bash
@@ -138,7 +138,7 @@ dig {{DOMAIN:domain:target.com}} {{TYPE:str:ANY}} +short @{{DNS:ip:8.8.8.8}}
 
 ---
 
-## Ping and Traceroute
+## ping and traceroute host
 Test connectivity and trace the network path to a host.
 
 ```bash

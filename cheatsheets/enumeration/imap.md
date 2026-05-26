@@ -6,7 +6,7 @@
 
 ---
 
-## Telnet Banner
+## grab banner telnet
 Connect raw to the IMAP service with telnet.
 
 ```bash
@@ -17,7 +17,7 @@ telnet {{TARGET:ip}} {{PORT:port:143}}
 
 ---
 
-## OpenSSL IMAPS
+## connect imaps tls openssl
 Connect to IMAPS over TLS for STARTTLS-less connections.
 
 ```bash
@@ -28,7 +28,7 @@ openssl s_client -connect {{TARGET:ip}}:{{PORT:port:993}}
 
 ---
 
-## Login (LOGIN command)
+## login authenticated
 Authenticate to the IMAP service from inside an interactive session.
 
 ```bash
@@ -39,7 +39,7 @@ echo "a LOGIN {{USERNAME:str}} {{PASSWORD:str}}" | nc {{TARGET:ip}} {{PORT:port:
 
 ---
 
-## List All Mailboxes
+## list mailboxes folders
 List all available folders for the authenticated user.
 
 ```bash
@@ -50,7 +50,7 @@ List all available folders for the authenticated user.
 
 ---
 
-## Fetch First Message Body
+## read message body inbox
 Read the body text of message 1 in INBOX.
 
 ```bash
@@ -61,7 +61,7 @@ Read the body text of message 1 in INBOX.
 
 ---
 
-## Hydra IMAP Brute Force
+## brute login imaps hydra
 Brute force credentials over IMAPS port 993.
 
 ```bash
@@ -72,7 +72,7 @@ hydra -L {{USERLIST:file:users.txt}} -P {{PASSLIST:wordlist:/usr/share/wordlists
 
 ---
 
-## Medusa IMAP Brute Force
+## brute login medusa
 Use Medusa's IMAP module for credential testing.
 
 ```bash
@@ -83,7 +83,7 @@ medusa -h {{TARGET:ip}} -U {{USERLIST:file:users.txt}} -P {{PASSLIST:wordlist:/u
 
 ---
 
-## Curl Login Probe
+## test login curl
 Test single credentials with curl.
 
 ```bash

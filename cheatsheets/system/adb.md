@@ -6,7 +6,7 @@
 
 ---
 
-## List Connected Devices
+## list connected devices android
 Show all attached Android devices/emulators and their state.
 
 ```bash
@@ -17,7 +17,7 @@ adb devices -l
 
 ---
 
-## Get Shell on Device
+## shell on android device
 Open an interactive shell on the target Android device.
 
 ```bash
@@ -28,7 +28,7 @@ adb shell
 
 ---
 
-## Install APK
+## install apk android
 Push and install an APK onto the device.
 
 ```bash
@@ -39,7 +39,7 @@ adb install {{APK:file:app.apk}}
 
 ---
 
-## Pull File from Device
+## pull file from android device
 Copy a file off the device to the local filesystem.
 
 ```bash
@@ -50,7 +50,7 @@ adb pull {{REMOTE:str:/sdcard/Download/file.txt}} {{LOCAL:dir:./}}
 
 ---
 
-## Push File to Device
+## push file to android device
 Copy a local file onto the device.
 
 ```bash
@@ -61,7 +61,7 @@ adb push {{LOCAL:file:./payload.apk}} {{REMOTE:str:/sdcard/Download/}}
 
 ---
 
-## Watch Audio/Media Recorder Activity (logcat)
+## watch media recorder logcat
 Filter logcat for media recorder activity (e.g., live mic/camera triggers).
 
 ```bash
@@ -72,7 +72,7 @@ adb logcat | grep -i "AudioRecord\|MediaRecorder"
 
 ---
 
-## List Installed Packages
+## list installed packages android
 Enumerate all installed packages on the device.
 
 ```bash
@@ -83,7 +83,7 @@ adb shell pm list packages -f
 
 ---
 
-## Get APK Path of a Package
+## find apk path package
 Find the APK path for a specific package (e.g., for pulling).
 
 ```bash

@@ -4,7 +4,7 @@
 
 ---
 
-## xfreerdp Connection
+## connect xfreerdp creds
 Connect to RDP target with credentials and clipboard support.
 
 ```bash
@@ -15,7 +15,7 @@ xfreerdp /v:{{TARGET:ip}} /u:{{USERNAME:str}} /p:{{PASSWORD:str}} /cert:ignore /
 
 ---
 
-## xfreerdp Pass-the-Hash
+## connect xfreerdp pass-the-hash NTLM
 Authenticate to RDP using NTLM hash (no plaintext password).
 
 ```bash
@@ -26,7 +26,7 @@ xfreerdp /v:{{TARGET:ip}} /u:{{USERNAME:str}} /pth:{{NTHASH:str}} /cert:ignore
 
 ---
 
-## xfreerdp with Domain
+## connect xfreerdp domain drive
 Connect with domain credentials and full screen drive redirection.
 
 ```bash
@@ -37,7 +37,7 @@ xfreerdp /v:{{TARGET:ip}} /u:{{USERNAME:str}} /p:{{PASSWORD:str}} /d:{{DOMAIN:do
 
 ---
 
-## rdesktop (Legacy)
+## connect rdesktop legacy
 Connect with rdesktop client (older protocol support).
 
 ```bash
@@ -48,7 +48,7 @@ rdesktop -u {{USERNAME:str}} -p {{PASSWORD:str}} -d {{DOMAIN:domain}} {{TARGET:i
 
 ---
 
-## Remmina Connection URI
+## connect remmina uri
 Launch Remmina with full RDP URI.
 
 ```bash
@@ -59,7 +59,7 @@ remmina -c rdp://{{USERNAME:str}}:{{PASSWORD:str}}@{{TARGET:ip}}
 
 ---
 
-## RDP via KRDC
+## connect krdc
 Open RDP session in KRDC client.
 
 ```bash
@@ -70,7 +70,7 @@ krdc rdp://{{USERNAME:str}}:{{PASSWORD:str}}@{{TARGET:ip}}
 
 ---
 
-## Vinagre RDP
+## connect vinagre
 Open RDP session in Vinagre client.
 
 ```bash
@@ -81,7 +81,7 @@ vinagre rdp://{{TARGET:ip}}
 
 ---
 
-## Bruteforce RDP with Hydra
+## brute rdp hydra
 Brute force RDP service with credential lists.
 
 ```bash
@@ -92,7 +92,7 @@ hydra -L {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:passwords.txt}} 
 
 ---
 
-## Crowbar RDP Brute Force
+## brute rdp crowbar nla
 Use crowbar for RDP brute force (handles NLA better).
 
 ```bash

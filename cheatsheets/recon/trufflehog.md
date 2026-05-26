@@ -6,7 +6,7 @@
 
 ---
 
-## Scan a GitHub Organization (Docker)
+## scan github org secrets docker
 Scan all repositories in an organization for secrets.
 
 ```bash
@@ -17,7 +17,7 @@ docker run -it -v "$PWD:/pwd" trufflesecurity/trufflehog:latest github --org={{O
 
 ---
 
-## Scan a Single Repo (Docker)
+## scan single repo secrets docker
 Scan a specific GitHub repository URL.
 
 ```bash
@@ -28,7 +28,7 @@ docker run -it -v "$PWD:/pwd" trufflesecurity/trufflehog:latest github --repo={{
 
 ---
 
-## Scan Local Git Working Tree
+## scan local git secrets
 Scan a cloned git repository on disk.
 
 ```bash
@@ -39,7 +39,7 @@ trufflehog git file://{{REPO_DIR:dir:./repo}}
 
 ---
 
-## Scan Filesystem
+## scan filesystem secrets
 Scan a filesystem path for hardcoded secrets.
 
 ```bash
@@ -50,7 +50,7 @@ trufflehog filesystem {{TARGET_DIR:dir:/srv}}
 
 ---
 
-## Only Verified Secrets
+## scan git verified secrets only
 Show only secrets that successfully validated against their service.
 
 ```bash
@@ -61,7 +61,7 @@ trufflehog git file://{{REPO_DIR:dir:./repo}} --only-verified
 
 ---
 
-## JSON Output
+## scan git secrets json output
 Emit findings as JSON for tooling.
 
 ```bash
@@ -72,7 +72,7 @@ trufflehog git file://{{REPO_DIR:dir:./repo}} --json > {{OUTFILE:file:trufflehog
 
 ---
 
-## Scan S3 Bucket
+## scan S3 bucket secrets
 Search a public or authorized S3 bucket for credentials.
 
 ```bash

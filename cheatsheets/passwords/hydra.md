@@ -6,7 +6,7 @@
 
 ---
 
-## SSH Brute Force
+## brute ssh
 Brute-force SSH login for a single user.
 
 ```bash
@@ -17,7 +17,7 @@ hydra -l {{USERNAME:str:root}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rocky
 
 ---
 
-## Ncrack FTP Brute Force
+## brute ftp ncrack
 Use Ncrack as alternative for FTP brute force (often faster).
 
 ```bash
@@ -28,7 +28,7 @@ ncrack -p ftp -U {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:password
 
 ---
 
-## Hydra Oracle SID Brute Force
+## brute oracle sid
 Brute force Oracle database accounts.
 
 ```bash
@@ -39,7 +39,7 @@ hydra -L {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:passwords.txt}} 
 
 ---
 
-## Hydra RPC Brute Force
+## brute rpc
 Brute force authentication on RPC endpoints.
 
 ```bash
@@ -50,7 +50,7 @@ hydra -l {{USERNAME:str}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.tx
 
 ---
 
-## Hydra Redis Password Crack
+## brute redis
 Brute force Redis authentication password.
 
 ```bash
@@ -61,7 +61,7 @@ hydra -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} redis://{{TARGET
 
 ---
 
-## FTP Brute Force
+## brute ftp
 Brute-force FTP login credentials.
 
 ```bash
@@ -72,7 +72,7 @@ hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rock
 
 ---
 
-## HTTP Basic Auth (GET)
+## brute http basic auth
 Brute-force HTTP Basic Authentication.
 
 ```bash
@@ -83,7 +83,7 @@ hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rock
 
 ---
 
-## HTTP POST Form
+## brute http post form
 Brute-force a web login form via HTTP POST.
 
 ```bash
@@ -94,7 +94,7 @@ hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rock
 
 ---
 
-## SMB Brute Force
+## brute smb
 Brute-force SMB/Windows authentication.
 
 ```bash
@@ -105,7 +105,7 @@ hydra -l {{USERNAME:str:administrator}} -P {{WORDLIST:wordlist:/usr/share/wordli
 
 ---
 
-## RDP Brute Force
+## brute rdp
 Brute-force Remote Desktop Protocol login.
 
 ```bash
@@ -116,7 +116,7 @@ hydra -l {{USERNAME:str:administrator}} -P {{WORDLIST:wordlist:/usr/share/wordli
 
 ---
 
-## MySQL Brute Force
+## brute mysql
 Brute-force MySQL database login.
 
 ```bash
@@ -127,7 +127,7 @@ hydra -l {{USERNAME:str:root}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rocky
 
 ---
 
-## With User List
+## spray password userlist
 Spray passwords across a list of usernames.
 
 ```bash
@@ -138,7 +138,7 @@ hydra -L {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists
 
 ---
 
-## With Credentials File
+## brute credentials combo file
 Use a colon-separated credentials file (user:pass).
 
 ```bash
@@ -149,7 +149,7 @@ hydra -C {{CREDFILE:file:creds.txt}} {{TARGET:ip}} {{PROTOCOL:str:ftp}} -t {{THR
 
 ---
 
-## HTTPS POST Form
+## brute https post form
 Brute force a login form over HTTPS on a custom port.
 
 ```bash
@@ -160,7 +160,7 @@ hydra -l {{USERNAME:str:user}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rocky
 
 ---
 
-## HTTP Digest Authentication
+## brute http digest auth
 Brute-force endpoints protected by HTTP Digest auth.
 
 ```bash
@@ -171,7 +171,7 @@ hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rock
 
 ---
 
-## POP3 Brute Force
+## brute pop3 mail
 Brute-force POP3 mail credentials.
 
 ```bash
@@ -182,7 +182,7 @@ hydra -l {{USERNAME:str:user@example.com}} -P {{WORDLIST:wordlist:/usr/share/wor
 
 ---
 
-## IMAP (with empty/reverse pass tries)
+## brute imap mail
 Brute-force IMAPS with empty, reverse, and same-as-user password tests.
 
 ```bash
@@ -193,7 +193,7 @@ hydra -l {{USERNAME:str:user@example.com}} -P {{WORDLIST:wordlist:/usr/share/wor
 
 ---
 
-## Telnet Brute Force
+## brute telnet
 Brute-force Telnet credentials.
 
 ```bash

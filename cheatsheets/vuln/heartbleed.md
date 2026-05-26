@@ -6,7 +6,7 @@
 
 ---
 
-## Nmap Heartbleed Scan
+## scan nmap nse
 Use the ssl-heartbleed NSE script for detection.
 
 ```bash
@@ -17,7 +17,7 @@ nmap -p {{PORT:port:443}} --script=ssl-heartbleed {{TARGET:ip}}
 
 ---
 
-## sslscan Bulk Heartbleed Check
+## check sslscan bulk hosts
 Scan many hosts from a target list with sslscan.
 
 ```bash
@@ -28,7 +28,7 @@ sslscan --targets={{TARGETS:file:/tmp/targets.lst}} --no-ciphersuites --no-fallb
 
 ---
 
-## Build Targets List from URL List
+## build targets list from urls
 Extract HTTPS hosts from URLs to feed sslscan.
 
 ```bash
@@ -39,7 +39,7 @@ grep https {{INFILE:file:urls.txt}} | cut -d '/' -f 3 | sort -u > {{OUTFILE:file
 
 ---
 
-## Metasploit Heartbleed Check
+## dump memory metasploit
 Use Metasploit auxiliary to test and dump.
 
 ```bash

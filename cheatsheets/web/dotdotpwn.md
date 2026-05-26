@@ -6,7 +6,7 @@
 
 ---
 
-## HTTP URL Traversal Test (Linux)
+## fuzz path traversal http url linux
 Fuzz a TRAVERSAL marker in a URL against a Linux target.
 
 ```bash
@@ -17,7 +17,7 @@ sudo dotdotpwn -m http-url -h {{TARGET:ip}} -x {{PORT:port:80}} -O -s -u "{{URL_
 
 ---
 
-## HTTP URL Traversal Test (Windows)
+## fuzz path traversal http url windows
 Same fuzz against a Windows host (different signature keyword).
 
 ```bash
@@ -28,7 +28,7 @@ sudo dotdotpwn -m http-url -h {{TARGET:ip}} -x {{PORT:port:8080}} -O -s -u "{{UR
 
 ---
 
-## HTTP Method-Based Fuzzing
+## fuzz path traversal http headers
 Fuzz using header/path traversal payloads against a host.
 
 ```bash
@@ -39,7 +39,7 @@ sudo dotdotpwn -m http -h {{TARGET:ip}} -x {{PORT:port:80}} -O -s -k {{KEYWORD:s
 
 ---
 
-## FTP Traversal Module
+## fuzz path traversal ftp
 Test for path traversal on an FTP service with credentials.
 
 ```bash

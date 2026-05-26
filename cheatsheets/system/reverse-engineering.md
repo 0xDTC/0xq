@@ -4,7 +4,7 @@
 
 ---
 
-## Identify Binary Type
+## identify binary type
 Identify file type, architecture, and linking type.
 
 ```bash
@@ -15,7 +15,7 @@ file {{BINARY:file:./target}}
 
 ---
 
-## Check Binary Security Mitigations
+## check binary mitigations checksec
 Show NX, PIE, RELRO, ASLR status with checksec.
 
 ```bash
@@ -26,7 +26,7 @@ checksec --file={{BINARY:file:./target}}
 
 ---
 
-## Extract Printable Strings
+## extract printable strings
 Pull printable strings from binary (look for hardcoded creds/cmds).
 
 ```bash
@@ -37,7 +37,7 @@ strings {{BINARY:file:./target}} | less
 
 ---
 
-## Strings with Length Filter
+## filter strings by length
 Strings of minimum length to reduce noise.
 
 ```bash
@@ -48,7 +48,7 @@ strings -n {{MIN_LEN:int:10}} {{BINARY:file:./target}}
 
 ---
 
-## ELF Header Inspection
+## inspect elf headers
 Display ELF headers, sections, and symbols.
 
 ```bash
@@ -59,7 +59,7 @@ readelf -a {{BINARY:file:./target}}
 
 ---
 
-## Disassemble Binary
+## disassemble binary objdump
 Disassemble binary into x86/x64 assembly.
 
 ```bash
@@ -70,7 +70,7 @@ objdump -d {{BINARY:file:./target}}
 
 ---
 
-## Disassemble Specific Function
+## disassemble specific function
 Disassemble a single function (e.g. main).
 
 ```bash
@@ -81,7 +81,7 @@ objdump -d {{BINARY:file:./target}} | awk '/<{{FUNCTION:str:main}}>:/,/^$/'
 
 ---
 
-## Trace Library Calls
+## trace library calls ltrace
 Monitor dynamic library function calls (printf, strcpy, etc).
 
 ```bash
@@ -92,7 +92,7 @@ ltrace ./{{BINARY:file:target}}
 
 ---
 
-## Trace System Calls
+## trace system calls strace
 Track all syscalls made by the binary.
 
 ```bash
@@ -103,7 +103,7 @@ strace ./{{BINARY:file:target}}
 
 ---
 
-## Strace Filter Syscalls
+## filter syscalls strace
 Filter strace output to specific syscalls.
 
 ```bash
@@ -114,7 +114,7 @@ strace -e {{SYSCALL:str:open,read,write}} ./{{BINARY:file:target}}
 
 ---
 
-## GDB Interactive Debug
+## debug binary gdb
 Open binary in GNU Debugger for dynamic analysis.
 
 ```bash
@@ -125,7 +125,7 @@ gdb {{BINARY:file:./target}}
 
 ---
 
-## GDB with PEDA/GEF Plugin
+## debug binary gef plugin
 Launch GDB with enhanced exploit dev plugins.
 
 ```bash
@@ -136,7 +136,7 @@ gdb-gef {{BINARY:file:./target}}
 
 ---
 
-## Find ROP Gadgets
+## find ROP gadgets
 Search binary for usable ROP gadgets.
 
 ```bash
@@ -147,7 +147,7 @@ ROPgadget --binary {{BINARY:file:./target}}
 
 ---
 
-## Filter ROP Gadgets by Pattern
+## filter ROP gadgets by pattern
 Search for specific gadget pattern (e.g. pop rdi).
 
 ```bash
@@ -158,7 +158,7 @@ ROPgadget --binary {{BINARY:file:./target}} --only "pop|ret"
 
 ---
 
-## OneGadget RCE Search
+## find one_gadget libc offsets
 Find one_gadget shell-spawning offsets in libc.
 
 ```bash
@@ -169,7 +169,7 @@ one_gadget {{LIBC:file:./libc.so.6}}
 
 ---
 
-## Radare2 Analysis
+## analyze binary radare2
 Open binary in radare2 for static/dynamic analysis.
 
 ```bash
@@ -180,7 +180,7 @@ r2 -A {{BINARY:file:./target}}
 
 ---
 
-## Patchelf Replace Library
+## replace libc patchelf
 Patch binary to use a custom libc version.
 
 ```bash
@@ -191,7 +191,7 @@ patchelf --replace-needed libc.so.6 {{NEW_LIBC:file:./libc-2.27.so}} {{BINARY:fi
 
 ---
 
-## NASM Assemble Shellcode
+## assemble shellcode nasm
 Assemble shellcode for x86_64.
 
 ```bash
@@ -202,7 +202,7 @@ nasm -f elf64 {{ASM:file:shellcode.asm}} -o {{OBJ:file:shellcode.o}}
 
 ---
 
-## Hex Dump with xxd
+## hex dump binary xxd
 View binary contents in hex with offsets.
 
 ```bash
@@ -213,7 +213,7 @@ xxd {{BINARY:file:./target}} | less
 
 ---
 
-## Edit Binary in Hexedit
+## edit binary hexedit
 Open binary in interactive hex editor.
 
 ```bash
@@ -224,7 +224,7 @@ hexedit {{BINARY:file:./target}}
 
 ---
 
-## Install pwndbg GDB Plugin
+## install pwndbg plugin
 Set up pwndbg for exploit development.
 
 ```bash
@@ -235,7 +235,7 @@ git clone https://github.com/pwndbg/pwndbg && cd pwndbg && ./setup.sh
 
 ---
 
-## Install GEF GDB Plugin
+## install gef plugin
 Set up GEF for GDB.
 
 ```bash

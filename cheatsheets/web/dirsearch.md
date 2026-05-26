@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Directory Scan
+## scan directories recursive
 Scan a target with default wordlists, recursing into discovered directories.
 
 ```bash
@@ -17,7 +17,7 @@ dirsearch -u {{URL:url:http://target.com/}} -i 200 -r -F -o {{OUTFILE:file:dirse
 
 ---
 
-## Scan with Common Extensions
+## scan directories common extensions
 Brute force paths with common web file extensions.
 
 ```bash
@@ -28,7 +28,7 @@ dirsearch -u {{URL:url:http://target.com/}} -i 200 -r -F -e {{EXTENSIONS:str:php
 
 ---
 
-## Rate-Limited Scan
+## scan directories rate limited
 Throttle requests to avoid WAF/rate-limit triggers.
 
 ```bash
@@ -39,7 +39,7 @@ dirsearch -u {{URL:url:http://target.com/}} -i 200,403,302 -r -F --max-rate {{RA
 
 ---
 
-## Custom HTTP Method
+## scan directories custom http method
 Scan using a non-default HTTP method (e.g., POST, PUT, OPTIONS).
 
 ```bash
@@ -50,7 +50,7 @@ dirsearch -u {{URL:url:http://target.com/}} -m {{METHOD:str:POST}} --max-rate {{
 
 ---
 
-## Custom User-Agent
+## scan directories custom user-agent
 Send requests with a real-browser User-Agent to bypass naive filters.
 
 ```bash
@@ -61,7 +61,7 @@ dirsearch -u {{URL:url:http://target.com/}} --user-agent="{{UA:str:Mozilla/5.0 (
 
 ---
 
-## Authenticated Scan with Cookie
+## scan directories authenticated cookie
 Re-use a session cookie when scanning protected paths.
 
 ```bash

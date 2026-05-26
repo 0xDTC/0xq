@@ -6,7 +6,7 @@
 
 ---
 
-## Decompile APK
+## decompile apk to java
 Decompile an APK file to Java sources.
 
 ```bash
@@ -17,7 +17,7 @@ jadx {{INFILE:file:app.apk}} -d {{OUTDIR:dir:./out}}
 
 ---
 
-## Decompile JAR
+## decompile jar to java
 Decompile a JAR file.
 
 ```bash
@@ -28,7 +28,7 @@ jadx {{INFILE:file:app.jar}} -d {{OUTDIR:dir:./out}}
 
 ---
 
-## GUI Mode
+## gui code browser
 Interactive GUI for code browsing.
 
 ```bash
@@ -39,7 +39,7 @@ jadx-gui {{INFILE:file:app.apk}}
 
 ---
 
-## Multi-Threaded Decompile
+## multi-threaded decompile fast
 Speed up with N threads.
 
 ```bash
@@ -50,7 +50,7 @@ jadx -j {{THREADS:int:4}} {{INFILE:file:app.apk}} -d {{OUTDIR:dir:./out}}
 
 ---
 
-## Skip Resources
+## decompile skip resources
 Decompile only code, skip resources.
 
 ```bash
@@ -61,7 +61,7 @@ jadx --no-res {{INFILE:file:app.apk}} -d {{OUTDIR:dir:./out}}
 
 ---
 
-## No Deobfuscation (Raw Code)
+## decompile raw no deobfuscation
 Disable auto-deobfuscation for raw decompiled code.
 
 ```bash
@@ -72,7 +72,7 @@ jadx --no-deobf {{INFILE:file:app.apk}} -d {{OUTDIR:dir:./out}}
 
 ---
 
-## Filter Class
+## decompile single class filter
 Only decompile a specific class.
 
 ```bash
@@ -83,7 +83,7 @@ jadx --class-filter={{CLASS:str:com.example.Foo}} {{INFILE:file:app.apk}} -d {{O
 
 ---
 
-## Increase Memory for Large APKs
+## increase heap memory large apk
 Use a larger heap for big apps.
 
 ```bash

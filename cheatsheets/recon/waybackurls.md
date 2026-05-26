@@ -6,7 +6,7 @@
 
 ---
 
-## Install via Go
+## install via go
 Install the latest waybackurls binary using go install.
 
 ```bash
@@ -17,7 +17,7 @@ go install github.com/tomnomnom/waybackurls@latest && sudo cp ~/go/bin/waybackur
 
 ---
 
-## Fetch Archived URLs for a Domain
+## fetch archived urls domain
 Pull every wayback-known URL for a domain into a file.
 
 ```bash
@@ -28,7 +28,7 @@ waybackurls {{DOMAIN:domain}} > {{OUTFILE:file:wayback.txt}}
 
 ---
 
-## Probe Live URLs (httpx Pipe)
+## probe live urls httpx
 Pipe wayback URLs through httpx to find currently live ones.
 
 ```bash
@@ -39,7 +39,7 @@ waybackurls {{DOMAIN:domain}} | httpx -silent -mc 200 > {{OUTFILE:file:live-wayb
 
 ---
 
-## Filter for JavaScript Files
+## filter javascript js urls
 Pull only .js URLs from wayback for source review.
 
 ```bash
@@ -50,7 +50,7 @@ waybackurls {{DOMAIN:domain}} | grep -Ei "\.js(\?|$)" | sort -u > {{OUTFILE:file
 
 ---
 
-## Filter URLs with Parameters
+## filter urls with params injection
 Extract URLs that have query strings (potential injection candidates).
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Simple GET Request
+## send GET request
 Perform a basic HTTP GET request.
 
 ```bash
@@ -17,7 +17,7 @@ curl -s {{URL:url:http://target.com}}
 
 ---
 
-## POST JSON Data
+## post json data
 Send a POST request with a JSON body.
 
 ```bash
@@ -28,7 +28,7 @@ curl -s -X POST {{URL:url:http://target.com/api/login}} -H "Content-Type: applic
 
 ---
 
-## Custom Headers
+## send custom headers
 Send a request with custom HTTP headers.
 
 ```bash
@@ -39,7 +39,7 @@ curl -s {{URL:url:http://target.com/api/data}} -H "Authorization: Bearer {{TOKEN
 
 ---
 
-## With Cookies
+## send request with cookies
 Send a request with specific cookies.
 
 ```bash
@@ -50,7 +50,7 @@ curl -s {{URL:url:http://target.com/dashboard}} -b "{{COOKIE:str:session=abc123;
 
 ---
 
-## Through a Proxy
+## route through proxy
 Route the request through an HTTP or SOCKS proxy.
 
 ```bash
@@ -61,7 +61,7 @@ curl -s {{URL:url:http://target.com}} -x {{PROXY:str:http://127.0.0.1:8080}}
 
 ---
 
-## Upload a File
+## upload file multipart
 Upload a file via multipart form POST.
 
 ```bash
@@ -72,7 +72,7 @@ curl -s -X POST {{URL:url:http://target.com/upload}} -F "file=@{{FILE:file:shell
 
 ---
 
-## Follow Redirects
+## follow redirects
 Automatically follow HTTP 3xx redirects.
 
 ```bash
@@ -83,7 +83,7 @@ curl -s -L {{URL:url:http://target.com}}
 
 ---
 
-## Ignore SSL Certificate Errors
+## ignore SSL cert errors
 Connect to HTTPS targets with invalid or self-signed certificates.
 
 ```bash
@@ -94,7 +94,7 @@ curl -s -k {{URL:url:https://target.com}}
 
 ---
 
-## Verbose Output with Headers
+## show verbose request headers
 Show full request and response headers for debugging.
 
 ```bash
@@ -105,7 +105,7 @@ curl -v {{URL:url:http://target.com}} 2>&1
 
 ---
 
-## Download File to Disk
+## download file to disk
 Download a file and save it locally.
 
 ```bash
@@ -116,7 +116,7 @@ curl -s -L -o {{OUTFILE:file:downloaded_file}} {{URL:url:http://target.com/file.
 
 ---
 
-## POST Form-Encoded Data
+## post form encoded data
 Send an application/x-www-form-urlencoded POST body.
 
 ```bash
@@ -127,7 +127,7 @@ curl -X POST -d '{{PARAM:str:user}}={{VALUE:str}}' {{URL:url}}
 
 ---
 
-## Cookie Jar (Save + Reuse)
+## save reuse cookie jar
 Persist cookies to disk and replay them on subsequent requests.
 
 ```bash
@@ -138,7 +138,7 @@ curl -c {{COOKIEFILE:file:cookies.txt}} -b {{COOKIEFILE:file:cookies.txt}} {{URL
 
 ---
 
-## Basic Auth
+## send basic auth creds
 Send HTTP Basic Authentication credentials.
 
 ```bash
@@ -149,7 +149,7 @@ curl -u '{{USERNAME:str}}:{{PASSWORD:str}}' {{URL:url}}
 
 ---
 
-## Force HTTP Version
+## force http version
 Force the request to use HTTP/2 (swap `--http2` for `--http1.1` when needed).
 
 ```bash
@@ -160,7 +160,7 @@ curl --http2 {{URL:url}}
 
 ---
 
-## Bypass DNS with --resolve
+## bypass DNS resolve vhost
 Send an HTTPS request to a specific IP while keeping the SNI/Host as a domain.
 
 ```bash
@@ -171,7 +171,7 @@ curl --resolve {{DOMAIN:domain}}:{{PORT:port:443}}:{{TARGET:ip}} https://{{DOMAI
 
 ---
 
-## Multipart File Upload
+## upload file simple multipart
 Upload a file using a simple multipart form body.
 
 ```bash
@@ -182,7 +182,7 @@ curl -F 'file=@{{FILE:file}}' {{URL:url}}
 
 ---
 
-## Status Code Loop Over URL List
+## loop status codes url list
 Iterate a file of URLs and print each URL's final HTTP status.
 
 ```bash
@@ -193,7 +193,7 @@ while read url; do echo -n "$url: "; curl -IsSL -w '%{http_code}\n' -o /dev/null
 
 ---
 
-## CORS Origin Reflection Test
+## test CORS origin reflection
 Probe a URL to see if it reflects an attacker-controlled Origin header.
 
 ```bash
@@ -204,7 +204,7 @@ curl -sIH "Origin: {{EVIL_ORIGIN:url:https://evil.com}}" -X GET {{URL:url}} | gr
 
 ---
 
-## Submit File via Form POST
+## upload shell via form post
 Inject a malicious file through a multipart form, simulating a real upload form.
 
 ```bash

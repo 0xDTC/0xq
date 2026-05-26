@@ -4,7 +4,7 @@
 
 ---
 
-## Nmap NFS Script Scan
+## scan nfs nmap nse
 Enumerate NFS exports, stats, and ACLs.
 
 ```bash
@@ -15,7 +15,7 @@ nmap -p 2049 --script "nfs-ls,nfs-statfs,nfs-showmount" {{TARGET:ip}}
 
 ---
 
-## Show Available NFS Exports
+## list nfs exports showmount
 List exported shares from NFS server.
 
 ```bash
@@ -26,7 +26,7 @@ showmount -e {{TARGET:ip}}
 
 ---
 
-## Mount NFS Share
+## mount nfs share
 Mount remote NFS share on local mount point.
 
 ```bash
@@ -37,7 +37,7 @@ sudo mount -t nfs {{TARGET:ip}}:{{REMOTE_PATH:str:/share}} {{MOUNT_POINT:dir:/mn
 
 ---
 
-## Mount NFSv2 (No Authentication)
+## mount nfsv2 anonymous
 Force NFSv2 (no auth) when possible.
 
 ```bash
@@ -48,7 +48,7 @@ sudo mount -t nfs -o vers=2 {{TARGET:ip}}:{{REMOTE_PATH:str:/share}} {{MOUNT_POI
 
 ---
 
-## Unmount NFS Share
+## unmount nfs share
 Force lazy unmount of NFS share.
 
 ```bash
@@ -59,7 +59,7 @@ sudo umount -lf {{MOUNT_POINT:dir:/mnt/nfs}}
 
 ---
 
-## Recursive Copy of Mounted NFS
+## copy mounted share loot
 Pull all data from mount for offline review.
 
 ```bash
@@ -70,7 +70,7 @@ cp -r {{MOUNT_POINT:dir:/mnt/nfs}}/ {{LOOT_DIR:dir:./nfs-loot}}
 
 ---
 
-## Metasploit - NFS Mount Scanner
+## scan nfs mounts metasploit
 Use Metasploit auxiliary scanner for NFS hosts.
 
 ```bash
@@ -81,7 +81,7 @@ msfconsole -q -x "use auxiliary/scanner/nfs/nfsmount; set RHOSTS {{TARGET:ip}}; 
 
 ---
 
-## Spoof UID for File Access
+## spoof uid no_root_squash privesc
 Create a local user matching remote UID for file access via no_root_squash bypass.
 
 ```bash

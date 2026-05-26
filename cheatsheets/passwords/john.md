@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Crack (Auto-Detect Format)
+## crack auto-detect format
 Crack hashes with automatic format detection using default mode.
 
 ```bash
@@ -17,7 +17,7 @@ john {{HASHFILE:file:hashes.txt}}
 
 ---
 
-## Wordlist Attack
+## crack wordlist
 Crack hashes using a specified wordlist.
 
 ```bash
@@ -28,7 +28,7 @@ john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/word
 
 ---
 
-## Wordlist with Rules
+## crack wordlist rules
 Apply mangling rules to increase wordlist coverage.
 
 ```bash
@@ -39,7 +39,7 @@ john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/word
 
 ---
 
-## Format-Specific Cracking
+## crack specific format
 Specify a hash format explicitly when auto-detection fails.
 <!-- Common formats: raw-md5, raw-sha1, raw-sha256, raw-sha512, nt, bcrypt, sha512crypt, krb5tgs, krb5asrep -->
 
@@ -51,7 +51,7 @@ john {{HASHFILE:file:hashes.txt}} --format={{FORMAT:str:raw-md5}} --wordlist={{W
 
 ---
 
-## Show Cracked Passwords
+## show cracked potfile
 Display previously cracked passwords from the potfile.
 
 ```bash
@@ -62,7 +62,7 @@ john {{HASHFILE:file:hashes.txt}} --show
 
 ---
 
-## ssh2john - Convert SSH Key
+## crack ssh key ssh2john
 Extract a crackable hash from a passphrase-protected SSH private key.
 
 ```bash
@@ -73,7 +73,7 @@ ssh2john {{KEYFILE:file:id_rsa}} > {{OUTFILE:file:ssh_hash.txt}} && john {{OUTFI
 
 ---
 
-## zip2john - Convert ZIP Archive
+## crack zip zip2john
 Extract a crackable hash from a password-protected ZIP file.
 
 ```bash
@@ -84,7 +84,7 @@ zip2john {{ZIPFILE:file:protected.zip}} > {{OUTFILE:file:zip_hash.txt}} && john 
 
 ---
 
-## rar2john - Convert RAR Archive
+## crack rar rar2john
 Extract a crackable hash from a password-protected RAR file.
 
 ```bash
@@ -95,7 +95,7 @@ rar2john {{RARFILE:file:protected.rar}} > {{OUTFILE:file:rar_hash.txt}} && john 
 
 ---
 
-## keepass2john - Convert KeePass Database
+## crack keepass keepass2john
 Extract a crackable hash from a KeePass database file.
 
 ```bash
@@ -106,7 +106,7 @@ keepass2john {{KDBX:file:database.kdbx}} > {{OUTFILE:file:keepass_hash.txt}} && 
 
 ---
 
-## pdf2john - Convert PDF
+## crack pdf pdf2john
 Extract a crackable hash from a password-protected PDF file.
 
 ```bash
@@ -117,7 +117,7 @@ pdf2john {{PDFFILE:file:protected.pdf}} > {{OUTFILE:file:pdf_hash.txt}} && john 
 
 ---
 
-## ansible2john - Convert Ansible Vault
+## crack ansible vault ansible2john
 Extract a crackable hash from an Ansible Vault encrypted file.
 
 ```bash
@@ -128,7 +128,7 @@ ansible2john {{VAULTFILE:file:vault.yml}} > {{OUTFILE:file:ansible_hash.txt}} &&
 
 ---
 
-## Decrypt Ansible Vault After Cracking
+## decrypt ansible vault
 Decrypt the Ansible Vault file once the password is known.
 
 ```bash

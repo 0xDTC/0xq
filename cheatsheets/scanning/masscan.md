@@ -6,7 +6,7 @@
 
 ---
 
-## Fast Top Ports Scan
+## scan top ports fast
 Quickly scan the most common ports on a target range.
 
 ```bash
@@ -17,7 +17,7 @@ sudo masscan {{SUBNET:cidr:192.168.1.0/24}} --top-ports 100 --rate {{RATE:int:10
 
 ---
 
-## All TCP Ports Scan
+## scan all ports TCP
 Scan all 65535 TCP ports across a target range.
 
 ```bash
@@ -28,7 +28,7 @@ sudo masscan {{SUBNET:cidr:192.168.1.0/24}} -p 0-65535 --rate {{RATE:int:10000}}
 
 ---
 
-## Scan with Banner Grabbing
+## scan banner grab version
 Capture service banners during the port scan for version identification.
 
 ```bash
@@ -39,7 +39,7 @@ sudo masscan {{SUBNET:cidr:192.168.1.0/24}} -p {{PORTS:port:21,22,80,443,445,338
 
 ---
 
-## Scan from Input File
+## scan from target list file
 Read target ranges from a file and scan specific ports.
 
 ```bash
@@ -50,7 +50,7 @@ sudo masscan -iL {{TARGETLIST:file:targets.txt}} -p {{PORTS:port:80,443,8080,844
 
 ---
 
-## Specific Ports with JSON Output
+## scan specific ports json output
 Scan targeted ports and output results in JSON for processing.
 
 ```bash
@@ -61,7 +61,7 @@ sudo masscan {{SUBNET:cidr:192.168.1.0/24}} -p {{PORTS:port:22,80,443,445,3306,5
 
 ---
 
-## Single Target Detailed Scan
+## scan single host all ports banners
 Scan a single host across all ports with banner grabbing.
 
 ```bash
@@ -72,7 +72,7 @@ sudo masscan {{TARGET:ip}} -p 0-65535 --banners --rate {{RATE:int:1000}} -oL {{O
 
 ---
 
-## Web Server Discovery
+## find web servers large range
 Find web servers across a large range by scanning HTTP/HTTPS ports.
 
 ```bash
@@ -83,7 +83,7 @@ sudo masscan {{SUBNET:cidr:10.0.0.0/8}} -p 80,443,8080,8443,8000,8888 --rate {{R
 
 ---
 
-## Scan with Source Port and Interface
+## scan custom source port interface
 Scan using a specific source port and network interface for routing control.
 
 ```bash

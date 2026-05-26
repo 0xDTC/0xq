@@ -6,7 +6,7 @@
 
 ---
 
-## List Available Patterns
+## list patterns
 Show all installed patterns.
 
 ```bash
@@ -17,7 +17,7 @@ gf -list
 
 ---
 
-## Filter URLs by Pattern
+## filter urls by pattern xss sqli
 Pipe URL list through a gf pattern (xss, sqli, ssrf, lfi, redirect, etc.).
 
 ```bash
@@ -28,7 +28,7 @@ cat {{URLS:file:urls.txt}} | gf {{PATTERN:str:xss}}
 
 ---
 
-## Combo with Waybackurls
+## filter waybackurls vuln candidates
 Pull historical URLs and filter for vulnerability candidates.
 
 ```bash
@@ -39,7 +39,7 @@ waybackurls {{DOMAIN:domain}} | gf {{PATTERN:str:sqli}}
 
 ---
 
-## Install + Pattern Setup
+## install patterns setup
 One-liner install and pattern bundle setup.
 
 ```bash

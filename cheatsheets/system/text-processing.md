@@ -6,7 +6,7 @@
 
 ---
 
-## Cut by Delimiter and Field
+## cut fields by delimiter
 Extract specific fields from delimited text.
 
 ```bash
@@ -17,7 +17,7 @@ cut -d'{{DELIM:str::}}' -f{{FIELDS:str:1,3}} {{FILE:file:/etc/passwd}}
 
 ---
 
-## Sort Unique Numerically
+## sort unique numerically
 Sort lines numerically and remove duplicates.
 
 ```bash
@@ -28,7 +28,7 @@ sort -un {{FILE:file:input.txt}}
 
 ---
 
-## Sort by Column
+## sort by column
 Sort by a specific column field.
 
 ```bash
@@ -39,7 +39,7 @@ sort -t'{{DELIM:str::}}' -k{{COL:int:3}} -n {{FILE:file:input.txt}}
 
 ---
 
-## Count Duplicates
+## count duplicate lines
 Count and sort duplicate lines, showing most frequent first.
 
 ```bash
@@ -50,7 +50,7 @@ sort {{FILE:file:input.txt}} | uniq -c | sort -rn
 
 ---
 
-## Show Only Duplicates
+## show only duplicate lines
 Display only lines that appear more than once.
 
 ```bash
@@ -61,7 +61,7 @@ sort {{FILE:file:input.txt}} | uniq -d
 
 ---
 
-## Translate Characters
+## translate characters tr
 Replace or transliterate characters (e.g., lowercase to uppercase).
 
 ```bash
@@ -72,7 +72,7 @@ cat {{FILE:file:input.txt}} | tr '{{FROM:str:a-z}}' '{{TO:str:A-Z}}'
 
 ---
 
-## Delete Characters
+## delete characters tr
 Remove specific characters from input.
 
 ```bash
@@ -83,7 +83,7 @@ cat {{FILE:file:input.txt}} | tr -d '{{CHARS:str:\r\n}}'
 
 ---
 
-## Word and Line Count
+## count lines words bytes
 Count lines, words, and bytes in a file.
 
 ```bash
@@ -94,7 +94,7 @@ wc -lwc {{FILE:file:input.txt}}
 
 ---
 
-## Xargs Parallel Execution
+## run parallel xargs
 Run a command on each line of input in parallel.
 
 ```bash
@@ -105,7 +105,7 @@ cat {{FILE:file:hosts.txt}} | xargs -I {} -P {{PROCS:int:10}} {{CMD:str:ping -c 
 
 ---
 
-## Head and Tail
+## view head and tail lines
 View the first or last N lines of a file.
 
 ```bash
@@ -116,7 +116,7 @@ head -n {{LINES:int:20}} {{FILE:file:input.txt}} && tail -n {{LINES2:int:20}} {{
 
 ---
 
-## Column Formatting
+## format aligned columns
 Format delimited output into aligned columns for readability.
 
 ```bash
@@ -127,7 +127,7 @@ cat {{FILE:file:input.txt}} | column -t -s'{{DELIM:str:,}}'
 
 ---
 
-## Tee to File and Stdout
+## tee output to file
 Write output to a file while also passing it through to stdout.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Directory Brute-Force
+## fuzz directories
 Discover hidden directories and files on a web server.
 
 ```bash
@@ -17,7 +17,7 @@ ffuf -u {{URL:url:http://target.com}}/FUZZ -w {{WORDLIST:wordlist:/usr/share/sec
 
 ---
 
-## Extension Fuzzing
+## fuzz file extensions
 Brute-force file extensions on a known or fuzzed path.
 
 ```bash
@@ -28,7 +28,7 @@ ffuf -u {{URL:url:http://target.com}}/FUZZ -w {{WORDLIST:wordlist:/usr/share/sec
 
 ---
 
-## VHost Fuzzing
+## fuzz vhosts
 Enumerate virtual hosts on a target web server.
 
 ```bash
@@ -39,7 +39,7 @@ ffuf -u {{URL:url:http://target.com}} -H "Host: FUZZ.{{DOMAIN:domain:target.com}
 
 ---
 
-## GET Parameter Fuzzing
+## fuzz GET parameters
 Discover hidden GET parameters on a URL.
 
 ```bash
@@ -50,7 +50,7 @@ ffuf -u {{URL:url:http://target.com/page.php}}?FUZZ=test -w {{WORDLIST:wordlist:
 
 ---
 
-## POST Data Fuzzing
+## fuzz POST data brute creds
 Fuzz POST request body parameters.
 
 ```bash
@@ -61,7 +61,7 @@ ffuf -u {{URL:url:http://target.com/login.php}} -X POST -d "{{PARAM:str:username
 
 ---
 
-## Recursive Discovery
+## fuzz directories recursive depth
 Recursively fuzz directories up to a specified depth.
 
 ```bash
@@ -72,7 +72,7 @@ ffuf -u {{URL:url:http://target.com}}/FUZZ -w {{WORDLIST:wordlist:/usr/share/sec
 
 ---
 
-## Multi-Wordlist Fuzzing
+## fuzz multi wordlist keywords
 Use multiple FUZZ keywords with separate wordlists.
 
 ```bash
@@ -83,7 +83,7 @@ ffuf -u {{URL:url:http://target.com}}/FUZZ1/FUZZ2 -w {{WORDLIST:wordlist:/usr/sh
 
 ---
 
-## With Filters and Matchers
+## fuzz with filters matchers
 Filter responses by status code, size, words, or lines to reduce noise.
 
 ```bash
@@ -94,7 +94,7 @@ ffuf -u {{URL:url:http://target.com}}/FUZZ -w {{WORDLIST:wordlist:/usr/share/sec
 
 ---
 
-## Rate-Limited Fuzzing
+## fuzz rate limited stealth
 Throttle requests to avoid WAF detection or rate limiting.
 
 ```bash
@@ -105,7 +105,7 @@ ffuf -u {{URL:url:http://target.com}}/FUZZ -w {{WORDLIST:wordlist:/usr/share/sec
 
 ---
 
-## Fuzz From Saved Request File
+## fuzz from saved request file
 Use a saved raw HTTP request (e.g. exported from Burp) and FUZZ marker.
 
 ```bash
@@ -116,7 +116,7 @@ ffuf -request {{REQUEST:file:request.txt}} -w {{WORDLIST:wordlist:/usr/share/sec
 
 ---
 
-## Recursion with Multiple Extensions
+## fuzz recursive multiple extensions
 Recurse and try a wide range of extensions per directory.
 
 ```bash

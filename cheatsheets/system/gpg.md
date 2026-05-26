@@ -6,7 +6,7 @@
 
 ---
 
-## Generate Full Key (Interactive)
+## generate full key interactive
 Walk through full key generation.
 
 ```bash
@@ -17,7 +17,7 @@ gpg --full-generate-key
 
 ---
 
-## Generate Quick Key
+## generate quick key
 Simplified PGP key creation.
 
 ```bash
@@ -28,7 +28,7 @@ gpg --gen-key
 
 ---
 
-## List Public Keys
+## list public keys
 List all stored public keys.
 
 ```bash
@@ -39,7 +39,7 @@ gpg --list-keys
 
 ---
 
-## List Secret Keys
+## list secret keys
 List private keys in the keyring.
 
 ```bash
@@ -50,7 +50,7 @@ gpg --list-secret-keys
 
 ---
 
-## Delete Secret Key
+## delete secret key
 Remove a private key by fingerprint.
 
 ```bash
@@ -61,7 +61,7 @@ gpg --delete-secret-keys {{FINGERPRINT:str}}
 
 ---
 
-## Delete Public Key
+## delete public key
 Remove a public key by fingerprint.
 
 ```bash
@@ -72,7 +72,7 @@ gpg --delete-keys {{FINGERPRINT:str}}
 
 ---
 
-## Encrypt File for Recipient
+## encrypt file for recipient
 Encrypt a file with a recipient's public key.
 
 ```bash
@@ -83,7 +83,7 @@ gpg -e -r {{RECIPIENT:str}} {{INFILE:file}}
 
 ---
 
-## Symmetric Encrypt
+## symmetric encrypt passphrase
 Encrypt with a passphrase only.
 
 ```bash
@@ -94,7 +94,7 @@ gpg -c {{INFILE:file}}
 
 ---
 
-## Decrypt File
+## decrypt file
 Decrypt a .gpg file.
 
 ```bash
@@ -105,7 +105,7 @@ gpg -d {{INFILE:file:secret.gpg}} > {{OUTFILE:file:plain.txt}}
 
 ---
 
-## Export Public Key
+## export public key armor
 Export a public key in ASCII armor.
 
 ```bash

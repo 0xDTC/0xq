@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Web Server Scan
+## scan web server
 Run a standard scan against a target web server.
 
 ```bash
@@ -17,7 +17,7 @@ nikto -h {{URL:url}} -o {{OUTFILE:file:nikto-results.txt}}
 
 ---
 
-## Scan with SSL/TLS
+## scan https SSL
 Force SSL mode for scanning HTTPS targets.
 
 ```bash
@@ -28,7 +28,7 @@ nikto -h {{TARGET:ip}} -p {{PORT:port:443}} -ssl -o {{OUTFILE:file:nikto-ssl.txt
 
 ---
 
-## Scan Specific Port
+## scan custom port
 Scan a web server running on a non-standard port.
 
 ```bash
@@ -39,7 +39,7 @@ nikto -h {{TARGET:ip}} -p {{PORT:port:8080}} -o {{OUTFILE:file:nikto-port.txt}}
 
 ---
 
-## HTML Report Output
+## output html report
 Generate a formatted HTML report of scan findings.
 
 ```bash
@@ -50,7 +50,7 @@ nikto -h {{URL:url}} -Format htm -o {{OUTFILE:file:nikto-report.html}}
 
 ---
 
-## Tuning — Specific Test Categories
+## scan specific test categories
 Run only specific test categories (1=files, 2=misconfig, 3=info, 4=XSS, 9=SQL injection).
 
 ```bash
@@ -61,7 +61,7 @@ nikto -h {{URL:url}} -Tuning {{TUNING:str:1249}} -o {{OUTFILE:file:nikto-tuned.t
 
 ---
 
-## Scan with Authentication
+## scan with basic auth
 Run a scan using HTTP basic authentication credentials.
 
 ```bash
@@ -72,7 +72,7 @@ nikto -h {{URL:url}} -id {{USERNAME:str}}:{{PASSWORD:str}} -o {{OUTFILE:file:nik
 
 ---
 
-## All CGI Directories Scan
+## scan all cgi directories
 Scan all possible CGI directories regardless of server type.
 
 ```bash
@@ -83,7 +83,7 @@ nikto -h {{URL:url}} -Cgidirs all -o {{OUTFILE:file:nikto-cgi.txt}}
 
 ---
 
-## Scan with Custom User-Agent and Evasion
+## scan with evasion user-agent
 Use evasion techniques and a custom user-agent to reduce detection.
 
 ```bash
@@ -94,7 +94,7 @@ nikto -h {{URL:url}} -useragent "{{USERAGENT:str:Mozilla/5.0 (Windows NT 10.0; W
 
 ---
 
-## Scan Multiple Hosts from File
+## scan multiple hosts file
 Scan a list of target hosts from a file.
 
 ```bash

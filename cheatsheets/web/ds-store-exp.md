@@ -6,7 +6,7 @@
 
 ---
 
-## Install Dependencies
+## install dependencies pip
 Install the Python libraries required by ds_store_exp and ds_walk.
 
 ```bash
@@ -17,7 +17,7 @@ pip install ds-store requests
 
 ---
 
-## Run ds_store_exp Against URL
+## dump .DS_Store directory tree
 Recursively parse a remote .DS_Store and download referenced files.
 
 ```bash
@@ -28,7 +28,7 @@ python3 {{SCRIPT:file:ds_store_exp.py}} {{URL:url:http://target.com/.DS_Store}}
 
 ---
 
-## Quick Probe for .DS_Store Files
+## probe exposed .DS_Store files
 Check if a server exposes .DS_Store at common paths before running the parser.
 
 ```bash

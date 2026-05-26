@@ -6,7 +6,7 @@
 
 ---
 
-## Basic Vulnerability Scan
+## scan url all templates
 Scan a target URL using all default templates.
 
 ```bash
@@ -17,7 +17,7 @@ nuclei -u {{URL:url}} -o {{OUTFILE:file:nuclei-results.txt}}
 
 ---
 
-## Filter by Severity
+## scan filter by severity
 Scan using only templates of a specific severity level.
 
 ```bash
@@ -28,7 +28,7 @@ nuclei -u {{URL:url}} -s {{SEVERITY:str:critical,high}} -o {{OUTFILE:file:nuclei
 
 ---
 
-## Scan with Specific Template
+## scan specific template
 Run a targeted scan using a specific template or template directory.
 
 ```bash
@@ -39,7 +39,7 @@ nuclei -u {{URL:url}} -t {{TEMPLATE:str:cves/}} -o {{OUTFILE:file:nuclei-templat
 
 ---
 
-## Scan URL List
+## scan url list
 Scan multiple targets from a file of URLs.
 
 ```bash
@@ -50,7 +50,7 @@ nuclei -l {{URLLIST:file:urls.txt}} -s critical,high,medium -o {{OUTFILE:file:nu
 
 ---
 
-## Technology Detection Only
+## detect technologies fingerprint
 Detect technologies and services without running vulnerability checks.
 
 ```bash
@@ -61,7 +61,7 @@ nuclei -u {{URL:url}} -t technologies/ -o {{OUTFILE:file:nuclei-tech.txt}}
 
 ---
 
-## Rate-Limited Scan
+## scan rate-limited stealth
 Scan with controlled request rate to avoid detection or target overload.
 
 ```bash
@@ -72,7 +72,7 @@ nuclei -u {{URL:url}} -rl {{RATE:int:50}} -c {{THREADS:int:5}} -s critical,high 
 
 ---
 
-## Headless Browser Scan
+## scan headless browser
 Run templates that require a headless browser for JavaScript-heavy targets.
 
 ```bash
@@ -83,7 +83,7 @@ nuclei -u {{URL:url}} -headless -t headless/ -o {{OUTFILE:file:nuclei-headless.t
 
 ---
 
-## Update Templates
+## update templates
 Download or update to the latest community templates.
 
 ```bash
@@ -94,7 +94,7 @@ nuclei -update-templates
 
 ---
 
-## JSON Output with Full Details
+## output json with evidence
 Run a scan with detailed JSON output including matched evidence.
 
 ```bash
@@ -105,7 +105,7 @@ nuclei -u {{URL:url}} -s critical,high,medium -json -irr -o {{OUTFILE:file:nucle
 
 ---
 
-## Detect SQL Injection
+## scan sqli injection
 Targeted scan for SQL injection vulnerabilities by tag.
 
 ```bash
@@ -116,7 +116,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags sqli -itags injection,sqli
 
 ---
 
-## Detect XSS
+## scan xss
 Targeted scan for cross-site scripting issues.
 
 ```bash
@@ -127,7 +127,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags xss -itags xss
 
 ---
 
-## Detect SSRF
+## scan ssrf
 Scan for server-side request forgery.
 
 ```bash
@@ -138,7 +138,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags ssrf -itags ssrf
 
 ---
 
-## Detect Subdomain Takeover
+## scan subdomain takeover
 Check subdomains for takeover vulnerabilities.
 
 ```bash
@@ -149,7 +149,7 @@ nuclei -l {{SUBDOMAINS:file:subdomains.txt}} -tags takeover -itags subdomain,tak
 
 ---
 
-## Detect Path Traversal
+## scan path traversal lfi
 Scan for directory traversal vulnerabilities.
 
 ```bash
@@ -160,7 +160,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags traversal -itags traversal,director
 
 ---
 
-## Detect RCE
+## scan rce
 Scan for known remote code execution vulnerabilities.
 
 ```bash
@@ -171,7 +171,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags rce -itags rce,code-execution
 
 ---
 
-## Detect Default Credentials
+## scan default credentials
 Probe for default credential exposures.
 
 ```bash
@@ -182,7 +182,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags creds -itags default,credentials
 
 ---
 
-## Detect Exposed Git Repositories
+## scan exposed git repos
 Find publicly exposed .git directories.
 
 ```bash
@@ -193,7 +193,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags git -itags git,exposed
 
 ---
 
-## Detect Cloud Misconfigurations
+## scan cloud misconfig
 Scan for AWS/GCP/Azure misconfigurations.
 
 ```bash
@@ -204,7 +204,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags cloud -itags cloud,aws,gcp,azure,mi
 
 ---
 
-## Detect Login Panels
+## find login admin panels
 Discover exposed admin/login panels.
 
 ```bash
@@ -215,7 +215,7 @@ nuclei -l {{URLLIST:file:targets.txt}} -tags login -itags login,admin-panel
 
 ---
 
-## Detect WordPress Vulns
+## scan wordpress vulns
 WordPress-specific vulnerability scan.
 
 ```bash
@@ -226,7 +226,7 @@ nuclei -l {{URLLIST:file:wp-sites.txt}} -tags wordpress -itags wordpress,plugin
 
 ---
 
-## Detect Phishing Sites
+## classify phishing sites
 Quickly classify URLs as phishing.
 
 ```bash
@@ -237,7 +237,7 @@ nuclei -l {{URLLIST:file:phishing-candidates.txt}} -tags phishing -itags phishin
 
 ---
 
-## Scan by Template Tags
+## scan by template tags
 Run templates matching specific tags like cve, sqli, xss, etc.
 
 ```bash

@@ -6,7 +6,7 @@
 
 ---
 
-## Awk Print Columns
+## print columns awk
 Print specific columns from whitespace-delimited output.
 
 ```bash
@@ -17,7 +17,7 @@ awk '{print ${{COL1:int:1}}, ${{COL2:int:3}}}' {{FILE:file:input.txt}}
 
 ---
 
-## Awk Custom Field Separator
+## awk custom field separator
 Split fields on a custom delimiter.
 
 ```bash
@@ -28,7 +28,7 @@ awk -F'{{DELIM:str::}}' '{print ${{COL:int:1}}}' {{FILE:file:/etc/passwd}}
 
 ---
 
-## Awk Pattern Matching
+## awk match pattern lines
 Print lines matching a pattern.
 
 ```bash
@@ -39,7 +39,7 @@ awk '/{{PATTERN:str:root}}/' {{FILE:file:/etc/passwd}}
 
 ---
 
-## Awk Sum a Column
+## sum column awk
 Sum all values in a numeric column.
 
 ```bash
@@ -50,7 +50,7 @@ awk '{sum += ${{COL:int:1}}} END {print sum}' {{FILE:file:data.txt}}
 
 ---
 
-## Awk Count Lines by Pattern
+## count lines by pattern awk
 Count occurrences of lines matching a pattern.
 
 ```bash
@@ -61,7 +61,7 @@ awk '/{{PATTERN:str:error}}/{count++} END {print count}' {{FILE:file:log.txt}}
 
 ---
 
-## Awk CSV Column Extraction
+## extract csv column awk
 Extract a column from CSV data.
 
 ```bash
@@ -72,7 +72,7 @@ awk -F',' '{print ${{COL:int:2}}}' {{FILE:file:data.csv}}
 
 ---
 
-## Sed Find and Replace
+## sed find and replace
 Replace first occurrence of a pattern on each line.
 
 ```bash
@@ -83,7 +83,7 @@ sed 's/{{FIND:str:old}}/{{REPLACE:str:new}}/' {{FILE:file:input.txt}}
 
 ---
 
-## Sed Global Replace In-Place
+## sed global replace inplace
 Replace all occurrences in a file, editing it in place with backup.
 
 ```bash
@@ -94,7 +94,7 @@ sed -i.bak 's/{{FIND:str:old}}/{{REPLACE:str:new}}/g' {{FILE:file:input.txt}}
 
 ---
 
-## Sed Delete Lines by Pattern
+## sed delete lines by pattern
 Remove lines matching a pattern.
 
 ```bash
@@ -105,7 +105,7 @@ sed '/{{PATTERN:str:^#}}/d' {{FILE:file:config.conf}}
 
 ---
 
-## Sed Extract Line Range
+## sed extract line range
 Print a specific range of lines from a file.
 
 ```bash
@@ -116,7 +116,7 @@ sed -n '{{START:int:10}},{{END:int:20}}p' {{FILE:file:input.txt}}
 
 ---
 
-## Sed Insert Line Before Match
+## sed insert line before match
 Insert text before the first line matching a pattern.
 
 ```bash

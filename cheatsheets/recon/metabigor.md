@@ -6,7 +6,7 @@
 
 ---
 
-## Enumerate Organization IPs
+## enum org IP ranges
 Find IP ranges associated with an organization name.
 
 ```bash
@@ -17,7 +17,7 @@ echo "{{ORG:str:Acme Corp}}" | metabigor net --org -o {{OUTFILE:file:org-ips.txt
 
 ---
 
-## ASN to IP Range
+## resolve ASN to IP ranges
 Resolve an ASN to its announced prefixes.
 
 ```bash
@@ -28,7 +28,7 @@ echo "{{ASN:str:AS15169}}" | metabigor net --asn -o {{OUTFILE:file:asn-ips.txt}}
 
 ---
 
-## Reverse Whois by Email/Term
+## find domains reverse whois email
 Search reverse whois records.
 
 ```bash
