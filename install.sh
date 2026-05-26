@@ -217,10 +217,13 @@ WIDGET_EOF
 setup_tmux() {
     local conf="${HOME}/.tmux.conf"
     touch "$conf"
+    # Remove any previous q block first so re-running the installer UPDATES it
+    # (rather than skipping) and keeps the config in sync with new releases.
     if grep -q '# >>> q toolkit tmux config' "$conf" 2>/dev/null; then
-        info "q tmux config already present in ${conf} — skipping."
-    else
-        cat >> "$conf" <<'TMUXEOF'
+        sed -i '/# >>> q toolkit tmux config/,/# <<< q toolkit tmux config/d' "$conf"
+        info "Refreshing q tmux config in ${conf}."
+    fi
+    cat >> "$conf" <<'TMUXEOF'
 
 # >>> q toolkit tmux config (added by q installer) >>>
 # Prefix: Ctrl+A instead of Ctrl+B (press C-a twice to send a literal C-a)
@@ -230,16 +233,25 @@ bind C-a send-prefix
 # Mouse on — scroll panes freely with the wheel, like a normal terminal
 set -g mouse on
 set -g history-limit 50000
+# Mouse selection -> system clipboard (keeps wheel scroll). Drag to select one
+# line or many and release to copy; double-click copies a word, triple-click a
+# line. Or hold Shift while dragging to use the terminal's own native selection
+# (bypasses tmux). Uses xclip.
+set -g set-clipboard on
+set -s copy-command 'xclip -in -selection clipboard'
+bind -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel
+bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel
+bind -n DoubleClick1Pane select-pane \; copy-mode -M \; send-keys -X select-word \; send-keys -X copy-pipe-and-cancel
+bind -n TripleClick1Pane select-pane \; copy-mode -M \; send-keys -X select-line \; send-keys -X copy-pipe-and-cancel
 # Ctrl+Q — open q in a popup in ANY pane (ssh / evil-winrm / ftp / container)
 # and paste the chosen command into the current session (review, then press Enter).
 bind -n C-q display-popup -E -w 90% -h 80% "Q_NO_POPUP=1 'Q_BIN_PATH' --inline > /tmp/.q_anywhere 2>/dev/null" \; load-buffer /tmp/.q_anywhere \; paste-buffer -d
 # <<< q toolkit tmux config <<<
 TMUXEOF
-        local escaped
-        escaped="$(printf '%s' "${Q_BIN}" | sed 's/[|\\&]/\\&/g')"
-        sed -i "s|Q_BIN_PATH|${escaped}|g" "$conf"
-        success "q tmux config added to ${conf} (prefix C-a, mouse scroll, Ctrl+Q launcher)"
-    fi
+    local escaped
+    escaped="$(printf '%s' "${Q_BIN}" | sed 's/[|\\&]/\\&/g')"
+    sed -i "s|Q_BIN_PATH|${escaped}|g" "$conf"
+    success "q tmux config written to ${conf} (prefix C-a, scroll, mouse-copy, Ctrl+Q)"
     # Apply to a running tmux server immediately, if one exists.
     if command -v tmux >/dev/null 2>&1 && tmux list-sessions &>/dev/null; then
         tmux source-file "$conf" 2>/dev/null && info "Reloaded tmux config on the running server."
