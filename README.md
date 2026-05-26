@@ -18,6 +18,7 @@ q> nmap scan full        recon    Aggressive full scan: OS, version, scripts, ve
 - **Session-aware variable fill** — `{{TARGET}}`, `{{RHOST}}`, `{{WORDLIST}}` resolve from session state, clipboard, target list, prior values, or discovered data. Path-typed vars get filesystem completion. `{{LHOST}}` auto-detects from `tun0`/`eth0`.
 - **On-screen variable fill** — unresolved placeholders are filled right on the search screen via a candidate popup (`Ctrl+F`, or just `Enter` to fill-then-review), overlaid with `tmux display-popup` (nested-fzf fallback outside tmux). No jump to a separate prompt; the `FILLED` preview updates live.
 - **Variable legend** — the preview spells out what every `{{placeholder}}` is for (e.g. `LHOST — your attacker IP`, `DC_IP — domain controller IP`) from a built-in glossary, so you never guess what to type.
+- **Author commands in-place** — `q new` walks you through adding a command: it auto-detects `{{vars}}` and asks each one's type/default, then title, description, risk/phase, and the target file (creating a new one if needed), and writes the markdown for you. `q edit [query]` edits or deletes an existing entry via an fzf picker. No hand-writing cheatsheets.
 - **Launch from any session** — in tmux, `Ctrl+Q` opens q in a popup over *any* pane — even inside `ssh`, `evil-winrm`, `ftp`, or a container shell — and pastes the chosen command into that session. q never has to exist on the target.
 - **Output capture and auto-promote** — every command's stdout is parsed for IPs, domains, URLs, open ports, services, SMB shares, NTLM/Kerberos hashes, JWTs, LDAP DNs, and HTTP titles. High-confidence findings become targets automatically.
 - **Per-target timestamped logs** — every run is captured to `sessions/<name>/runs/<target>/<tool>-<ts>.log`. List, show, prune.
@@ -144,6 +145,8 @@ q chain run example_recon
 | `q c`                                    | Clear targets in the active session                       |
 | `q history`                              | Show timestamped command history                          |
 | `q promote`                              | Promote discoveries → targets                             |
+| `q new`                                  | Author a command interactively (auto-typed vars, file)    |
+| `q edit [query]`                         | Edit or delete an existing command (fzf picker)           |
 | `q chain list / show NAME / run NAME`    | Browse and execute YAML chains (`--dry-run` supported)    |
 | `q run [-j N] CMD`                       | Fan a command template across every target in parallel   |
 | `q run show TARGET`                      | Print last output for a target                            |

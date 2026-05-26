@@ -81,7 +81,8 @@ q_main() {
 q_source_all_libs() {
     local lib
     for lib in parser.sh search.sh variables.sh executor.sh session.sh \
-               logger.sh promote.sh chains.sh runner.sh sync.sh tmux.sh; do
+               logger.sh promote.sh chains.sh runner.sh sync.sh tmux.sh \
+               authoring.sh; do
         if [[ -f "${Q_ROOT}/lib/${lib}" ]]; then
             # shellcheck source=/dev/null
             source "${Q_ROOT}/lib/${lib}"
@@ -140,6 +141,26 @@ case "${1:-}" in
         q_ensure_dirs
         q_config_load
         q_session_get "$2"
+        exit $?
+        ;;
+
+    # -- Author / edit cheatsheet commands --------------------------------
+    new|author)
+        q_source_all_libs
+        q_check_deps
+        q_ensure_dirs
+        q_config_load
+        q_author_add
+        exit $?
+        ;;
+
+    edit)
+        shift
+        q_source_all_libs
+        q_check_deps
+        q_ensure_dirs
+        q_config_load
+        q_author_edit "$@"
         exit $?
         ;;
 

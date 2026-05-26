@@ -208,6 +208,10 @@ ${Q_BOLD}FAST SHORTCUTS${Q_RESET}
 ${Q_BOLD}DISCOVERY & PROMOTION${Q_RESET}
     q promote                   Promote discovered IPs/domains/URLs to targets
 
+${Q_BOLD}AUTHOR CHEATSHEETS${Q_RESET}
+    q new                       Add a command (prompts for vars, description, file)
+    q edit                      Edit or delete an existing command (fzf picker)
+
 ${Q_BOLD}CHAINS${Q_RESET}
     q chain list                List available command chains
     q chain show NAME           Show steps in a chain
