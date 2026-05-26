@@ -6,7 +6,7 @@
 
 ---
 
-## Directory Mode
+## brute directories
 Brute-force directories and files on a web server.
 
 ```bash
