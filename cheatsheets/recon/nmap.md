@@ -113,3 +113,25 @@ sudo nmap -sS -f -D RND:5 --data-length 24 -T2 -p {{PORTS:port:80,443}} {{TARGET
 ```
 
 <!-- meta: risk=med | phase=recon | tags=evasion,firewall,stealth -->
+
+## scan full
+Aggressive full scan: OS, version detection, default scripts, verbose.
+
+```bash
+sudo nmap -A -sC -sS -v {{TARGET:ip}} -oN nmap
+```
+
+<!-- meta: risk=low | phase=recon | tags=full,aggressive,scripts -->
+
+---
+
+## scan full fast
+Same aggressive full scan, rate-capped to go faster.
+
+```bash
+sudo nmap -A -sC -sS -v --max-rate=1500 {{TARGET:ip}} -oN nmap
+```
+
+<!-- meta: risk=low | phase=recon | tags=full,fast,max-rate -->
+
+---
