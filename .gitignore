@@ -15,3 +15,9 @@ cache/
 
 # Runtime data — synced upstream cheatsheets land here, not source
 cheatsheets/external/
+
+# Command chains are source files. A global *.yaml ignore would otherwise
+# hide them, so re-include them here — except machine-specific HTB automation
+# that depends on local-only tooling.
+!chains/*.yaml
+chains/htb_*.yaml

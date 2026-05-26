@@ -365,6 +365,6 @@ Create or set a registry value (persistence or config tampering).
 reg add "{{KEYPATH:str}}" /v {{VALUE:str}} /t REG_SZ /d "{{DATA:str}}" /f
 ```
 
-<!-- meta: risk=medium | phase=post | tags=registry,reg,persistence,windows -->
+<!-- meta: risk=med | phase=post | tags=registry,reg,persistence,windows -->
 
 ---

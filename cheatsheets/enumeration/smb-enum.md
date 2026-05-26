@@ -153,7 +153,7 @@ smbclient //{{TARGET:ip}}/{{SHARE:str}} -U '{{USERNAME:str}}%{{PASSWORD:str}}' -
 Authenticate using an existing Kerberos ticket in the local cache.
 
 ```bash
-smbclient //{{TARGET:domain}}/{{SHARE:str}} -k
+smbclient //{{RHOST_NAME:str}}/{{SHARE:str}} -k
 ```
 
 <!-- meta: risk=low | phase=enum | tags=smbclient,kerberos,ccache -->

@@ -87,7 +87,7 @@ ldapsearch -D '{{BINDDN:str}}' -w '{{PASSWORD:str}}' -h {{TARGET:ip}} '(&(member
 Find accounts with Service Principal Names set.
 
 ```bash
-ldapsearch -x -h {{TARGET:ip}} -D '{{USER:str}}@{{DOMAIN:domain}}' -W -b "DC={{DC1:str:corp}},DC={{DC2:str:local}}" "(servicePrincipalName=*)"
+ldapsearch -x -h {{TARGET:ip}} -D '{{USERNAME:str}}@{{DOMAIN:domain}}' -W -b "DC={{DC1:str:corp}},DC={{DC2:str:local}}" "(servicePrincipalName=*)"
 ```
 
 <!-- meta: risk=low | phase=enum | tags=spn,kerberoast -->

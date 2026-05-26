@@ -416,22 +416,38 @@ _q_build_candidates() {
     fi
 
     # --- Type-specific additions ---
-    # Wordlist candidates
+    # Wordlist candidates — curated favourites first, then live discovery so
+    # the rest of the installed lists surface as real candidates (not just a
+    # handful of hardcoded pins).
     if [[ "$upper_type" == "WORDLIST" ]] || [[ "$upper_name" == *WORDLIST* ]]; then
         local -a wordlist_paths=(
+            "/usr/share/wordlists/rockyou.txt"
             "/usr/share/seclists/Discovery/Web-Content/common.txt"
             "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"
             "/usr/share/seclists/Discovery/Web-Content/raft-medium-words.txt"
             "/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt"
             "/usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt"
             "/usr/share/seclists/Usernames/top-usernames-shortlist.txt"
-            "/usr/share/wordlists/rockyou.txt"
             "/usr/share/wordlists/dirb/common.txt"
             "/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
         )
         local wp
         for wp in "${wordlist_paths[@]}"; do
             [[ -f "$wp" ]] && candidates="${candidates}${wp}"$'\n'
+        done
+        # Discover the rest of the common seclists dirs (deduped by the trailing
+        # awk). Bounded by -maxdepth 1 so it stays fast.
+        local _wl_dir _wl
+        for _wl_dir in \
+            /usr/share/seclists/Usernames \
+            /usr/share/seclists/Passwords/Common-Credentials \
+            /usr/share/seclists/Passwords/Leaked-Databases \
+            /usr/share/seclists/Discovery/Web-Content \
+            /usr/share/seclists/Discovery/DNS; do
+            [[ -d "$_wl_dir" ]] || continue
+            while IFS= read -r _wl; do
+                [[ -n "$_wl" ]] && candidates="${candidates}${_wl}"$'\n'
+            done < <(find "$_wl_dir" -maxdepth 1 -type f -name '*.txt' 2>/dev/null | sort)
         done
     fi
 
@@ -442,6 +458,15 @@ _q_build_candidates() {
         if [[ -n "$ifaces" ]]; then
             candidates="${candidates}${ifaces}"$'\n'
         fi
+    fi
+
+    # Reverse/bind callback presets — LPORT specifically, ranked before the
+    # generic service-port list below so listener ports come first.
+    if [[ "$upper_type" == "LPORT" ]] || [[ "$upper_name" == *LPORT* ]]; then
+        local _cb
+        for _cb in 4444 9001 443 80 8080 1234 4443 1080; do
+            candidates="${candidates}${_cb}"$'\n'
+        done
     fi
 
     # Port candidates
@@ -457,6 +482,26 @@ _q_build_candidates() {
         for p in "${common_ports[@]}"; do
             candidates="${candidates}${p}"$'\n'
         done
+    fi
+
+    # msfvenom payload candidates (-p). Curated; bare strings match -p usage.
+    if [[ "$upper_type" == "PAYLOAD" ]] || [[ "$upper_name" == *PAYLOAD* ]]; then
+        if command -v msfvenom >/dev/null 2>&1; then
+            local _pl
+            for _pl in \
+                windows/x64/meterpreter/reverse_tcp \
+                windows/x64/meterpreter/reverse_https \
+                windows/meterpreter/reverse_tcp \
+                windows/x64/shell_reverse_tcp \
+                linux/x64/meterpreter/reverse_tcp \
+                linux/x64/shell_reverse_tcp \
+                java/jsp_shell_reverse_tcp \
+                php/meterpreter/reverse_tcp \
+                cmd/unix/reverse_python \
+                windows/x64/meterpreter/bind_tcp; do
+                candidates="${candidates}${_pl}"$'\n'
+            done
+        fi
     fi
 
     # Also handle LHOST auto-detection in candidates
@@ -494,7 +539,7 @@ _q_build_candidates() {
 
     # Live network hosts — ARP neighbours + /etc/hosts (target/host/ip/domain vars)
     case "$upper_name" in
-        TARGET|RHOST|RHOSTS|IP|HOST|HOSTNAME|DC_IP|DC_HOST|DOMAIN)
+        TARGET|RHOST|RHOSTS|RHOST_NAME|IP|HOST|HOSTNAME|DC_IP|DC_HOST|DOMAIN)
             local _h
             while IFS= read -r _h; do
                 [[ -n "$_h" ]] && candidates="${candidates}[arp] ${_h}"$'\n'

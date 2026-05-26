@@ -14,7 +14,7 @@ q> nmap scan full        recon    Aggressive full scan: OS, version, scripts, ve
 
 ## Features
 
-- **Sub-millisecond fuzzy search** over 1,600+ commands across 123 curated cheatsheets (recon, web, AD, post-exploit, passwords, system, network, vuln, wireless). Titles read like search queries — type `nmap scan full`, `list users windows`, or `spray passwords smb`.
+- **Sub-millisecond fuzzy search** over 1,790+ commands across 130 curated cheatsheets (recon, web, AD, cloud, C2, enumeration, exploit, post-exploit, passwords, network, system, vuln, wireless). Titles read like search queries — type `nmap scan full`, `kerberoast all users`, or `dump lsass remote`.
 - **Session-aware variable fill** — `{{TARGET}}`, `{{RHOST}}`, `{{WORDLIST}}` resolve from session state, clipboard, target list, prior values, or discovered data. Path-typed vars get filesystem completion. `{{LHOST}}` auto-detects from `tun0`/`eth0`.
 - **On-screen variable fill** — unresolved placeholders are filled right on the search screen via a candidate popup (`Ctrl+F`, or just `Enter` to fill-then-review), overlaid with `tmux display-popup` (nested-fzf fallback outside tmux). No jump to a separate prompt; the `FILLED` preview updates live.
 - **Variable legend** — the preview spells out what every `{{placeholder}}` is for (e.g. `LHOST — your attacker IP`, `DC_IP — domain controller IP`) from a built-in glossary, so you never guess what to type.
@@ -232,7 +232,7 @@ crackmapexec smb {{TARGET}} -u '' -p '' --shares
 ```
 
 ## spray passwords smb
-<!-- meta: risk=medium | phase=exploit | tags=auth -->
+<!-- meta: risk=med | phase=exploit | tags=auth -->
 Spray one password across a user list.
 
 ```bash
@@ -248,7 +248,9 @@ crackmapexec smb {{TARGET}} -u {{USERFILE:wordlist}} -p {{PASSWORD}}
 {{NAME:type:default}}    typed with default
 ```
 
-Supported types: `str`, `ip`, `url`, `domain`, `port`, `file`, `wordlist`, `dir`, `iface`. The type drives which candidates appear in the per-variable fzf picker (session value, clipboard, targets of compatible type, discovered data, history, wordlist library, network interfaces, common ports).
+Supported types: `str`, `ip`, `url`, `domain`, `port`, `file`, `wordlist`, `dir`, `iface`, `cidr`, `int`. The type drives which candidates appear in the per-variable fzf picker (session value, clipboard, targets of compatible type, discovered data, history, wordlist library, network interfaces, common ports). The `wordlist` picker discovers installed SecLists/wordlists live; `LPORT` offers reverse-shell callback ports; `PAYLOAD` offers an msfvenom list.
+
+**Actor vs subject (AD).** For multi-step attacks the vocabulary separates the credential you authenticate *with* from the principal you act *on*: `{{USERNAME}}` / `{{PASSWORD}}` / `{{NTHASH}}` are the **actor**; `{{TARGET_USER}}` / `{{TARGET_PASSWORD}}` / `{{TARGET_NTHASH}}` are the **subject**. Hosts split the same way — `{{TARGET}}` (IP) vs `{{RHOST_NAME}}` (hostname/FQDN, for Kerberos/SPN), alongside `{{DC_IP}}` / `{{DC_HOST}}`.
 
 ### Meta directives
 
@@ -362,6 +364,8 @@ flowchart LR
 ```
 
 Chain files live in `chains/` (shipped) and `~/.local/share/q/chains/` (user). Chain `vars:` are merged into the session without overwriting existing values.
+
+**Shipped AD attack chains.** `chains/` includes nxc → bloodyAD ACL-abuse flows: `ad_acl_forcechangepassword` (validate creds → force-reset a target user → re-validate), `ad_targeted_kerberoast` (write an SPN → roast → clean up), `ad_grant_dcsync` (grant the actor DCSync → dump NTDS), and `ad_rbcd_takeover` (add a computer → configure RBCD → S4U). Destructive steps are gated behind a `when:` confirmation var (e.g. `q set CONFIRM_RESET 1`), so `--dry-run` and an un-armed run stay safe.
 
 ---
 
@@ -529,7 +533,7 @@ Tests run in isolated `BATS_TEST_TMPDIR` and never touch real user data.
 │   ├── logger.sh            # per-target timestamped logs
 │   ├── sync.sh              # upstream cheatsheet sync
 │   └── tmux.sh              # tmux session + per-target panes + bindings
-├── cheatsheets/             # built-in markdown library (123 sheets · 1,600+ commands)
+├── cheatsheets/             # built-in markdown library (130 sheets · 1,790+ commands)
 ├── chains/                  # built-in chain YAML files
 └── tests/                   # bats suite + fixtures
 ```

