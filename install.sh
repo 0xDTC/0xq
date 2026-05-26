@@ -214,6 +214,38 @@ WIDGET_EOF
     fi
 }
 
+setup_tmux() {
+    local conf="${HOME}/.tmux.conf"
+    touch "$conf"
+    if grep -q '# >>> q toolkit tmux config' "$conf" 2>/dev/null; then
+        info "q tmux config already present in ${conf} — skipping."
+    else
+        cat >> "$conf" <<'TMUXEOF'
+
+# >>> q toolkit tmux config (added by q installer) >>>
+# Prefix: Ctrl+A instead of Ctrl+B (press C-a twice to send a literal C-a)
+set -g prefix C-a
+unbind C-b
+bind C-a send-prefix
+# Mouse on — scroll panes freely with the wheel, like a normal terminal
+set -g mouse on
+set -g history-limit 50000
+# Ctrl+Q — open q in a popup in ANY pane (ssh / evil-winrm / ftp / container)
+# and paste the chosen command into the current session (review, then press Enter).
+bind -n C-q display-popup -E -w 90% -h 80% "Q_NO_POPUP=1 'Q_BIN_PATH' --inline > /tmp/.q_anywhere 2>/dev/null" \; load-buffer /tmp/.q_anywhere \; paste-buffer -d
+# <<< q toolkit tmux config <<<
+TMUXEOF
+        local escaped
+        escaped="$(printf '%s' "${Q_BIN}" | sed 's/[|\\&]/\\&/g')"
+        sed -i "s|Q_BIN_PATH|${escaped}|g" "$conf"
+        success "q tmux config added to ${conf} (prefix C-a, mouse scroll, Ctrl+Q launcher)"
+    fi
+    # Apply to a running tmux server immediately, if one exists.
+    if command -v tmux >/dev/null 2>&1 && tmux list-sessions &>/dev/null; then
+        tmux source-file "$conf" 2>/dev/null && info "Reloaded tmux config on the running server."
+    fi
+}
+
 case "$CURRENT_SHELL" in
     zsh)
         setup_zsh
@@ -228,6 +260,8 @@ case "$CURRENT_SHELL" in
         [[ -f "${HOME}/.bashrc" ]] && setup_bash
         ;;
 esac
+
+setup_tmux
 
 # ===========================================================================
 # 6. Verify ~/.local/bin is in PATH

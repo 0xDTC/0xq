@@ -567,7 +567,7 @@ while IFS=$'\t' read -r name vtype vdefault; do
     header="Enter: select | Type: custom value | Esc: skip"
     out="$tmpdir/out"; : > "$out"
 
-    if [[ -n "${TMUX:-}" ]]; then
+    if [[ -n "${TMUX:-}" && -z "${Q_NO_POPUP:-}" ]]; then
         printf '%s\n' "$cands" > "$tmpdir/cands"
         tmux display-popup -E -w '75%' -h '45%' \
           "fzf --print-query --reverse --border --no-info --no-multi --prompt='$prompt' --header='$header' < '$tmpdir/cands' > '$out'" || true
