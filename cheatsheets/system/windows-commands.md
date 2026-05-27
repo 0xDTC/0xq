@@ -599,3 +599,23 @@ Test-NetConnection -ComputerName {{COMPUTER:str:DC01}} -Port {{PORT:port:445}}
 <!-- meta: risk=low | phase=enum | tags=powershell,port,connectivity -->
 
 ---
+
+## get registered owner windows
+Retrieves the name of the registered owner from the Windows Registry
+
+```bash
+(Get-ItemProperty "HKLM:\Software\Microsoft\Windows NT\CurrentVersion").RegisteredOwner
+```
+
+<!-- meta: risk=safe | phase=recon | tags=windows,powershell,recon,registry,owner -->
+
+---
+
+## list loaded powershell modules
+Lists all PowerShell modules currently loaded in the active session
+
+```bash
+Get-Module
+```
+
+<!-- meta: risk=safe | phase=recon | tags=windows,powershell,modules,recon -->
