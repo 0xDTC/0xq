@@ -198,3 +198,17 @@ setup() {
     run grep -F 'SECOND desc' "$SHEET"; [ "$status" -eq 0 ]
     run grep -F 'first' "$SHEET"; [ "$status" -ne 0 ]
 }
+
+@test "q new composes a multi-line command in \$EDITOR when left blank" {
+    _q_author_pick_file(){ printf '%s' "$SHEET"; }
+    _q_author_read(){ case "$1" in *Title*) printf 'ml new';; *Description*) printf 'd';; *) printf '';; esac; }
+    _q_author_edit_in_editor(){ printf 'cmd one {{TARGET}} \\\n  cmd two {{PORTS}}'; }
+    _q_author_fzf(){ cat >/dev/null 2>&1 || true; case "$1" in *TARGET*) printf 'ip';; *PORTS*) printf 'port';; *) printf '';; esac; }
+    _q_author_confirm(){ return 0; }
+    run q_author_add
+    [ "$status" -eq 0 ]
+    run q_author_extract_command "$SHEET" "ml new"
+    [ "${#lines[@]}" -eq 2 ]
+    run grep -F '{{TARGET:ip}}' "$SHEET"; [ "$status" -eq 0 ]
+    run grep -F '{{PORTS:port}}' "$SHEET"; [ "$status" -eq 0 ]
+}

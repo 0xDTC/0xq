@@ -262,7 +262,10 @@ q_author_add() {
     local file; file="$(_q_author_pick_file)" || { q_info "Cancelled."; return 0; }
     [[ -z "$file" ]] && { q_info "Cancelled."; return 0; }
 
-    local command; command="$(_q_author_read 'Command (use {{VAR}} for variables): ')"
+    # Type a one-liner inline, or leave it blank to compose a multi-line
+    # command in $EDITOR (an empty editor cancels).
+    local command; command="$(_q_author_read 'Command (use {{VAR}}; blank = compose multi-line in $EDITOR): ')"
+    [[ -z "$command" ]] && command="$(_q_author_edit_in_editor "")"
     [[ -z "$command" ]] && { q_info "No command entered — cancelled."; return 0; }
     command="$(_q_author_type_vars "$command")"
 
