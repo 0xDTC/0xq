@@ -84,8 +84,8 @@ q_search() {
 
         # Strip ANSI so field parsing is clean
         line="\$(printf '%s' "\$line" | sed 's/\x1b\[[0-9;]*m//g')"
-        # Layout: DISPLAY \t title \t cmd \t src
-        IFS=\$'\t' read -r _display _title _cmd _src <<< "\$line"
+        # Layout: DISPLAY \t title \t cmd \t src \t keywords
+        IFS=\$'\t' read -r _display _title _cmd _src _kw <<< "\$line"
 
         bold=\$'\033[1m'
         dim=\$'\033[2m'
@@ -218,10 +218,10 @@ PREVIEW_EOF
 
     # -----------------------------------------------------------------------
     # Build the display list and run fzf.
-    # Display columns 1..3: CATEGORY/TOOL, TITLE, DESCRIPTION
-    # Hidden columns 4..8:  COMMAND, RISK, PHASE, TAGS, SOURCE_FILE
-    # Search matches against visible cols (title + description + tool),
-    # NOT the bash command — so users type "find windows users" not nxc flags.
+    # fzf line (after cut): DISPLAY \t title \t cmd \t src \t keywords
+    # --with-nth=1 shows DISPLAY only (tool│title│desc); --nth=1,5 also searches
+    # the hidden keywords field (category + phase + tags), so users can type
+    # intent like "post creds windows" — but never the raw bash command.
     # --expect captures Ctrl+F / Ctrl+E so the shell layer can set sideband
     # flags before returning.
     # -----------------------------------------------------------------------
@@ -257,10 +257,13 @@ PREVIEW_EOF
             return s sprintf("%*s", w - ls, "")
         }
         {
+            cat   = $1
             tool  = $2
             title = $3
             desc  = ($4 != "") ? $4 : "(no description)"
             cmd   = $5
+            phase = $7
+            tags  = $8
             src   = $9
 
             mark = (title in mru_rank) ? (magenta "★" reset " ") : "  "
@@ -272,10 +275,15 @@ PREVIEW_EOF
             desc_col  = dim desc reset
             display   = tool_col " " sep " " title_col " " sep " " desc_col
 
-            # Emit:  rank \t row_no \t display \t title \t cmd \t src
+            # Hidden keyword field (category + phase + tags) so the search can
+            # match on intent: recon/enum/post/privesc, persistence, creds, ...
+            gsub(/,/, " ", tags)
+            keywords = cat " " phase " " tags
+
+            # Emit:  rank \t row_no \t display \t title \t cmd \t src \t keywords
             # Sort prefix gets stripped after sort.
-            printf "%010d\t%010d\t%s\t%s\t%s\t%s\n", \
-                rank, NR, display, title, cmd, src
+            printf "%010d\t%010d\t%s\t%s\t%s\t%s\t%s\n", \
+                rank, NR, display, title, cmd, src, keywords
         }
         ' "$index_file" \
         | sort -k1,1n -k2,2n \
@@ -297,7 +305,7 @@ PREVIEW_EOF
             --bind='tab:toggle-preview' \
             --delimiter=$'\t' \
             --with-nth=1 \
-            --nth=1 \
+            --nth=1,5 \
             --tabstop=4 \
             --color='pointer:cyan,prompt:cyan,hl:yellow,hl+:yellow:bold' \
             --no-multi \
