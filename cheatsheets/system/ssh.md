@@ -117,10 +117,10 @@ ssh {{USER:str:root}}@{{HOST:ip:10.10.10.1}} "{{CMD:str:id && hostname && cat /e
 ---
 
 ## inline password sshpass
-Supply an SSH password inline for non-interactive automation.
+Supply an SSH password inline; the -o flags skip the host-key prompt so it works on a first connect (sshpass can't answer yes/no).
 
 ```bash
-sshpass -p '{{PASSWORD:str}}' ssh {{USERNAME:str}}@{{TARGET:ip}}
+sshpass -p '{{PASSWORD:str}}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{USERNAME:str}}@{{TARGET:ip}}
 ```
 
 <!-- meta: risk=med | phase=misc | tags=sshpass,password,automation -->
@@ -142,7 +142,7 @@ ssh -c aes256-cbc -oKexAlgorithms=+diffie-hellman-group1-sha1 {{USERNAME:str}}@{
 Use sshpass to pipe a passphrase into a key-based SSH login.
 
 ```bash
-sshpass -P 'passphrase' -p '{{PASSPHRASE:str}}' ssh -i {{KEYFILE:file:id_rsa}} {{USERNAME:str}}@{{TARGET:ip}}
+sshpass -P 'passphrase' -p '{{PASSPHRASE:str}}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{KEYFILE:file:id_rsa}} {{USERNAME:str}}@{{TARGET:ip}}
 ```
 
 <!-- meta: risk=med | phase=misc | tags=sshpass,key,passphrase -->
