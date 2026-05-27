@@ -44,6 +44,20 @@ _q_author_fzf() {
     printf '%s' "$out"
 }
 
+# _q_author_edit_in_editor CONTENT — open CONTENT in $EDITOR (used for editing
+# multi-line commands); echo the edited result (or CONTENT unchanged if the
+# editor can't run, e.g. no tty).
+_q_author_edit_in_editor() {
+    local content="$1" tmpf out
+    local ed="${EDITOR:-${VISUAL:-nano}}"
+    tmpf="$(mktemp "${TMPDIR:-/tmp}/q_cmd_XXXXXX.sh")"
+    printf '%s\n' "$content" > "$tmpf"
+    "$ed" "$tmpf" < /dev/tty > /dev/tty 2>&1 || true
+    out="$(cat "$tmpf" 2>/dev/null)" || out="$content"
+    rm -f "$tmpf"
+    printf '%s' "$out"
+}
+
 # _q_author_trim_title TITLE — collapse tabs/CR to spaces and trim the ends so
 # the written "## title" matches the parser's trimmed, tab-free index title.
 _q_author_trim_title() {
@@ -151,6 +165,23 @@ q_author_replace_entry() {
     fi
     rm -f "$nf"
     return "$rc"
+}
+
+# q_author_extract_command FILE TITLE — print the raw (possibly multi-line)
+# command from inside the matching entry's ```bash block. Empty if not found.
+# The index flattens multi-line commands to one space-joined line, so editing
+# must read the real command from the source file instead.
+q_author_extract_command() {
+    local file="$1" title="$2"
+    _qa_t="## ${title}" awk '
+        BEGIN { t = ENVIRON["_qa_t"] }
+        { m = $0; sub(/\r$/, "", m); sub(/[[:space:]]+$/, "", m) }
+        !inentry && m == t                    { inentry = 1; next }
+        inentry && m ~ /^## /                 { exit }
+        inentry && !incode && m ~ /^```bash/  { incode = 1; next }
+        inentry && incode && m ~ /^```/       { exit }
+        inentry && incode                     { print }
+    ' "$file"
 }
 
 # ===========================================================================
@@ -304,14 +335,22 @@ q_author_edit() {
             row="$(awk -F'\t' -v t="$title" -v f="$srcfile" '$3==t && $9==f {print; exit}' "$index")"
             local cur_desc cur_cmd cur_risk cur_phase cur_tags
             cur_desc="$(printf '%s'  "$row" | cut -f4)"
-            cur_cmd="$(printf '%s'   "$row" | cut -f5)"
             cur_risk="$(printf '%s'  "$row" | cut -f6)"
             cur_phase="$(printf '%s' "$row" | cut -f7)"
             cur_tags="$(printf '%s'  "$row" | cut -f8)"
+            # Read the command from the SOURCE FILE — the index flattens
+            # multi-line commands to one space-joined line. Fall back to index.
+            cur_cmd="$(q_author_extract_command "$file" "$title")"
+            [[ -z "$cur_cmd" ]] && cur_cmd="$(printf '%s' "$row" | cut -f5)"
 
             local new_title new_cmd new_desc new_risk new_phase new_tags
             new_title="$(_q_author_read "Title [${title}]: " "$title")"
-            new_cmd="$(_q_author_read   "Command [${cur_cmd}]: " "$cur_cmd")"
+            if [[ "$cur_cmd" == *$'\n'* ]]; then
+                q_info "Multi-line command — opening \$EDITOR (${EDITOR:-${VISUAL:-nano}}); save & quit to apply."
+                new_cmd="$(_q_author_edit_in_editor "$cur_cmd")"
+            else
+                new_cmd="$(_q_author_read "Command [${cur_cmd}]: " "$cur_cmd")"
+            fi
             new_desc="$(_q_author_read  "Description [${cur_desc}]: " "$cur_desc")"
             # shellcheck disable=SC2086
             new_risk="$(printf '%s\n' $_Q_AUTHOR_RISKS | _q_author_fzf "Risk [${cur_risk}]> ")"

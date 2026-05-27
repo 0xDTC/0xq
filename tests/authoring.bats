@@ -169,3 +169,32 @@ setup() {
     result="$(_q_author_type_vars "run {{TOK}}")"
     [[ "$result" == *"{{TOK:str:a&b}}"* ]]
 }
+
+@test "extract_command returns a single-line command verbatim" {
+    q_author_append_entry "$SHEET" "$(q_author_build_entry "one liner" "d" "nmap -sV {{TARGET:ip}}" "low" "misc" "")"
+    run q_author_extract_command "$SHEET" "one liner"
+    [ "$status" -eq 0 ]
+    [ "$output" = "nmap -sV {{TARGET:ip}}" ]
+}
+
+@test "extract_command returns a multi-line command intact (3 lines)" {
+    ml=$'msfvenom -p win \\\n  LHOST={{LHOST:ip}} \\\n  -f exe -o {{OUTFILE:file}}'
+    q_author_append_entry "$SHEET" "$(q_author_build_entry "build payload" "d" "$ml" "high" "exploit" "")"
+    run q_author_extract_command "$SHEET" "build payload"
+    [ "$status" -eq 0 ]
+    [ "${#lines[@]}" -eq 3 ]
+    run grep -F 'msfvenom -p win' "$SHEET"; [ "$status" -eq 0 ]
+    run grep -F 'exe -o {{OUTFILE:file}}' "$SHEET"; [ "$status" -eq 0 ]
+}
+
+@test "multi-line command survives an edit of another field (no flatten)" {
+    ml=$'line one \\\nline two \\\nline three'
+    q_author_append_entry "$SHEET" "$(q_author_build_entry "ml entry" "first" "$ml" "low" "misc" "")"
+    cur="$(q_author_extract_command "$SHEET" "ml entry")"
+    q_author_replace_entry "$SHEET" "ml entry" "$(q_author_build_entry "ml entry" "SECOND desc" "$cur" "low" "misc" "")"
+    run q_author_extract_command "$SHEET" "ml entry"
+    [ "${#lines[@]}" -eq 3 ]
+    run grep -F 'line three' "$SHEET"; [ "$status" -eq 0 ]
+    run grep -F 'SECOND desc' "$SHEET"; [ "$status" -eq 0 ]
+    run grep -F 'first' "$SHEET"; [ "$status" -ne 0 ]
+}
