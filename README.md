@@ -210,6 +210,7 @@ The picker shows three preview blocks for the highlighted command:
 | `Ctrl+T` | Cycle `TARGET` through the session's targets (preview updates live) |
 | `Ctrl+Y` | Copy the filled command to the clipboard |
 | `Ctrl+E` | Fill, then open in `$EDITOR` before running |
+| `Ctrl+N` | Add a new command (runs `q new`) |
 | `Tab` / `Esc` | Toggle preview / quit |
 
 Values resolve in priority order: on-screen pick → `Ctrl+T` cycle → session var → `LHOST` auto-detect → declared default.

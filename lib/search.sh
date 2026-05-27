@@ -21,6 +21,7 @@
 #   Ctrl+E    fill, then open in $EDITOR before exec (.force_edit sideband)
 #   Ctrl+T    cycle TARGET through session targets; preview updates live
 #   Ctrl+Y    copy the session-filled command to the clipboard
+#   Ctrl+N    add a new cheatsheet command (runs q new), then quits
 #   Tab       toggle preview
 #   Esc       quit
 
@@ -282,7 +283,7 @@ PREVIEW_EOF
         | fzf \
             --ansi \
             --prompt='q> ' \
-            --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit | Esc: quit' \
+            --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit | Ctrl+N: new | Esc: quit' \
             --preview="$preview_cmd" \
             --preview-window="${Q_PREVIEW_POS:-down:30%:wrap}" \
             --query="$initial_query" \
@@ -292,6 +293,7 @@ PREVIEW_EOF
             --bind="ctrl-y:execute-silent('${copy_script}' {3} '${vars_file}')+abort" \
             --bind="ctrl-t:execute-silent('${cycle_script}' '${targets_file}' '${cycle_file}')+refresh-preview" \
             --bind="ctrl-s:execute('${setvar_script}' {3} '${vars_file}' '${q_bin}')+refresh-preview" \
+            --bind="ctrl-n:execute('${q_bin}' new)+abort" \
             --bind='tab:toggle-preview' \
             --delimiter=$'\t' \
             --with-nth=1 \

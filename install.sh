@@ -173,6 +173,19 @@ WIDGET_EOF
         printf '\n# q command launcher alias\nalias q='\''%s'\''\n' "$Q_BIN" >> "$rc_file"
         success "Alias added to ${rc_file}"
     fi
+
+    # --- Word-delete keybindings (Alt+Backspace; Ctrl+W always works too) -
+    if grep -q 'q: word-delete keys' "$rc_file" 2>/dev/null; then
+        info "zsh word-delete bindings already present in ${rc_file} — skipping."
+    else
+        cat >> "$rc_file" << 'KEYS_EOF'
+
+# q: word-delete keys — make Alt+Backspace delete the previous word
+bindkey '^[^?' backward-kill-word
+bindkey '^[^H' backward-kill-word
+KEYS_EOF
+        success "zsh word-delete bindings added to ${rc_file}"
+    fi
 }
 
 setup_bash() {
@@ -211,6 +224,19 @@ WIDGET_EOF
     else
         printf '\n# q command launcher alias\nalias q='\''%s'\''\n' "$Q_BIN" >> "$rc_file"
         success "Alias added to ${rc_file}"
+    fi
+
+    # --- Word-delete keybindings (Alt+Backspace; Ctrl+W always works too) -
+    if grep -q 'q: word-delete keys' "$rc_file" 2>/dev/null; then
+        info "bash word-delete binding already present in ${rc_file} — skipping."
+    else
+        cat >> "$rc_file" << 'KEYS_EOF'
+
+# q: word-delete keys — make Alt+Backspace delete the previous word
+bind '"\e\C-?": backward-kill-word' 2>/dev/null
+bind '"\e\C-h": backward-kill-word' 2>/dev/null
+KEYS_EOF
+        success "bash word-delete binding added to ${rc_file}"
     fi
 }
 
