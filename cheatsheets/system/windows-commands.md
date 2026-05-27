@@ -368,3 +368,234 @@ reg add "{{KEYPATH:str}}" /v {{VALUE:str}} /t REG_SZ /d "{{DATA:str}}" /f
 <!-- meta: risk=med | phase=post | tags=registry,reg,persistence,windows -->
 
 ---
+
+## list local users powershell
+Enumerate local user accounts via the PowerShell cmdlet.
+
+```bash
+Get-LocalUser
+```
+
+<!-- meta: risk=low | phase=enum | tags=powershell,localuser,accounts -->
+
+---
+
+## list local groups powershell
+List all local groups on the host.
+
+```bash
+Get-LocalGroup
+```
+
+<!-- meta: risk=low | phase=enum | tags=powershell,localgroup,groups -->
+
+---
+
+## list local group members powershell
+Show the members of a local group such as Administrators.
+
+```bash
+Get-LocalGroupMember -Name "{{GROUP:str:Administrators}}"
+```
+
+<!-- meta: risk=low | phase=enum | tags=powershell,localgroup,members -->
+
+---
+
+## create local user powershell
+Create a new local user account with no password set.
+
+```bash
+New-LocalUser -Name "{{USERNAME:str}}" -NoPassword
+```
+
+<!-- meta: risk=med | phase=post | tags=powershell,localuser,create -->
+
+---
+
+## set local user password powershell
+Set the password on an existing local user account.
+
+```bash
+$Password = Read-Host -AsSecureString; Set-LocalUser -Name "{{USERNAME:str}}" -Password $Password
+```
+
+<!-- meta: risk=med | phase=post | tags=powershell,localuser,password -->
+
+---
+
+## add local admin powershell
+Add a user to a local group such as Administrators for privilege escalation.
+
+```bash
+Add-LocalGroupMember -Group "{{GROUP:str:Administrators}}" -Member "{{USERNAME:str}}"
+```
+
+<!-- meta: risk=med | phase=privesc | tags=powershell,localgroup,admin -->
+
+---
+
+## remote pssession windows
+Open an interactive remote PowerShell session over WinRM with explicit credentials.
+
+```bash
+Enter-PSSession -ComputerName {{COMPUTER:str:DC01}} -Credential {{USERNAME:str}} -Authentication Negotiate
+```
+
+<!-- meta: risk=med | phase=post | tags=powershell,winrm,pssession,lateral -->
+
+---
+
+## test winrm windows
+Check whether the WinRM service is reachable on a remote host.
+
+```bash
+Test-WSMan -ComputerName {{COMPUTER:str:DC01}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=powershell,winrm,wsman -->
+
+---
+
+## enable winrm windows
+Configure and start the WinRM listener on the local host.
+
+```bash
+winrm quickconfig
+```
+
+<!-- meta: risk=med | phase=post | tags=winrm,quickconfig,remoting -->
+
+---
+
+## list openssh capability windows
+Query available OpenSSH client/server capabilities on the host.
+
+```bash
+Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+```
+
+<!-- meta: risk=low | phase=enum | tags=powershell,openssh,capability -->
+
+---
+
+## install openssh client windows
+Install the OpenSSH client as an optional Windows capability.
+
+```bash
+Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+```
+
+<!-- meta: risk=med | phase=post | tags=powershell,openssh,install -->
+
+---
+
+## search files for passwords powershell
+Recursively search user files for credential-related strings.
+
+```bash
+Get-ChildItem -Path {{PATH:str:C:\Users}} -Filter "*.txt" -Recurse -File | sls "{{PATTERN:str:Password}}","credential","key"
+```
+
+<!-- meta: risk=low | phase=post | tags=powershell,creds,search,sls -->
+
+---
+
+## find sensitive files powershell
+Recursively list script and text files under a path, ignoring access errors.
+
+```bash
+Get-ChildItem -Path {{PATH:str:C:\Users}} -File -Recurse -ErrorAction SilentlyContinue | where {($_.Name -like "*.txt" -or $_.Name -like "*.ps1")}
+```
+
+<!-- meta: risk=low | phase=post | tags=powershell,files,search -->
+
+---
+
+## find file by name windows
+Recursively locate a file by name from the drive root.
+
+```bash
+where /R C:\ {{FILE:str:file.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=where,file,search -->
+
+---
+
+## list environment variables windows
+Print all current environment variables for the session.
+
+```bash
+set
+```
+
+<!-- meta: risk=low | phase=enum | tags=env,variables,set -->
+
+---
+
+## set environment variable windows
+Set a persistent (global) environment variable with setx, or a session variable with set.
+
+```bash
+setx {{VAR:str:PATH}} {{DATA:str:value}}
+```
+
+<!-- meta: risk=med | phase=post | tags=env,setx,persistent -->
+
+---
+
+## set session variable windows
+Set an environment variable for the current shell session only.
+
+```bash
+set {{VAR:str:PATH}}={{DATA:str:value}}
+```
+
+<!-- meta: risk=low | phase=misc | tags=env,set,session -->
+
+---
+
+## delete environment variable windows
+Delete a persistent (global) environment variable by setting it empty with setx.
+
+```bash
+setx {{VAR:str:PATH}} ""
+```
+
+<!-- meta: risk=med | phase=post | tags=env,setx,delete -->
+
+---
+
+## list shares net share
+Enumerate the local SMB shares exposed by the host.
+
+```bash
+net share
+```
+
+<!-- meta: risk=low | phase=enum | tags=net,share,smb -->
+
+---
+
+## list domain resources net view
+Enumerate machines in the domain, or shares on a specific host.
+
+```bash
+net view && net view \\{{COMPUTER:str:DC01}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=net,view,smb,shares -->
+
+---
+
+## test port test-netconnection
+Test TCP connectivity to a specific port on a remote host.
+
+```bash
+Test-NetConnection -ComputerName {{COMPUTER:str:DC01}} -Port {{PORT:port:445}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=powershell,port,connectivity -->
+
+---
