@@ -39,6 +39,25 @@ setup() {
     [ "$status" -eq 1 ]
 }
 
+@test "fill preserves backslashes in Windows path defaults" {
+    run q_fill_vars_auto 'reg query {{KEYPATH:str:HKLM:\SOFTWARE\Microsoft\Run}}'
+    [ "$status" -eq 0 ]
+    [ "$output" = 'reg query HKLM:\SOFTWARE\Microsoft\Run' ]
+}
+
+@test "fill preserves a literal & in a value" {
+    q_session_set X 'a&b&c'
+    run q_fill_vars_auto 'echo {{X}}'
+    [ "$status" -eq 0 ]
+    [ "$output" = 'echo a&b&c' ]
+}
+
+@test "fill distinguishes a var name that is a prefix of another" {
+    run q_fill_vars_auto 'a {{KEYPATH:str:HKLM:\X}} b {{KEYPATH_HKCU:str:HKCU:\Y}}'
+    [ "$status" -eq 0 ]
+    [ "$output" = 'a HKLM:\X b HKCU:\Y' ]
+}
+
 @test "q_unresolved_vars lists only unresolved names" {
     q_session_set HOST 10.0.0.1
     printf 'USER=bob\n' > "$Q_CACHE_DIR/.fill_state"

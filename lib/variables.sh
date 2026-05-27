@@ -47,6 +47,30 @@ q_extract_vars() {
 }
 
 # ===========================================================================
+# _q_subst_var COMMAND NAME VALUE — replace every {{NAME}}, {{NAME:type}} or
+# {{NAME:type:default}} with VALUE, inserted LITERALLY (pure bash string ops,
+# no awk/sed/regex) so backslashes and & in Windows paths survive intact.
+# ===========================================================================
+_q_subst_var() {
+    local rest="$1" name="$2" value="$3"
+    local open="{{${name}" close="}}" out=""
+    while [[ "$rest" == *"$open"* ]]; do
+        out+="${rest%%"$open"*}"          # text before {{NAME
+        rest="${rest#*"$open"}"           # text after {{NAME
+        case "${rest:0:1}" in
+            '}'|':')                      # {{NAME}} or {{NAME:...}} -> our var
+                rest="${rest#*"$close"}"  # drop through the closing }}
+                out+="$value"
+                ;;
+            *)                            # {{NAMExyz -> a longer name; keep as-is
+                out+="$open"
+                ;;
+        esac
+    done
+    printf '%s' "${out}${rest}"
+}
+
+# ===========================================================================
 # q_fill_vars — main entry point: fill all placeholders in a command string
 # ===========================================================================
 q_fill_vars() {
@@ -123,8 +147,7 @@ q_fill_vars() {
         # Replace all variations: {{NAME}}, {{NAME:type}}, {{NAME:type:default}}
         # Use a loop to handle all patterns for this variable name
         # Single-pass replacement via awk to avoid re-scanning substituted text
-        result="$(printf '%s' "$result" | \
-            awk -v n="$name" -v v="$value" '{ gsub("\\{\\{" n "(:[^}]*)?" "\\}\\}", v); print }')"
+        result="$(_q_subst_var "$result" "$name" "$value")"
     done
 
     printf '%s' "$result"
@@ -200,8 +223,7 @@ q_fill_vars_auto() {
         [[ -z "$value" ]] && return 1
 
         # Substitute all occurrences of this variable via awk
-        result="$(printf '%s' "$result" | \
-            awk -v n="$name" -v v="$value" '{ gsub("\\{\\{" n "(:[^}]*)?" "\\}\\}", v); print }')"
+        result="$(_q_subst_var "$result" "$name" "$value")"
     done <<< "$vars_raw"
 
     printf '%s' "$result"
