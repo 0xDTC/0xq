@@ -1,0 +1,12 @@
+name: nmap_full_recon
+description: Combined TCP + UDP recon — fast discovery on both, then a single deep -sS -sU scan against the merged port list
+steps:
+  - title: Fast TCP -p- port discovery (writes tcp-ports.gnmap)
+    command: 'sudo nmap -p- --min-rate {{MIN_RATE:int:5000}} -T4 -v -Pn {{TARGET}} -oG tcp-ports.gnmap'
+    continue_on_error: false
+  - title: Fast UDP top-100 ports discovery (writes udp-ports.gnmap)
+    command: 'sudo nmap -sU --top-ports 100 -v --max-rate {{RATE:int:1000}} -Pn {{TARGET}} -oG udp-ports.gnmap'
+    continue_on_error: true
+  - title: Combined deep TCP+UDP scan on the merged port list - writes {{TARGET}}-full.md
+    command: 'TCP=$(grep -oE "[0-9]+/open/tcp" tcp-ports.gnmap | cut -d/ -f1 | paste -sd,); UDP=$(grep -oE "[0-9]+/open/udp" udp-ports.gnmap | cut -d/ -f1 | paste -sd,); SPEC=""; [ -n "$TCP" ] && SPEC="T:$TCP"; [ -n "$UDP" ] && SPEC="${SPEC:+$SPEC,}U:$UDP"; [ -n "$SPEC" ] && sudo nmap -A -sS -sU -sV -v -p "$SPEC" --max-rate {{RATE:int:1000}} {{TARGET}} -oN {{TARGET}}-full.md || echo "No open ports in either gnmap"'
+    continue_on_error: true

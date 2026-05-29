@@ -1,0 +1,9 @@
+name: nmap_tcp
+description: TCP recon — fast -p- port discovery, then a deep -A -sS -sV scan on the open ports (PORTS auto-extracted from the gnmap)
+steps:
+  - title: Fast TCP -p- port discovery (writes tcp-ports.gnmap)
+    command: 'sudo nmap -p- --min-rate {{MIN_RATE:int:5000}} -T4 -v -Pn {{TARGET}} -oG tcp-ports.gnmap'
+    continue_on_error: false
+  - title: Deep TCP scan on discovered ports - writes {{TARGET}}.md
+    command: 'PORTS=$(grep -oE "[0-9]+/open/tcp" tcp-ports.gnmap | cut -d/ -f1 | paste -sd,); [ -n "$PORTS" ] && sudo nmap -A -sS -sV -v -p $PORTS --max-rate {{RATE:int:1000}} {{TARGET}} -oN {{TARGET}}.md || echo "No open TCP ports in tcp-ports.gnmap"'
+    continue_on_error: true

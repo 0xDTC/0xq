@@ -1,0 +1,13 @@
+name: nmap_udp
+description: UDP recon — fast top-100 discovery (and optional -p- exhaustive), then deep -A -sU -sV scan on the open ports
+steps:
+  - title: Fast UDP top-100 ports discovery (writes udp-ports.gnmap)
+    command: 'sudo nmap -sU --top-ports 100 -v --max-rate {{RATE:int:1000}} -Pn {{TARGET}} -oG udp-ports.gnmap'
+    continue_on_error: false
+  - title: 'Optional exhaustive UDP -p- (slow; arm: q set UDP_FULL 1)'
+    command: 'sudo nmap -sU -p- --min-rate {{MIN_RATE:int:1000}} -v -Pn {{TARGET}} -oG udp-ports.gnmap'
+    when: 'UDP_FULL'
+    continue_on_error: true
+  - title: Deep UDP scan on discovered ports - writes {{TARGET}}-udp.md
+    command: 'PORTS=$(grep -oE "[0-9]+/open/udp" udp-ports.gnmap | cut -d/ -f1 | paste -sd,); [ -n "$PORTS" ] && sudo nmap -A -sU -sV -v -p $PORTS --max-rate {{RATE:int:1000}} {{TARGET}} -oN {{TARGET}}-udp.md || echo "No open UDP ports in udp-ports.gnmap"'
+    continue_on_error: true
