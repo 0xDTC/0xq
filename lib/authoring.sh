@@ -239,8 +239,7 @@ _q_author_type_vars() {
                         | sed 's/[{}]//g' | sort -u) || true
     for v in "${vars[@]}"; do
         [[ -z "$v" ]] && continue
-        # shellcheck disable=SC2086
-        t="$(printf '%s\n' $_Q_AUTHOR_TYPES | _q_author_fzf "Type for {{${v}}} [str]> ")"
+        t="$(_q_author_all_types | _q_author_fzf "Type for {{${v}}} [str]> ")"
         t="${t:-str}"
         d="$(_q_author_read "Default for {{${v}}} (optional): ")"
         if [[ -n "$d" ]]; then repl="{{${v}:${t}:${d}}}"; else repl="{{${v}:${t}}}"; fi
@@ -285,6 +284,53 @@ _q_author_show_known_vars() {
     } 2>/dev/null > /dev/tty || true
 }
 
+# _q_author_all_types — print the union of canonical types and any types
+# already in use in the index, one per line, deduped (canonical first). Lets
+# the type picker auto-pick up new types defined in prior cheatsheet edits.
+_q_author_all_types() {
+    local index="${Q_CACHE_DIR}/index.tsv" t
+    {
+        for t in $_Q_AUTHOR_TYPES; do printf '%s\n' "$t"; done
+        if [[ -s "$index" ]]; then
+            cut -f5 "$index" 2>/dev/null \
+                | grep -oE '\{\{[A-Za-z_][A-Za-z0-9_]*:[a-z][a-z0-9_]*' 2>/dev/null \
+                | awk -F: '{print $NF}' | sort -u
+        fi
+    } | awk '!seen[$0]++'
+}
+
+# _q_author_pick_vars COMMAND — for each "{{}}" placeholder in COMMAND, run an
+# fzf picker over the existing variable names so the author picks one (or
+# types a new name; fzf's --print-query echoes the typed query when there is
+# no match). The picked name is sanitised to [A-Za-z0-9_], substituted into
+# the FIRST remaining {{}}, and the loop continues until none remain. Empty
+# pick (Esc) warns and leaves the marker so the author can fix later.
+_q_author_pick_vars() {
+    local cmd="$1" marker='{{}}'
+    [[ "$cmd" != *"${marker}"* ]] && { printf '%s' "$cmd"; return 0; }
+    command -v fzf >/dev/null 2>&1 || { printf '%s' "$cmd"; return 0; }
+    local names; names="$(_q_author_known_vars 256)" || names=""
+    while [[ "$cmd" == *"${marker}"* ]]; do
+        local out="" rc=0 pick=""
+        out="$(printf '%s\n' "$names" | fzf --height=40% --reverse --no-multi \
+            --print-query --prompt 'Pick existing variable (or type a new one)> ' \
+            2>/dev/null)" || rc=$?
+        case "$rc" in
+            0) pick="$(printf '%s' "$out" | tail -n1)" ;;   # picked from list
+            1) pick="$(printf '%s' "$out" | head -n1)" ;;   # typed a new name
+            *) pick="" ;;                                    # cancelled (130/etc)
+        esac
+        pick="$(printf '%s' "$pick" | tr -d '[:space:]' | tr -cd 'A-Za-z0-9_')"
+        if [[ -z "$pick" ]]; then
+            q_warn "No name chosen — leaving {{}} placeholder."
+            break
+        fi
+        local before="${cmd%%${marker}*}" after="${cmd#*${marker}}"
+        cmd="${before}{{${pick}}}${after}"
+    done
+    printf '%s' "$cmd"
+}
+
 # ===========================================================================
 # q_author_add — interactive "add a new command" flow.
 # ===========================================================================
@@ -297,10 +343,12 @@ q_author_add() {
 
     # Show the established variable vocabulary, then type a one-liner inline, or
     # leave it blank to compose a multi-line command in $EDITOR (empty cancels).
+    # Use {{NAME}} to type a name directly, or {{}} as a marker we'll fzf-pick.
     _q_author_show_known_vars
-    local command; command="$(_q_author_read 'Command (use {{VAR}}; blank = compose multi-line in $EDITOR): ')"
+    local command; command="$(_q_author_read 'Command (type {{NAME}} or {{}} to pick; blank = $EDITOR): ')"
     [[ -z "$command" ]] && command="$(_q_author_edit_in_editor "")"
     [[ -z "$command" ]] && { q_info "No command entered — cancelled."; return 0; }
+    command="$(_q_author_pick_vars "$command")"
     command="$(_q_author_type_vars "$command")"
 
     local title; title="$(_q_author_read 'Title (search-query style, lowercase): ')"
@@ -389,6 +437,8 @@ q_author_edit() {
             else
                 new_cmd="$(_q_author_read "Command [${cur_cmd}]: " "$cur_cmd")"
             fi
+            new_cmd="$(_q_author_pick_vars "$new_cmd")"
+            new_cmd="$(_q_author_type_vars "$new_cmd")"
             new_desc="$(_q_author_read  "Description [${cur_desc}]: " "$cur_desc")"
             # shellcheck disable=SC2086
             new_risk="$(printf '%s\n' $_Q_AUTHOR_RISKS | _q_author_fzf "Risk [${cur_risk}]> ")"

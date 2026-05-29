@@ -235,3 +235,52 @@ setup() {
     [ "$status" -eq 0 ]
     [ -z "$output" ]
 }
+
+@test "pick_vars: no {{}} marker → command unchanged" {
+    run _q_author_pick_vars 'kubectl get pods'
+    [ "$status" -eq 0 ]
+    [ "$output" = 'kubectl get pods' ]
+}
+
+@test "pick_vars: replaces {{}} markers in order with fzf-picked names" {
+    _q_author_known_vars() { printf 'POD\nNAMESPACE\nTARGET\n'; }
+    counter="$BATS_TEST_TMPDIR/pn"; echo 0 > "$counter"
+    fzf() {
+        cat >/dev/null
+        local n; n="$(cat "$counter")"; echo "$((n+1))" > "$counter"
+        case "$n" in
+            0) printf '\nPOD\n' ;;
+            *) printf '\nNAMESPACE\n' ;;
+        esac
+        return 0
+    }
+    export -f fzf _q_author_known_vars
+    result="$(_q_author_pick_vars 'kubectl logs -f {{}} -n {{}}')"
+    [ "$result" = 'kubectl logs -f {{POD}} -n {{NAMESPACE}}' ]
+}
+
+@test "pick_vars: accepts a new typed name (fzf rc=1, query echoed)" {
+    _q_author_known_vars() { printf 'TARGET\n'; }
+    fzf() { cat >/dev/null; printf 'NEWVAR\n'; return 1; }
+    export -f fzf _q_author_known_vars
+    result="$(_q_author_pick_vars 'echo {{}}')"
+    [ "$result" = 'echo {{NEWVAR}}' ]
+}
+
+@test "pick_vars: cancel (rc=130) warns and leaves the marker" {
+    _q_author_known_vars() { printf 'TARGET\n'; }
+    fzf() { cat >/dev/null; return 130; }
+    export -f fzf _q_author_known_vars
+    result="$(_q_author_pick_vars 'a {{}} b {{}} c' 2>/dev/null)"
+    [ "$result" = 'a {{}} b {{}} c' ]
+}
+
+@test "all_types unions canonical with index-derived types" {
+    q_author_append_entry "$SHEET" "$(q_author_build_entry "a" "d" "x {{X:custom:y}}" "low" "misc" "")"
+    q_build_index
+    run _q_author_all_types
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"str"* ]]
+    [[ "$output" == *"ip"* ]]
+    [[ "$output" == *"custom"* ]]
+}

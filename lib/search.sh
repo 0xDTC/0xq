@@ -293,7 +293,7 @@ PREVIEW_EOF
             --prompt='q> ' \
             --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit | Ctrl+N: new | Esc: quit' \
             --preview="$preview_cmd" \
-            --preview-window="${Q_PREVIEW_POS:-down:30%:wrap}" \
+            --preview-window="${Q_PREVIEW_POS:-down:50%:wrap}" \
             --query="$initial_query" \
             --bind="ctrl-f:execute('${fill_script}' {3} '${fill_state}' '${vars_file}' '${q_bin}' '${Q_ROOT}' all)+refresh-preview" \
             --bind="enter:transform('${decide_script}' {3} '${fill_state}' '${vars_file}' '${cur_cmd_file}' '${fill_script}' '${q_bin}' '${Q_ROOT}')" \

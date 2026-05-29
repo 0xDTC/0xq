@@ -271,7 +271,7 @@ bind -n DoubleClick1Pane select-pane \; copy-mode -M \; send-keys -X select-word
 bind -n TripleClick1Pane select-pane \; copy-mode -M \; send-keys -X select-line \; send-keys -X copy-pipe-and-cancel
 # Ctrl+Q — open q in a popup in ANY pane (ssh / evil-winrm / ftp / container)
 # and paste the chosen command into the current session (review, then press Enter).
-bind -n C-q display-popup -E -w 90% -h 80% "Q_NO_POPUP=1 'Q_BIN_PATH' --inline > /tmp/.q_anywhere 2>/dev/null" \; load-buffer /tmp/.q_anywhere \; paste-buffer -d
+bind -n C-q display-popup -E -w 95% -h 90% "Q_NO_POPUP=1 'Q_BIN_PATH' --inline > /tmp/.q_anywhere 2>/dev/null" \; if-shell '[ -s /tmp/.q_anywhere ]' 'load-buffer /tmp/.q_anywhere ; paste-buffer -d'
 # <<< q toolkit tmux config <<<
 TMUXEOF
     local escaped
