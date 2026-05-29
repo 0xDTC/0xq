@@ -252,6 +252,39 @@ _q_author_type_vars() {
     printf '%s' "$cmd"
 }
 
+# _q_author_known_vars [N] — the N most-used {{VAR}} names across all indexed
+# commands, most-frequent first, one per line. Lets the author reuse the
+# established variable vocabulary instead of inventing new names. Pure (reads
+# the index only), so it is unit-testable.
+_q_author_known_vars() {
+    local n="${1:-48}" index="${Q_CACHE_DIR}/index.tsv"
+    [[ -s "$index" ]] || return 0
+    cut -f5 "$index" 2>/dev/null \
+        | grep -oE '\{\{[A-Za-z_][A-Za-z0-9_]*' 2>/dev/null \
+        | sed 's/^{{//' \
+        | sort | uniq -c | sort -rn \
+        | awk -v n="$n" 'NR<=n { print $2 }'
+}
+
+# _q_author_show_known_vars — print the existing variable names (a columnar
+# reference) to the tty above the command prompt, so the author can pick a
+# consistent name. Best-effort; never aborts the flow.
+_q_author_show_known_vars() {
+    local names; names="$(_q_author_known_vars 48)" || names=""
+    [[ -z "$names" ]] && return 0
+    # Lay the names out in fixed-width columns (4 per row) for clean alignment.
+    local listing
+    listing="$(printf '%s\n' "$names" | awk '
+        { printf "%-18s", $0; if (++c % 4 == 0) printf "\n" }
+        END { if (c % 4 != 0) printf "\n" }
+    ' | sed 's/^/  /; s/ *$//')"
+    {
+        printf '%sExisting variables%s — reuse for consistency (type as {{NAME}}; you set type/default next):\n' \
+            "${Q_BOLD:-}" "${Q_RESET:-}"
+        printf '%s%s%s\n' "${Q_DIM:-}" "$listing" "${Q_RESET:-}"
+    } 2>/dev/null > /dev/tty || true
+}
+
 # ===========================================================================
 # q_author_add — interactive "add a new command" flow.
 # ===========================================================================
@@ -262,8 +295,9 @@ q_author_add() {
     local file; file="$(_q_author_pick_file)" || { q_info "Cancelled."; return 0; }
     [[ -z "$file" ]] && { q_info "Cancelled."; return 0; }
 
-    # Type a one-liner inline, or leave it blank to compose a multi-line
-    # command in $EDITOR (an empty editor cancels).
+    # Show the established variable vocabulary, then type a one-liner inline, or
+    # leave it blank to compose a multi-line command in $EDITOR (empty cancels).
+    _q_author_show_known_vars
     local command; command="$(_q_author_read 'Command (use {{VAR}}; blank = compose multi-line in $EDITOR): ')"
     [[ -z "$command" ]] && command="$(_q_author_edit_in_editor "")"
     [[ -z "$command" ]] && { q_info "No command entered — cancelled."; return 0; }
@@ -348,6 +382,7 @@ q_author_edit() {
 
             local new_title new_cmd new_desc new_risk new_phase new_tags
             new_title="$(_q_author_read "Title [${title}]: " "$title")"
+            _q_author_show_known_vars
             if [[ "$cur_cmd" == *$'\n'* ]]; then
                 q_info "Multi-line command — opening \$EDITOR (${EDITOR:-${VISUAL:-nano}}); save & quit to apply."
                 new_cmd="$(_q_author_edit_in_editor "$cur_cmd")"

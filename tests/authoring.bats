@@ -212,3 +212,26 @@ setup() {
     run grep -F '{{TARGET:ip}}' "$SHEET"; [ "$status" -eq 0 ]
     run grep -F '{{PORTS:port}}' "$SHEET"; [ "$status" -eq 0 ]
 }
+
+@test "known_vars lists used variable names, most-frequent first" {
+    q_author_append_entry "$SHEET" "$(q_author_build_entry "a" "d" "x {{TARGET:ip}} {{TARGET:ip}} {{PORT:port}}" "low" "misc" "")"
+    q_author_append_entry "$SHEET" "$(q_author_build_entry "b" "d" "y {{TARGET:ip}} {{USERNAME:str}}" "low" "misc" "")"
+    q_build_index
+    run _q_author_known_vars 10
+    [ "$status" -eq 0 ]
+    # TARGET appears most (3x) → first; PORT + USERNAME also present (once each).
+    [ "${lines[0]}" = "TARGET" ]
+    [[ "$output" == *"PORT"* ]]
+    [[ "$output" == *"USERNAME"* ]]
+}
+
+@test "known_vars caps the count and is empty with no index" {
+    q_author_append_entry "$SHEET" "$(q_author_build_entry "c" "d" "z {{A:str}} {{B:str}} {{C:str}}" "low" "misc" "")"
+    q_build_index
+    run _q_author_known_vars 2
+    [ "${#lines[@]}" -eq 2 ]
+    rm -f "$Q_CACHE_DIR/index.tsv"
+    run _q_author_known_vars 10
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
