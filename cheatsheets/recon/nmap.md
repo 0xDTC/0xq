@@ -214,3 +214,47 @@ grep -oE '[0-9]+/open/{{PROTO:str:tcp}}' {{INFILE:file:tcp-ports.gnmap}} | cut -
 <!-- meta: risk=safe | phase=recon | tags=parse,ports,extract,gnmap,utility -->
 
 ---
+
+## chained tcp scan nmap
+One-shot TCP recon — fast `-p-` discovery, then deep `-A -sS -sV` scan on whatever was open. Both nmap calls chained with `&&` and the port list auto-extracted in between.
+
+```bash
+sudo nmap -p- --min-rate {{MIN_RATE:int:5000}} -T4 -v -Pn {{TARGET:ip}} -oG /tmp/q-tcp-{{TARGET:ip}}.gnmap && sudo nmap -A -sS -sV -v -p "$(grep -oE '[0-9]+/open/tcp' /tmp/q-tcp-{{TARGET:ip}}.gnmap | cut -d/ -f1 | paste -sd,)" --max-rate {{RATE:int:1000}} {{TARGET:ip}} -oN {{TARGET:ip}}.md
+```
+
+<!-- meta: risk=low | phase=enum | tags=tcp,chained,discovery,deep,auto -->
+
+---
+
+## chained udp top scan nmap
+One-shot UDP recon (top-100) — fast UDP top-100 discovery, then deep `-A -sU -sV` on the open ports.
+
+```bash
+sudo nmap -sU --top-ports 100 -v --max-rate {{RATE:int:1000}} -Pn {{TARGET:ip}} -oG /tmp/q-udp-{{TARGET:ip}}.gnmap && sudo nmap -A -sU -sV -v -p "$(grep -oE '[0-9]+/open/udp' /tmp/q-udp-{{TARGET:ip}}.gnmap | cut -d/ -f1 | paste -sd,)" --max-rate {{RATE:int:1000}} {{TARGET:ip}} -oN {{TARGET:ip}}-udp.md
+```
+
+<!-- meta: risk=low | phase=enum | tags=udp,chained,top-ports,deep,auto -->
+
+---
+
+## chained udp full scan nmap
+One-shot UDP recon (-p-) — exhaustive UDP all-ports discovery, then deep `-A -sU -sV` on the open ports. Slow but thorough.
+
+```bash
+sudo nmap -sU -p- --min-rate {{MIN_RATE:int:1000}} -v -Pn {{TARGET:ip}} -oG /tmp/q-udp-full-{{TARGET:ip}}.gnmap && sudo nmap -A -sU -sV -v -p "$(grep -oE '[0-9]+/open/udp' /tmp/q-udp-full-{{TARGET:ip}}.gnmap | cut -d/ -f1 | paste -sd,)" --max-rate {{RATE:int:1000}} {{TARGET:ip}} -oN {{TARGET:ip}}-udp.md
+```
+
+<!-- meta: risk=low | phase=enum | tags=udp,chained,all-ports,deep,thorough -->
+
+---
+
+## chained tcp udp scan nmap
+One-shot TCP+UDP recon — fast TCP `-p-` + UDP top-100 discovery, then a single deep `-sS -sU` scan on the merged port list. Best-effort if one side finds nothing.
+
+```bash
+sudo nmap -p- --min-rate {{MIN_RATE:int:5000}} -T4 -v -Pn {{TARGET:ip}} -oG /tmp/q-tcp-{{TARGET:ip}}.gnmap && sudo nmap -sU --top-ports 100 -v --max-rate {{RATE:int:1000}} -Pn {{TARGET:ip}} -oG /tmp/q-udp-{{TARGET:ip}}.gnmap && sudo nmap -A -sS -sU -sV -v -p "T:$(grep -oE '[0-9]+/open/tcp' /tmp/q-tcp-{{TARGET:ip}}.gnmap | cut -d/ -f1 | paste -sd,),U:$(grep -oE '[0-9]+/open/udp' /tmp/q-udp-{{TARGET:ip}}.gnmap | cut -d/ -f1 | paste -sd,)" --max-rate {{RATE:int:1000}} {{TARGET:ip}} -oN {{TARGET:ip}}-full.md
+```
+
+<!-- meta: risk=low | phase=enum | tags=tcp,udp,chained,combined,deep,auto -->
+
+---
