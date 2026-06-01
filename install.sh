@@ -243,6 +243,25 @@ KEYS_EOF
 setup_tmux() {
     local conf="${HOME}/.tmux.conf"
     touch "$conf"
+
+    # Bootstrap TPM + session-persistence plugins so save/restore works out of the box
+    local plugins_dir="${HOME}/.tmux/plugins"
+    if command -v git >/dev/null 2>&1; then
+        local repo
+        for repo in tpm tmux-resurrect tmux-continuum; do
+            if [[ ! -d "${plugins_dir}/${repo}" ]]; then
+                if git clone --depth 1 "https://github.com/tmux-plugins/${repo}" \
+                        "${plugins_dir}/${repo}" >/dev/null 2>&1; then
+                    success "Installed tmux plugin: ${repo}"
+                else
+                    warn "Could not clone ${repo} (session save/restore needs it)."
+                fi
+            fi
+        done
+    else
+        warn "git not found — install TPM + tmux-resurrect/continuum manually for session save/restore."
+    fi
+
     # Remove any previous q block first so re-running the installer UPDATES it
     # (rather than skipping) and keeps the config in sync with new releases.
     if grep -q '# >>> q toolkit tmux config' "$conf" 2>/dev/null; then
@@ -259,6 +278,14 @@ bind C-a send-prefix
 # Mouse on — scroll panes freely with the wheel, like a normal terminal
 set -g mouse on
 set -g history-limit 50000
+# Session persistence — autosave every 15 min, save on detach, restore on start
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+set -g @resurrect-capture-pane-contents 'on'
+set -g @continuum-restore 'on'
+set -g @continuum-save-interval '15'
+set-hook -g client-detached 'run-shell "~/.tmux/plugins/tmux-resurrect/scripts/save.sh"'
 # Mouse selection -> system clipboard (keeps wheel scroll). Drag to select one
 # line or many and release to copy; double-click copies a word, triple-click a
 # line. Or hold Shift while dragging to use the terminal's own native selection
@@ -272,6 +299,8 @@ bind -n TripleClick1Pane select-pane \; copy-mode -M \; send-keys -X select-line
 # Ctrl+Q — open q in a popup in ANY pane (ssh / evil-winrm / ftp / container)
 # and paste the chosen command into the current session (review, then press Enter).
 bind -n C-q display-popup -E -w 95% -h 90% "Q_NO_POPUP=1 'Q_BIN_PATH' --inline > /tmp/.q_anywhere 2>/dev/null" \; if-shell '[ -s /tmp/.q_anywhere ]' 'load-buffer /tmp/.q_anywhere ; paste-buffer -d'
+# Initialize TPM — must come after all @plugin lines above
+run '~/.tmux/plugins/tpm/tpm'
 # <<< q toolkit tmux config <<<
 TMUXEOF
     local escaped
