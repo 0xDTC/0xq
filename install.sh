@@ -278,13 +278,15 @@ bind C-a send-prefix
 # Mouse on — scroll panes freely with the wheel, like a normal terminal
 set -g mouse on
 set -g history-limit 50000
-# Session persistence — autosave every 15 min, save on detach, restore on start
+# Session persistence — autosave every 1 min, save on detach, restore on start.
+# Lightweight: layout/commands only (no scrollback capture); prune to newest ~15 saves.
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-resurrect'
 set -g @plugin 'tmux-plugins/tmux-continuum'
-set -g @resurrect-capture-pane-contents 'on'
+set -g @resurrect-capture-pane-contents 'off'
 set -g @continuum-restore 'on'
-set -g @continuum-save-interval '15'
+set -g @continuum-save-interval '1'
+set -g @resurrect-hook-post-save-all 'd="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/resurrect"; l="$(readlink "$d/last" 2>/dev/null)"; ls -1 "$d"/tmux_resurrect_*.txt 2>/dev/null | sort -r | tail -n +16 | grep -vxF "$d/$l" | xargs -r rm -f'
 set-hook -g client-detached 'run-shell "~/.tmux/plugins/tmux-resurrect/scripts/save.sh"'
 # Mouse selection -> system clipboard (keeps wheel scroll). Drag to select one
 # line or many and release to copy; double-click copies a word, triple-click a
