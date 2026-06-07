@@ -10,7 +10,7 @@
 Connect to a remote host with username.
 
 ```bash
-ssh {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -p {{PORT:port:22}}
+ssh {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -p {{PORT:port:22}} -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes
 ```
 
 <!-- meta: risk=low | phase=misc | tags=connect,basic,remote -->
@@ -21,7 +21,7 @@ ssh {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -p {{PORT:port:22}}
 Connect using a private key file.
 
 ```bash
-ssh -i {{KEY:file:~/.ssh/id_rsa}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -p {{PORT:port:22}}
+ssh -i {{KEY:file:~/.ssh/id_rsa}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -p {{PORT:port:22}} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
 ```
 
 <!-- meta: risk=low | phase=misc | tags=key,identity,authentication -->
