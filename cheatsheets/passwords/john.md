@@ -136,3 +136,36 @@ ansible-vault decrypt {{VAULTFILE:file:vault.yml}} --output {{OUTFILE:file:decry
 ```
 
 <!-- meta: risk=safe | phase=passwords | tags=ansible,decrypt -->
+
+---
+
+## crack bitlocker bitlocker2john
+Extract the BitLocker password hash from a VHD, filter to the $0 (user password) mode, then crack with john.
+
+```bash
+bitlocker2john -i {{VHD:file:Backup.vhd}} > /tmp/q-bl.hashes && grep 'bitlocker$0' /tmp/q-bl.hashes > /tmp/q-bl.hash && john --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} /tmp/q-bl.hash
+```
+
+<!-- meta: risk=high | phase=passwords | tags=bitlocker,chained,john,crack -->
+
+---
+
+## crack 7z 7z2john
+Extract a crackable hash from a password-protected 7-Zip archive and hand it to john.
+
+```bash
+7z2john {{ARCHIVE:file:secret.7z}} > /tmp/q-7z.hash && john --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} /tmp/q-7z.hash
+```
+
+<!-- meta: risk=safe | phase=passwords | tags=7z,chained,john,crack -->
+
+---
+
+## crack office doc office2john
+Extract a crackable hash from an MS Office doc/xlsx/pptx and hand it to john.
+
+```bash
+office2john.py {{OFFICEFILE:file:doc.docx}} > /tmp/q-office.hash && john --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} /tmp/q-office.hash
+```
+
+<!-- meta: risk=safe | phase=passwords | tags=office,doc,chained,john,crack -->
