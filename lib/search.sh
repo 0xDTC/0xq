@@ -18,7 +18,9 @@
 # Keybindings in the main fzf:
 #   Enter     fill any missing vars on-screen, then (next Enter) run
 #   Ctrl+F    fill / change variables via the candidate popup
-#   Ctrl+E    fill, then open in $EDITOR before exec (.force_edit sideband)
+#   Ctrl+E    open the RAW command (with {{VAR}} placeholders intact) in
+#             $EDITOR — no fill prompt, so you can rewrite anything (fill in
+#             values manually, change flags, add pipes). (.force_edit sideband)
 #   Ctrl+T    cycle TARGET through session targets; preview updates live
 #   Ctrl+Y    copy the session-filled command to the clipboard
 #   Ctrl+N    add a new cheatsheet command (runs q new), then quits
@@ -34,7 +36,8 @@
 #
 # Sideband flag file (consumed by q_main, run in a command substitution so
 # env exports don't propagate):
-#   ${Q_CACHE_DIR}/.force_edit  exists  -> after fill, open in $EDITOR
+#   ${Q_CACHE_DIR}/.force_edit  exists  -> open the raw command in $EDITOR
+#                                          (skips fill so you edit as a whole)
 q_search() {
     local index_file="${Q_CACHE_DIR}/index.tsv"
     local initial_query="${*}"
@@ -291,13 +294,13 @@ PREVIEW_EOF
         | fzf \
             --ansi \
             --prompt='q> ' \
-            --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit | Ctrl+N: new | Esc: quit' \
+            --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit raw | Ctrl+N: new | Esc: quit' \
             --preview="$preview_cmd" \
             --preview-window="${Q_PREVIEW_POS:-down:50%:wrap}" \
             --query="$initial_query" \
             --bind="ctrl-f:execute('${fill_script}' {3} '${fill_state}' '${vars_file}' '${q_bin}' '${Q_ROOT}' all)+refresh-preview" \
             --bind="enter:transform('${decide_script}' {3} '${fill_state}' '${vars_file}' '${cur_cmd_file}' '${fill_script}' '${q_bin}' '${Q_ROOT}')" \
-            --bind="ctrl-e:execute('${fill_script}' {3} '${fill_state}' '${vars_file}' '${q_bin}' '${Q_ROOT}' missing)+execute-silent(touch '${Q_CACHE_DIR}/.force_edit')+accept" \
+            --bind="ctrl-e:execute-silent(touch '${Q_CACHE_DIR}/.force_edit')+accept" \
             --bind="ctrl-y:execute-silent('${copy_script}' {3} '${vars_file}')+abort" \
             --bind="ctrl-t:execute-silent('${cycle_script}' '${targets_file}' '${cycle_file}')+refresh-preview" \
             --bind="ctrl-s:execute('${setvar_script}' {3} '${vars_file}' '${q_bin}')+refresh-preview" \
@@ -318,7 +321,8 @@ PREVIEW_EOF
     fi
 
     # With live binds (no --expect), fzf prints only the accepted row.
-    # Ctrl+E sets .force_edit via its bind; q_main opens $EDITOR after fill.
+    # Ctrl+E sets .force_edit via its bind; q_main opens the RAW command in
+    # $EDITOR (skipping fill) so the user rewrites the selection as a whole.
     local selection_line="$selected"
 
     # -----------------------------------------------------------------------
