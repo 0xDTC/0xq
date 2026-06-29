@@ -137,6 +137,15 @@ q_session_use() {
     _Q_SESSION_DIR_CACHE_KEY=""
     export Q_SESSION_NAME
     q_success "Switched to session '${name}'."
+
+    # Show a quick tail of what was last running so the user recalls where they
+    # were. Opt out with Q_SESSION_USE_TAIL=0 in ~/.config/q/config.sh.
+    if [[ "${Q_SESSION_USE_TAIL:-1}" != "0" ]]; then
+        if _q_history_tail 5; then
+            printf '  %sRun `q session replay` to step through them.%s\n' \
+                "$Q_DIM" "$Q_RESET" >&2
+        fi
+    fi
 }
 
 # List all session directories.
@@ -615,14 +624,176 @@ q_parse_output() {
 # ===========================================================================
 # Command history log
 # ===========================================================================
+# history.log is a TSV: <YYYY-mm-dd HH:MM:SS>\t<rc>\t<duration_sec>\t<command>
+# Legacy files (2-field: ts + command) are still readable — every reader in
+# executor.sh / session.sh treats a 2-field row as "unknown rc, unknown dur".
+# Callers should pass rc + duration when they have them (the executor and the
+# chain runner do) so `q session replay` can filter and colour-code entries.
 
-# Append a timestamped command entry to the session history.
+# q_history_log CMD [EXIT_CODE] [DURATION_SEC] — append one entry to
+# ${session_dir}/history.log. Missing rc/duration become "-".
 q_history_log() {
     local command="$1"
+    local exit_code="${2:--}"
+    local duration="${3:--}"
     local log_file
     log_file="$(q_session_dir)/history.log"
-    # Use printf %(...)T builtin instead of $(date ...) to avoid a fork
+    # Sanitise: tabs would split fields, newlines would break the record. Both
+    # can arrive via Ctrl+E multi-line edits or pasted commands. Replace them
+    # so history.log stays strictly single-line-per-entry.
+    command="${command//$'\t'/ }"
+    command="${command//$'\n'/ ; }"
+    # printf %(...)T builtin avoids a $(date ...) fork.
     local ts
     printf -v ts '%(%Y-%m-%d %H:%M:%S)T' -1
-    printf '%s\t%s\n' "$ts" "$command" >> "$log_file"
+    printf '%s\t%s\t%s\t%s\n' "$ts" "$exit_code" "$duration" "$command" >> "$log_file"
+}
+
+# _q_history_split LINE → sets shell vars ts / rc / dur / cmd from LINE.
+# Handles both new (4-field) and legacy (2-field) rows. Missing fields → "-".
+# Uses prefix-strip so the last field absorbs any residual tabs the writer
+# didn't sanitise (defensive — old rows may pre-date the sanitiser).
+_q_history_split() {
+    local line="$1"
+    # Count tabs to distinguish new (≥3 tabs, 4 fields) from legacy (1 tab).
+    local only_tabs="${line//[^$'\t']/}"
+    if [[ ${#only_tabs} -ge 3 ]]; then
+        ts="${line%%$'\t'*}";  line="${line#*$'\t'}"
+        rc="${line%%$'\t'*}";  line="${line#*$'\t'}"
+        dur="${line%%$'\t'*}"; cmd="${line#*$'\t'}"
+    else
+        ts="${line%%$'\t'*}"; rc="-"; dur="-"; cmd="${line#*$'\t'}"
+    fi
+}
+
+# _q_history_status_sym RC → sets `sym` and `color` shell vars for a bullet.
+# ✓ green for rc=0, • dim for unknown, ✗ red for anything else.
+_q_history_status_sym() {
+    case "$1" in
+        0) sym="✓"; color="$Q_GREEN" ;;
+        -) sym="•"; color="$Q_DIM"   ;;
+        *) sym="✗"; color="$Q_RED"   ;;
+    esac
+}
+
+# _q_history_tail [N] — print the last N history rows with rc-colored bullets.
+# Returns 1 (nothing printed) if the log doesn't exist or is empty so callers
+# can gate a follow-up hint.
+_q_history_tail() {
+    local n="${1:-5}"
+    local log_file
+    log_file="$(q_session_dir)/history.log"
+    [[ -f "$log_file" ]] && [[ -s "$log_file" ]] || return 1
+    printf '%s%sLast %d in [%s]:%s\n' "$Q_BOLD" "$Q_CYAN" "$n" "$Q_SESSION_NAME" "$Q_RESET" >&2
+    local line ts rc dur cmd sym color
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        _q_history_split "$line"
+        _q_history_status_sym "$rc"
+        printf '  %s%s%s  %s%s%s  %s\n' \
+            "$color" "$sym" "$Q_RESET" \
+            "$Q_DIM" "$ts" "$Q_RESET" \
+            "$cmd" >&2
+    done < <(tail -n "$n" "$log_file")
+}
+
+# q_session_replay [--yes|-y] [N] — walk the last N history entries in
+# chronological order and offer to re-run each. Default N=10. Per entry:
+#   [y] run   [n] skip   [e] edit-then-run   [a] abort replay
+# --yes runs them all without prompting (dangerous — use with care).
+# Requires executor.sh sourced (uses _q_execute + _q_edit_command).
+q_session_replay() {
+    local auto=0 n=10
+    while (( $# > 0 )); do
+        case "$1" in
+            --yes|-y) auto=1 ;;
+            [0-9]*)   n="$1" ;;
+            *)        q_error "Usage: q session replay [--yes] [N]"; return 1 ;;
+        esac
+        shift
+    done
+    # The [0-9]* glob accepts "10abc" — validate the digits strictly.
+    if ! [[ "$n" =~ ^[0-9]+$ ]] || (( n < 1 )); then
+        q_error "N must be a positive integer (got '$n')."
+        return 1
+    fi
+    # Refuse to run interactively without a TTY (cron, CI, non-interactive
+    # SSH, `< /dev/null`). Otherwise a failed read + empty case would silently
+    # auto-run every entry — the opposite of a safe default. Explicit --yes
+    # is still required to acknowledge auto-run.
+    if [[ "$auto" -ne 1 ]]; then
+        if ! { [[ -r /dev/tty ]] && [[ -w /dev/tty ]] && [[ -t 0 ]]; }; then
+            q_error "q session replay needs a TTY — re-run with --yes to auto-run."
+            return 1
+        fi
+    fi
+    local log_file
+    log_file="$(q_session_dir)/history.log"
+    if [[ ! -f "$log_file" ]] || [[ ! -s "$log_file" ]]; then
+        q_info "No history for session '${Q_SESSION_NAME}' — nothing to replay."
+        return 0
+    fi
+    local -a lines
+    mapfile -t lines < <(tail -n "$n" "$log_file")
+    if [[ ${#lines[@]} -eq 0 ]]; then
+        q_info "No history entries in the last $n rows."
+        return 0
+    fi
+    printf '%s%sReplaying last %d in [%s]%s\n' \
+        "$Q_BOLD" "$Q_CYAN" "${#lines[@]}" "$Q_SESSION_NAME" "$Q_RESET" >&2
+    local i=0 line ts rc dur cmd sym color key extra
+    for line in "${lines[@]}"; do
+        [[ -z "$line" ]] && continue
+        i=$((i+1))
+        _q_history_split "$line"
+        _q_history_status_sym "$rc"
+        extra=""
+        [[ "$dur" != "-" ]] && extra=" ${Q_DIM}(last ran in ${dur}s)${Q_RESET}"
+        printf '\n%s[%d/%d]%s  %s%s%s  %s%s%s%s\n' \
+            "$Q_BOLD" "$i" "${#lines[@]}" "$Q_RESET" \
+            "$color" "$sym" "$Q_RESET" \
+            "$Q_DIM" "$ts" "$Q_RESET" \
+            "$extra" >&2
+        printf '    %s%s%s\n' "$Q_GREEN" "$cmd" "$Q_RESET" >&2
+        if [[ "$auto" -eq 1 ]]; then
+            key="y"
+        else
+            # Drain any stale bytes left in the tty buffer.
+            while read -rsn1 -t 0.05 _ < /dev/tty 2>/dev/null; do :; done
+            # Enter defaults to SKIP (safe default when reviewing history —
+            # re-firing scans/hydras on muscle-memory Enter is exactly what
+            # we don't want). Explicit y required to run.
+            printf '%s[Enter]%s Skip  %s[y]%s Run  %s[e]%s Edit  %s[a]%s Abort  \n' \
+                "$Q_BOLD" "$Q_RESET" "$Q_BOLD" "$Q_RESET" \
+                "$Q_BOLD" "$Q_RESET" "$Q_BOLD" "$Q_RESET" >&2
+            read -rsn1 key < /dev/tty || key=""
+            printf '\n' >&2
+        fi
+        case "$key" in
+            y|Y)
+                # Q_REPLAY hints q_pre_exec_check to auto-skip missing binaries
+                # (a nested [y/N] between replay prompts is confusing UX).
+                Q_REPLAY=1 _q_execute "$cmd" || true
+                ;;
+            e|E)
+                if declare -f _q_edit_command >/dev/null 2>&1; then
+                    local edited
+                    edited="$(_q_edit_command "$cmd")"
+                    if [[ -z "$edited" ]]; then
+                        q_info "Empty after edit — skipped."
+                    else
+                        [[ "$edited" == *"{{"* ]] && \
+                            q_warn "Edited command still has {{...}} placeholders — running literally."
+                        Q_REPLAY=1 _q_execute "$edited" || true
+                    fi
+                else
+                    q_warn "Edit helper not sourced — skipping."
+                fi
+                ;;
+            a|A|q|Q) q_info "Aborted replay."; return 0 ;;
+            n|N|"")  q_info "Skipped." ;;
+            *)       q_info "Skipped." ;;
+        esac
+    done
+    q_success "Replay finished."
 }

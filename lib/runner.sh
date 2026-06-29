@@ -224,8 +224,9 @@ q_run_parallel() {
     rm -f "$queue" "$results_file"
     unset _Q_RUNS_DIR _Q_TS _Q_RESULTS
 
-    # Log to history
-    q_history_log "q_run_parallel -j ${jobs} ${cmd}"
+    # Log to history — use the user-facing `q run` shape so the entry is
+    # replayable (the internal function name isn't a real command).
+    q_history_log "q run -j ${jobs} ${cmd}" "-" "-"
 
     return 0
 }

@@ -302,15 +302,17 @@ q_chain_run() {
         # 5. Real run
         printf '%s[%d]%s %s\n' "$Q_DIM" "$((i+1))" "$Q_RESET" "$title" >&2
         printf '    %s$%s %s\n' "$Q_GREEN" "$Q_RESET" "$filled" >&2
-        q_history_log "$filled"
 
         # Execute. Use bash -c so the eval'd command's failures don't kill the
         # caller's shell under `set -e`. We deliberately use `eval` to honor
         # shell pipes/redirects in step commands.
+        local step_start=${EPOCHSECONDS:-0}
         set +e
         eval "$filled"
         rc=$?
         set -e
+        # Log to history AFTER the step so we capture rc + duration for replay.
+        q_history_log "$filled" "$rc" "$((${EPOCHSECONDS:-0} - step_start))"
         (( run_count++ )) || true
 
         if [[ "$rc" -ne 0 ]]; then

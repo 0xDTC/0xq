@@ -191,9 +191,11 @@ ${Q_BOLD}SESSION & VARIABLES${Q_RESET}
     q set VAR VALUE             Set a session variable (e.g. RHOST, LPORT)
     q get VAR                   Get a session variable
     q session create NAME       Create a new session
-    q session use NAME          Switch to an existing session
+    q session use NAME          Switch — shows tail of last commands
     q session list              List all sessions
     q session purge NAME        Delete a session and its data
+    q session history           Full command history for the active session
+    q session replay [--yes] [N]   Walk last N history entries; prompt to re-run
 
 ${Q_BOLD}TARGETS${Q_RESET}
     q add TARGET                Add a target to the current session

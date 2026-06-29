@@ -41,31 +41,37 @@ q_main() {
     # Track this title in the MRU so it floats to top next time
     q_mru_add "$title" 2>/dev/null || true
 
-    # 4. Auto-fill from session / on-screen picks; fall back to the interactive
-    #    fill flow only if a variable still can't be resolved. Ctrl+E in the
-    #    main fzf writes the .force_edit sideband flag (handled below).
+    # 4. Ctrl+E requested "edit raw": drop the user straight into $EDITOR with
+    #    the raw command (placeholders intact) so they can rewrite the whole
+    #    selection — fill vars manually, change flags, add pipes, etc. No
+    #    fill prompt runs. Otherwise, auto-fill from session / on-screen picks
+    #    and fall back to the interactive fill flow only if a var stays unset.
     local filled_command
     local force_edit="${Q_CACHE_DIR}/.force_edit"
 
-    if ! filled_command="$(q_fill_vars_auto "$command" 2>/dev/null)"; then
-        filled_command="$(q_fill_vars "$command")"
+    if [[ -f "$force_edit" ]]; then
+        local tmpfile
+        tmpfile="$(mktemp /tmp/q_edit_XXXXXX.sh)"
+        printf '%s\n' "$command" > "$tmpfile"
+        "${EDITOR:-${VISUAL:-nano}}" "$tmpfile" < /dev/tty > /dev/tty 2>&1 || true
+        filled_command="$(<"$tmpfile")"
+        rm -f "$tmpfile"
+        # Ctrl+E hands the raw command over — remind the user if they left any
+        # {{VAR}} placeholders unfilled (eval would send them literally).
+        if [[ "$filled_command" == *"{{"* ]]; then
+            q_warn "Command still has {{...}} placeholders — running it will pass them literally."
+        fi
+    else
+        if ! filled_command="$(q_fill_vars_auto "$command" 2>/dev/null)"; then
+            filled_command="$(q_fill_vars "$command")"
+        fi
     fi
 
-    # 5a. Inline mode: print the filled command for shell widget consumption
+    # 5a. Inline mode: print the (possibly edited) command for shell widgets
     if [[ "$inline" == "yes" ]]; then
         printf '%s' "$filled_command"
         rm -f "$force_edit"
         return 0
-    fi
-
-    # 5b. Ctrl+E requested edit-before-run: pop the command into $EDITOR
-    if [[ -f "$force_edit" ]]; then
-        local tmpfile
-        tmpfile="$(mktemp /tmp/q_edit_XXXXXX.sh)"
-        printf '%s\n' "$filled_command" > "$tmpfile"
-        "${EDITOR:-${VISUAL:-nano}}" "$tmpfile" < /dev/tty > /dev/tty 2>&1 || true
-        filled_command="$(<"$tmpfile")"
-        rm -f "$tmpfile"
     fi
 
     # Clear the sideband flag so it doesn't leak into the next invocation
@@ -167,10 +173,11 @@ case "${1:-}" in
     # -- Session management -----------------------------------------------
     session)
         if [[ $# -lt 2 ]]; then
-            q_error "Usage: q session create|use|list|purge NAME"
+            q_error "Usage: q session create|use|list|purge|replay|history [args]"
             exit 1
         fi
         source "${Q_ROOT}/lib/session.sh"
+        source "${Q_ROOT}/lib/executor.sh"
         q_ensure_dirs
         q_config_load
         subcmd="$2"
@@ -190,9 +197,16 @@ case "${1:-}" in
                 [[ $# -lt 3 ]] && { q_error "Usage: q session purge NAME"; exit 1; }
                 q_session_purge "$3"
                 ;;
+            replay)
+                shift 2
+                q_session_replay "$@"
+                ;;
+            history)
+                q_show_history
+                ;;
             *)
                 q_error "Unknown session command: ${subcmd}"
-                q_error "Valid: create, use, list, purge"
+                q_error "Valid: create, use, list, purge, replay, history"
                 exit 1
                 ;;
         esac

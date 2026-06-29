@@ -47,6 +47,13 @@ q_pre_exec_check() {
     esac
 
     if ! command -v "$binary" &>/dev/null; then
+        # In replay mode (Q_REPLAY=1) auto-skip missing binaries without a
+        # prompt — otherwise a nested [y/N] between replay prompts is confusing
+        # and history spans hosts where the tool may not be installed.
+        if [[ "${Q_REPLAY:-0}" == "1" ]]; then
+            q_warn "Skipping in replay: '${binary}' not on this host."
+            return 1
+        fi
         q_warn "Tool '${binary}' not found on this system."
         q_warn "Install with: ${Q_BOLD}sudo apt install ${binary}${Q_RESET}"
         # Ask whether to continue anyway
@@ -170,9 +177,6 @@ _q_execute() {
         return 1
     fi
 
-    # Log to history
-    q_history_log "$command"
-
     # Resolve a persistent per-target log path under sessions/<name>/runs/.
     # q_log_start returns a fresh timestamped path with its parent dir created.
     # If logger.sh isn't sourced (defensive), fall back to a temp file.
@@ -185,6 +189,16 @@ _q_execute() {
 
     printf '%s--- Executing ---%s\n' "$Q_DIM" "$Q_RESET" >&2
     printf '%slog: %s%s\n' "$Q_DIM" "$logfile" "$Q_RESET" >&2
+
+    # Capture wall-clock time so history.log carries a duration for replay.
+    local start_ts=${EPOCHSECONDS:-0}
+
+    # Absorb SIGINT so Ctrl+C during eval kills the CHILD but doesn't take q
+    # itself down before the post-run q_history_log below records the aborted
+    # command. Without this trap, the whole q process exits with 130 and the
+    # command a user most wants to review (the one they just cancelled) never
+    # lands in history.log.
+    trap ':' INT
     # Disable errexit around the user command — many tools legitimately exit
     # non-zero (no results, failed auth); that must NOT abort q before the
     # output is parsed/promoted and the exit code is returned.
@@ -193,7 +207,15 @@ _q_execute() {
     eval "$command" 2>&1 | tee "$logfile"
     exit_code=${PIPESTATUS[0]}
     set -e
-    printf '%s--- Finished (exit %d) ---%s\n' "$Q_DIM" "$exit_code" "$Q_RESET" >&2
+    trap - INT
+
+    local end_ts=${EPOCHSECONDS:-0}
+    local duration=$((end_ts - start_ts))
+    printf '%s--- Finished (exit %d, %ds) ---%s\n' "$Q_DIM" "$exit_code" "$duration" "$Q_RESET" >&2
+
+    # Log to history AFTER the run so we capture the actual exit code + duration.
+    # This is what powers `q session replay` and the session-switch tail.
+    q_history_log "$command" "$exit_code" "$duration"
 
     # Parse output for discoverable data and promote high-confidence findings
     # (IPs, domains, URLs) into the session's target list. q_promote_after_run
@@ -226,11 +248,23 @@ q_show_history() {
 
     printf '%s%sCommand History [%s]:%s\n\n' "$Q_BOLD" "$Q_CYAN" "$Q_SESSION_NAME" "$Q_RESET" >&2
 
-    local line_num=0
-    while IFS=$'\t' read -r timestamp cmd; do
-        [[ -z "$timestamp" ]] && continue
+    # Format-agnostic reader: handles both legacy 2-field (ts + cmd) and new
+    # 4-field (ts + rc + duration + cmd) rows. Colour-codes by exit code and
+    # appends "(Ns)" when the duration is known. _q_history_split and
+    # _q_history_status_sym live in session.sh.
+    local line_num=0 line ts rc dur cmd sym color extra
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
         line_num=$((line_num + 1))
-        printf '  %s%3d  %s%s  %s\n' "$Q_DIM" "$line_num" "$timestamp" "$Q_RESET" "$cmd" >&2
+        _q_history_split "$line"
+        _q_history_status_sym "$rc"
+        extra=""
+        [[ "$dur" != "-" ]] && extra=" ${Q_DIM}(${dur}s)${Q_RESET}"
+        printf '  %s%3d%s  %s%s%s  %s%s%s  %s%s\n' \
+            "$Q_DIM" "$line_num" "$Q_RESET" \
+            "$color" "$sym" "$Q_RESET" \
+            "$Q_DIM" "$ts" "$Q_RESET" \
+            "$cmd" "$extra" >&2
     done < "$log_file"
 
     printf '\n  %s%d commands total%s\n' "$Q_DIM" "$line_num" "$Q_RESET" >&2
