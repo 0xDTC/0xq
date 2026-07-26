@@ -381,7 +381,9 @@ BEGIN {
     print out line
 }')
 
-if command -v xclip >/dev/null 2>&1; then
+if command -v pbcopy >/dev/null 2>&1; then
+    printf '%s' "$filled" | pbcopy
+elif command -v xclip >/dev/null 2>&1; then
     printf '%s' "$filled" | xclip -selection clipboard
 elif command -v xsel >/dev/null 2>&1; then
     printf '%s' "$filled" | xsel --clipboard --input

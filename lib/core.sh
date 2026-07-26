@@ -38,10 +38,13 @@ export Q_RED Q_GREEN Q_YELLOW Q_BLUE Q_CYAN Q_MAGENTA Q_DIM Q_BOLD Q_RESET
 # q_strip_ansi — remove ANSI escape codes from stdin or argument
 # ===========================================================================
 q_strip_ansi() {
+    # Literal ESC byte, not \x1b — the latter is a GNU-sed extension that BSD/
+    # macOS sed treats literally (leaving the escape codes in place).
+    local esc; esc="$(printf '\033')"
     if [[ $# -gt 0 ]]; then
-        printf '%s' "$1" | sed 's/\x1b\[[0-9;]*m//g'
+        printf '%s' "$1" | sed "s/${esc}\[[0-9;]*m//g"
     else
-        sed 's/\x1b\[[0-9;]*m//g'
+        sed "s/${esc}\[[0-9;]*m//g"
     fi
 }
 
@@ -71,6 +74,7 @@ q_check_deps() {
         [batcat]="bat"
     )
 
+    local os; os="$(uname)"
     local missing_hard=()
     local missing_opt=()
     local cmd
@@ -80,6 +84,9 @@ q_check_deps() {
     done
 
     for cmd in "${!opt_deps[@]}"; do
+        # macOS: `bat` satisfies `batcat`, and pbcopy (built in) satisfies xclip.
+        [[ "$cmd" == batcat ]] && command -v bat &>/dev/null && continue
+        [[ "$cmd" == xclip && "$os" == Darwin ]] && command -v pbcopy &>/dev/null && continue
         command -v "$cmd" &>/dev/null || missing_opt+=("${opt_deps[$cmd]}")
     done
 
@@ -87,6 +94,24 @@ q_check_deps() {
     local all_missing=("${missing_hard[@]}" "${missing_opt[@]}")
 
     if [[ ${#all_missing[@]} -gt 0 ]]; then
+        # macOS: don't run a package manager on every invocation — guide via brew.
+        if [[ "$os" == Darwin ]]; then
+            if [[ ${#missing_hard[@]} -gt 0 ]]; then
+                q_error "Missing required dependencies: ${missing_hard[*]}"
+                q_error "Install them with:  brew install ${missing_hard[*]}"
+                exit 1
+            fi
+            if [[ ${#missing_opt[@]} -gt 0 ]]; then
+                q_warn "Optional packages not installed: ${missing_opt[*]}"
+                q_warn "For full features:  brew install ${missing_opt[*]}"
+            fi
+            if command -v batcat &>/dev/null; then Q_PREVIEWER="batcat"
+            elif command -v bat &>/dev/null; then Q_PREVIEWER="bat"
+            else Q_PREVIEWER="cat"; fi
+            export Q_PREVIEWER
+            return 0
+        fi
+
         q_info "Missing packages: ${all_missing[*]}"
         q_info "Attempting auto-install..."
 

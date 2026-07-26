@@ -340,9 +340,11 @@ q_target_list() {
 # ===========================================================================
 
 # Detect the available clipboard backend.
-# Prints one of: xclip, xsel, wl, tmux, or returns 1 if none available.
+# Prints one of: pb, xclip, xsel, wl, tmux, or returns 1 if none available.
 _q_clip_backend() {
-    if [[ -n "${DISPLAY:-}" ]] && command -v xclip &>/dev/null; then
+    if command -v pbcopy &>/dev/null; then
+        printf 'pb'
+    elif [[ -n "${DISPLAY:-}" ]] && command -v xclip &>/dev/null; then
         printf 'xclip'
     elif [[ -n "${DISPLAY:-}" ]] && command -v xsel &>/dev/null; then
         printf 'xsel'
@@ -367,6 +369,7 @@ q_clipboard_read() {
 
     local content=""
     case "$backend" in
+        pb)    content="$(pbpaste 2>/dev/null)" || true ;;
         xclip) content="$(xclip -selection clipboard -o 2>/dev/null)" || true ;;
         xsel)  content="$(xsel --clipboard --output 2>/dev/null)" || true ;;
         wl)    content="$(wl-paste --no-newline 2>/dev/null)" || true ;;
@@ -391,6 +394,7 @@ q_clipboard_write() {
     backend="$(_q_clip_backend)" || return 1
 
     case "$backend" in
+        pb)    printf '%s' "$text" | pbcopy 2>/dev/null ;;
         xclip) printf '%s' "$text" | xclip -selection clipboard 2>/dev/null ;;
         xsel)  printf '%s' "$text" | xsel --clipboard --input 2>/dev/null ;;
         wl)    printf '%s' "$text" | wl-copy 2>/dev/null ;;

@@ -1,12 +1,35 @@
 #!/usr/bin/env bash
-# q — Fast, keyboard-driven command launcher for Kali Linux pentesters
+# q — Fast, keyboard-driven command launcher for pentesters (Linux + macOS)
 # Usage: q [query], q --inline [query], q set/get/session/add/targets/history/rebuild
+
+# Re-exec under bash >= 4 if launched with an older bash (macOS ships 3.2, which
+# lacks the associative arrays q uses). Runs fine under 3.2 itself.
+if [ -z "${_Q_BASH_REEXEC:-}" ] && [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
+    for _qb in /opt/homebrew/bin/bash /usr/local/bin/bash /usr/bin/bash bash; do
+        command -v "$_qb" >/dev/null 2>&1 || continue
+        _qv="$("$_qb" -c 'echo ${BASH_VERSINFO:-0}' 2>/dev/null || echo 0)"
+        if [ "${_qv:-0}" -ge 4 ]; then _Q_BASH_REEXEC=1 exec "$_qb" "$0" "$@"; fi
+    done
+    printf 'q: needs bash >= 4 (macOS ships 3.2). Install with: brew install bash\n' >&2
+    exit 1
+fi
+
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# Resolve Q_ROOT to the directory containing this script (follows symlinks)
+# Resolve Q_ROOT to the directory containing this script (follows symlinks).
+# Portable substitute for `readlink -f` (BSD/older-macOS readlink lacks -f).
 # ---------------------------------------------------------------------------
-Q_ROOT="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+_q_resolve() {
+    local src="$1" dir
+    while [ -h "$src" ]; do
+        dir="$(cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd)"
+        src="$(readlink "$src")"
+        case "$src" in /*) ;; *) src="$dir/$src" ;; esac
+    done
+    cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd
+}
+Q_ROOT="$(_q_resolve "${BASH_SOURCE[0]}")"
 Q_VERSION="1.1.0"
 export Q_ROOT Q_VERSION
 

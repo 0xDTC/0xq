@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 # install.sh — Set up q: symlink, config dirs, shell widget (Ctrl+Q), alias
+
+# Re-exec under bash >= 4 if launched with an older bash (macOS ships 3.2, which
+# lacks the associative arrays this installer and q itself use).
+if [ -z "${_Q_BASH_REEXEC:-}" ] && [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
+    for _qb in /opt/homebrew/bin/bash /usr/local/bin/bash /usr/bin/bash bash; do
+        command -v "$_qb" >/dev/null 2>&1 || continue
+        _qv="$("$_qb" -c 'echo ${BASH_VERSINFO:-0}' 2>/dev/null || echo 0)"
+        if [ "${_qv:-0}" -ge 4 ]; then _Q_BASH_REEXEC=1 exec "$_qb" "$0" "$@"; fi
+    done
+    printf 'q installer: needs bash >= 4 (macOS ships 3.2). Install with: brew install bash\n' >&2
+    exit 1
+fi
+
 set -euo pipefail
 
 # ===========================================================================
@@ -21,6 +34,13 @@ info()    { printf '%s[*]%s %s\n' "$CYAN"   "$RESET" "$*"; }
 warn()    { printf '%s[!]%s %s\n' "$YELLOW"  "$RESET" "$*"; }
 error()   { printf '%s[-]%s %s\n' "$RED"     "$RESET" "$*"; }
 success() { printf '%s[+]%s %s\n' "$GREEN"   "$RESET" "$*"; }
+
+OS="$(uname)"
+# Portable in-place sed: GNU sed has --version, BSD/macOS sed does not and needs
+# an explicit (empty) backup suffix argument.
+sed_inplace() {
+    if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi
+}
 
 # ===========================================================================
 # Preflight: check that the q script exists and is executable
@@ -63,19 +83,24 @@ success "Data directories ready: ${Q_DATA_DIR}"
 # 4. Auto-install dependencies
 # ===========================================================================
 install_deps() {
-    # All packages q needs, mapped to their apt package names
-    local -A deps=(
-        [fzf]="fzf"
-        [xclip]="xclip"
-        [batcat]="bat"
-    )
+    # Command name -> package name, per platform. Clipboard: macOS uses the
+    # built-in pbcopy/pbpaste, so xclip is Linux-only. `batcat` is the Debian
+    # binary name for bat; on macOS/brew it installs as `bat`.
+    local want_cmds=(fzf batcat xclip)
+    local -A brew_pkg=( [fzf]="fzf" [batcat]="bat" [xclip]="" )
+    local -A apt_pkg=(  [fzf]="fzf" [batcat]="bat" [xclip]="xclip" )
 
     local to_install=()
     local cmd
-
-    for cmd in "${!deps[@]}"; do
-        if ! command -v "$cmd" &>/dev/null; then
-            to_install+=("${deps[$cmd]}")
+    for cmd in "${want_cmds[@]}"; do
+        # macOS: `bat` satisfies `batcat`, and pbcopy replaces xclip.
+        [[ "$cmd" == batcat ]] && command -v bat &>/dev/null && continue
+        [[ "$cmd" == xclip && "$OS" == Darwin ]] && continue
+        command -v "$cmd" &>/dev/null && continue
+        if [[ "$OS" == Darwin ]]; then
+            [[ -n "${brew_pkg[$cmd]}" ]] && to_install+=("${brew_pkg[$cmd]}")
+        else
+            to_install+=("${apt_pkg[$cmd]}")
         fi
     done
 
@@ -87,6 +112,21 @@ install_deps() {
     info "Missing packages: ${BOLD}${to_install[*]}${RESET}"
     info "Installing dependencies..."
 
+    # ---- macOS: Homebrew ----
+    if [[ "$OS" == Darwin ]]; then
+        if command -v brew &>/dev/null; then
+            if brew install "${to_install[@]}"; then
+                success "Installed: ${to_install[*]}"
+            else
+                error "Auto-install failed. Install manually:  brew install ${to_install[*]}"
+            fi
+        else
+            warn "Homebrew not found (https://brew.sh). Then run:  brew install ${to_install[*]}"
+        fi
+        return 0
+    fi
+
+    # ---- Linux: apt ----
     # Skip apt-get update if it was run within the last hour
     _apt_update_if_stale() {
         local stamp="/var/lib/apt/lists/partial"
@@ -162,7 +202,7 @@ WIDGET_EOF
         # Replace placeholder with actual path
         local escaped_dir
         escaped_dir="$(printf '%s' "${SCRIPT_DIR}" | sed 's/[|\\&]/\\&/g')"
-        sed -i "s|Q_ROOT_PATH|${escaped_dir}|g" "$rc_file"
+        sed_inplace "s|Q_ROOT_PATH|${escaped_dir}|g" "$rc_file"
         success "Ctrl+Q widget added to ${rc_file}"
     fi
 
@@ -214,7 +254,7 @@ WIDGET_EOF
         # Replace placeholder with actual path
         local escaped_dir
         escaped_dir="$(printf '%s' "${SCRIPT_DIR}" | sed 's/[|\\&]/\\&/g')"
-        sed -i "s|Q_ROOT_PATH|${escaped_dir}|g" "$rc_file"
+        sed_inplace "s|Q_ROOT_PATH|${escaped_dir}|g" "$rc_file"
         success "Ctrl+Q widget added to ${rc_file}"
     fi
 
@@ -265,7 +305,7 @@ setup_tmux() {
     # Remove any previous q block first so re-running the installer UPDATES it
     # (rather than skipping) and keeps the config in sync with new releases.
     if grep -q '# >>> q toolkit tmux config' "$conf" 2>/dev/null; then
-        sed -i '/# >>> q toolkit tmux config/,/# <<< q toolkit tmux config/d' "$conf"
+        sed_inplace '/# >>> q toolkit tmux config/,/# <<< q toolkit tmux config/d' "$conf"
         info "Refreshing q tmux config in ${conf}."
     fi
     cat >> "$conf" <<'TMUXEOF'
@@ -286,14 +326,14 @@ set -g @plugin 'tmux-plugins/tmux-continuum'
 set -g @resurrect-capture-pane-contents 'off'
 set -g @continuum-restore 'on'
 set -g @continuum-save-interval '1'
-set -g @resurrect-hook-post-save-all 'd="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/resurrect"; l="$(readlink "$d/last" 2>/dev/null)"; ls -1 "$d"/tmux_resurrect_*.txt 2>/dev/null | sort -r | tail -n +16 | grep -vxF "$d/$l" | xargs -r rm -f'
+set -g @resurrect-hook-post-save-all 'd="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/resurrect"; l="$(readlink "$d/last" 2>/dev/null)"; ls -1 "$d"/tmux_resurrect_*.txt 2>/dev/null | sort -r | tail -n +16 | grep -vxF "$d/$l" | xargs -I{} rm -f -- {}'
 set-hook -g client-detached 'run-shell "~/.tmux/plugins/tmux-resurrect/scripts/save.sh"'
 # Mouse selection -> system clipboard (keeps wheel scroll). Drag to select one
 # line or many and release to copy; double-click copies a word, triple-click a
 # line. Or hold Shift while dragging to use the terminal's own native selection
-# (bypasses tmux). Uses xclip.
+# (bypasses tmux). Uses pbcopy on macOS, xclip on Linux.
 set -g set-clipboard on
-set -s copy-command 'xclip -in -selection clipboard'
+set -s copy-command 'Q_CLIP_CMD'
 bind -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel
 bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel
 bind -n DoubleClick1Pane select-pane \; copy-mode -M \; send-keys -X select-word \; send-keys -X copy-pipe-and-cancel
@@ -307,7 +347,11 @@ run '~/.tmux/plugins/tpm/tpm'
 TMUXEOF
     local escaped
     escaped="$(printf '%s' "${Q_BIN}" | sed 's/[|\\&]/\\&/g')"
-    sed -i "s|Q_BIN_PATH|${escaped}|g" "$conf"
+    sed_inplace "s|Q_BIN_PATH|${escaped}|g" "$conf"
+    # Clipboard command for tmux copy: pbcopy on macOS, xclip on Linux.
+    local clip_cmd="xclip -in -selection clipboard"
+    command -v pbcopy >/dev/null 2>&1 && clip_cmd="pbcopy"
+    sed_inplace "s|Q_CLIP_CMD|${clip_cmd}|g" "$conf"
     success "q tmux config written to ${conf} (prefix C-a, scroll, mouse-copy, Ctrl+Q)"
     # Apply to a running tmux server immediately, if one exists.
     if command -v tmux >/dev/null 2>&1 && tmux list-sessions &>/dev/null; then

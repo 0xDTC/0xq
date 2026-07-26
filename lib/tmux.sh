@@ -116,6 +116,9 @@ _q_tmux_safe_name() {
 _q_tmux_write_bindings() {
     local tmux_name="$1" sdir="$2" q_bin="$3"
     local cfg="${sdir}/tmux.conf"
+    # Clipboard command: pbcopy on macOS, xclip on Linux.
+    local clip_cmd="xclip -selection clipboard"
+    command -v pbcopy >/dev/null 2>&1 && clip_cmd="pbcopy"
 
     # Heredoc — tmux is permissive about quoting in its own DSL. We use single
     # quotes around shell commands so $-vars are evaluated when tmux fires
@@ -150,7 +153,7 @@ bind-key -T prefix -N 'q: promote'         p send-keys -t '${tmux_name}.0' '${q_
 bind-key -T prefix -N 'q: logs ls'         L if-shell '[ "\$(tmux -V | awk "{print \$2}" | cut -d. -f1)" -ge 3 ]' "display-popup -E '${q_bin} logs ls; read -n1'" "split-window -h '${q_bin} logs ls; read -n1'"
 
 # Prefix + Y : capture pane to clipboard
-bind-key -T prefix -N 'q: capture pane'    Y run-shell "tmux capture-pane -p -t '${tmux_name}' | xclip -selection clipboard 2>/dev/null"
+bind-key -T prefix -N 'q: capture pane'    Y run-shell "tmux capture-pane -p -t '${tmux_name}' | ${clip_cmd} 2>/dev/null"
 
 # Prefix + ? : help popup
 bind-key -T prefix -N 'q: help'            \\? display-popup -E "cat <<HLP
