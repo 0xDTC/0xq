@@ -507,7 +507,7 @@ q_parse_output() {
     # --- Extract open ports (nmap, masscan, naabu output) ---
     # Matches patterns like: 80/tcp, 443/open, 22/tcp open
     local ports
-    ports="$(printf '%s' "$output" | grep -oP '\b(\d{1,5})/(?:tcp|udp)' | cut -d/ -f1 | sort -un)" || true
+    ports="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP '\b(\d{1,5})/(?:tcp|udp)' | cut -d/ -f1 | sort -un)" || true
     if [[ -n "$ports" ]]; then
         local -a port_arr
         mapfile -t port_arr <<< "$ports"
@@ -521,7 +521,7 @@ q_parse_output() {
 
     # --- Extract IPs ---
     local ips
-    ips="$(printf '%s' "$output" | grep -oP '\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\b' | sort -un)" || true
+    ips="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP '\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\b' | sort -un)" || true
     if [[ -n "$ips" ]]; then
         local -a ip_arr
         mapfile -t ip_arr <<< "$ips"
@@ -539,7 +539,7 @@ q_parse_output() {
 
     # --- Extract URLs ---
     local urls
-    urls="$(printf '%s' "$output" | grep -oP 'https?://[^\s"'"'"'<>\\]+' | sort -u | head -50)" || true
+    urls="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP 'https?://[^\s"'"'"'<>\\]+' | sort -u | head -50)" || true
     if [[ -n "$urls" ]]; then
         local -a url_arr
         mapfile -t url_arr <<< "$urls"
@@ -549,7 +549,7 @@ q_parse_output() {
     # --- Extract domains/subdomains ---
     # Match FQDN patterns but exclude common noise
     local domains
-    domains="$(printf '%s' "$output" | grep -oP '\b[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}\b' | \
+    domains="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP '\b[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}\b' | \
         grep -v -E '^\d+\.\d+\.\d+\.\d+$' | \
         grep -v -E '\.(txt|md|sh|py|js|json|xml|html|css|jpg|png|gif|pdf|zip|gz|tar)$' | \
         sort -u | head -50)" || true
@@ -564,14 +564,14 @@ q_parse_output() {
         nmap)
             # Extract hostnames from nmap output (e.g., "Nmap scan report for hostname (ip)")
             local nmap_hosts
-            nmap_hosts="$(printf '%s' "$output" | grep -oP 'scan report for \K[^\s(]+' | sort -u)" || true
+            nmap_hosts="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP 'scan report for \K[^\s(]+' | sort -u)" || true
             [[ -n "$nmap_hosts" ]] && {
                 local -a nh_arr; mapfile -t nh_arr <<< "$nmap_hosts"
                 q_discover_add "domains" "${nh_arr[@]}"
             }
             # Extract service info
             local services
-            services="$(printf '%s' "$output" | grep -oP '^\d+/tcp\s+open\s+\S+' | sort -u)" || true
+            services="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP '^\d+/tcp\s+open\s+\S+' | sort -u)" || true
             [[ -n "$services" ]] && {
                 local -a svc_arr; mapfile -t svc_arr <<< "$services"
                 q_discover_add "services" "${svc_arr[@]}"
@@ -580,7 +580,7 @@ q_parse_output() {
         subfinder|amass|assetfinder|findomain)
             # These tools output one subdomain per line
             local subs
-            subs="$(printf '%s' "$output" | grep -oP '^[a-zA-Z0-9]([a-zA-Z0-9.-]*\.[a-zA-Z]{2,})$' | sort -u)" || true
+            subs="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP '^[a-zA-Z0-9]([a-zA-Z0-9.-]*\.[a-zA-Z]{2,})$' | sort -u)" || true
             [[ -n "$subs" ]] && {
                 local -a sub_arr; mapfile -t sub_arr <<< "$subs"
                 q_discover_add "domains" "${sub_arr[@]}"
@@ -589,7 +589,7 @@ q_parse_output() {
         httpx)
             # httpx outputs URLs, often with status codes
             local httpx_urls
-            httpx_urls="$(printf '%s' "$output" | grep -oP 'https?://[^\s\[\]]+' | sort -u)" || true
+            httpx_urls="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP 'https?://[^\s\[\]]+' | sort -u)" || true
             [[ -n "$httpx_urls" ]] && {
                 local -a hu_arr; mapfile -t hu_arr <<< "$httpx_urls"
                 q_discover_add "urls" "${hu_arr[@]}"
@@ -598,7 +598,7 @@ q_parse_output() {
         ffuf|gobuster|feroxbuster|dirsearch)
             # Directory discovery — extract found paths/URLs
             local found_paths
-            found_paths="$(printf '%s' "$output" | grep -oP 'https?://[^\s\[\]]+' | sort -u)" || true
+            found_paths="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP 'https?://[^\s\[\]]+' | sort -u)" || true
             [[ -n "$found_paths" ]] && {
                 local -a fp_arr; mapfile -t fp_arr <<< "$found_paths"
                 q_discover_add "urls" "${fp_arr[@]}"
@@ -607,7 +607,7 @@ q_parse_output() {
         crackmapexec|cme|nxc)
             # Extract usernames from CME output (pattern: domain\username or [+] username)
             local cme_users
-            cme_users="$(printf '%s' "$output" | grep -oP '(?<=\\\\)\S+(?=\s)' | sort -u)" || true
+            cme_users="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP '(?<=\\\\)\S+(?=\s)' | sort -u)" || true
             [[ -n "$cme_users" ]] && {
                 local -a cu_arr; mapfile -t cu_arr <<< "$cme_users"
                 q_discover_add "users" "${cu_arr[@]}"
@@ -616,7 +616,7 @@ q_parse_output() {
         hydra|john|hashcat)
             # Extract cracked credentials
             local creds
-            creds="$(printf '%s' "$output" | grep -oP '(?<=password: )\S+|(?<=\$\S{1,20}\$\S+ )\S+' | sort -u)" || true
+            creds="$(printf '%s' "$output" | "${Q_GREP_P:-grep}" -oP '(?<=password: )\S+|(?<=\$\S{1,20}\$\S+ )\S+' | sort -u)" || true
             [[ -n "$creds" ]] && {
                 local -a cr_arr; mapfile -t cr_arr <<< "$creds"
                 q_discover_add "passwords" "${cr_arr[@]}"

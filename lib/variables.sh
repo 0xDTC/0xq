@@ -16,7 +16,7 @@ q_extract_vars() {
     local cmd="$1"
 
     # Extract all {{...}} tokens
-    grep -oP '\{\{[^}]+\}\}' <<< "$cmd" | while IFS= read -r placeholder; do
+    grep -oE '\{\{[^}]+\}\}' <<< "$cmd" | while IFS= read -r placeholder; do
         # Strip the {{ and }}
         local inner="${placeholder#\{\{}"
         inner="${inner%\}\}}"
@@ -271,9 +271,18 @@ q_unresolved_vars() {
 # ===========================================================================
 _q_detect_lhost() {
     local ip=""
-    ip="$(ip -4 addr show tun0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
-    ip="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
-    ip="$(ip -4 route get 1 2>/dev/null | grep -oP 'src \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+    if command -v ip >/dev/null 2>&1; then
+        # Linux (iproute2): prefer VPN tun0, then eth0, then default route.
+        ip="$(ip -4 addr show tun0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+        ip="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+        ip="$(ip -4 route get 1 2>/dev/null | grep -oP 'src \K[0-9.]+' | head -1)" && [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+    else
+        # macOS/BSD: prefer VPN utunN, then the default interface's IPv4.
+        ip="$(ifconfig 2>/dev/null | awk '/^utun[0-9]/{d=1;next} d&&/inet /{print $2;exit}')"; [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+        local dev; dev="$(route -n get default 2>/dev/null | awk '/interface:/{print $2;exit}')"
+        [[ -n "$dev" ]] && { ip="$(ipconfig getifaddr "$dev" 2>/dev/null)"; [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }; }
+        ip="$(ipconfig getifaddr en0 2>/dev/null)"; [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+    fi
     return 1
 }
 

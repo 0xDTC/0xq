@@ -15,6 +15,20 @@ Q_VAR_HISTORY_DIR="${Q_DATA_DIR}/var_history"
 export Q_DATA_DIR Q_CACHE_DIR Q_SHEETS_DIR Q_SESSION_DIR Q_VAR_HISTORY_DIR
 
 # ===========================================================================
+# Perl-regex-capable grep. GNU grep has -P; BSD/macOS grep does not, but
+# `brew install grep` provides ggrep. Discovery patterns (q promote) use -P;
+# they are all `|| true`-guarded so a plain-grep fallback degrades gracefully.
+# ===========================================================================
+if printf 'x' | grep -qP 'x' 2>/dev/null; then
+    Q_GREP_P="grep"
+elif command -v ggrep >/dev/null 2>&1 && printf 'x' | ggrep -qP 'x' 2>/dev/null; then
+    Q_GREP_P="ggrep"
+else
+    Q_GREP_P="grep"
+fi
+export Q_GREP_P
+
+# ===========================================================================
 # ANSI color constants
 # ===========================================================================
 if [[ -t 2 ]]; then

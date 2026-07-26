@@ -86,7 +86,7 @@ q_search() {
         varhint='${varhint_script}'
 
         # Strip ANSI so field parsing is clean
-        line="\$(printf '%s' "\$line" | sed 's/\x1b\[[0-9;]*m//g')"
+        line="\$(printf '%s' "\$line" | sed "s/$(printf '\033')\[[0-9;]*m//g")"
         # Layout: DISPLAY \t title \t cmd \t src \t keywords
         IFS=\$'\t' read -r _display _title _cmd _src _kw <<< "\$line"
 
@@ -346,7 +346,7 @@ _q_write_copy_helper() {
 #!/usr/bin/env bash
 raw="$1"
 vars_file="$2"
-stripped=$(printf '%s' "$raw" | sed 's/\x1b\[[0-9;]*m//g')
+stripped=$(printf '%s' "$raw" | sed "s/$(printf '\033')\[[0-9;]*m//g")
 filled=$(printf '%s' "$stripped" | awk -v vars_file="$vars_file" '
 BEGIN {
     while ((getline ln < vars_file) > 0) {
@@ -446,10 +446,10 @@ vars_file="$2"
 q_bin="$3"
 
 # Strip ANSI
-cmd=$(printf '%s' "$raw_cmd" | sed 's/\x1b\[[0-9;]*m//g')
+cmd=$(printf '%s' "$raw_cmd" | sed "s/$(printf '\033')\[[0-9;]*m//g")
 
 # Extract unique variable names from {{NAME[:type[:default]]}} placeholders
-mapfile -t allvars < <(grep -oP '\{\{[^}]+\}\}' <<< "$cmd" \
+mapfile -t allvars < <(grep -oE '\{\{[^}]+\}\}' <<< "$cmd" \
     | sed -E 's/^\{\{([^:}]+).*/\1/' \
     | awk '!seen[$0]++')
 
@@ -536,7 +536,7 @@ fi
 fill_state="$1"; vars_file="$2"; q_bin="$3"; q_root="$4"; mode="${5:-all}"
 
 # Strip ANSI from the command field.
-cmd="$(printf '%s' "$cmd" | sed 's/\x1b\[[0-9;]*m//g')"
+cmd="$(printf '%s' "$cmd" | sed "s/$(printf '\033')\[[0-9;]*m//g")"
 
 # Source libs so we can reuse _q_build_candidates + extraction helpers.
 export Q_ROOT="$q_root"
@@ -623,7 +623,7 @@ set -uo pipefail
 cmd="$1"; fill_state="$2"; vars_file="$3"; cur_cmd_file="$4"
 fill_script="$5"; q_bin="$6"; q_root="$7"
 
-cmd="$(printf '%s' "$cmd" | sed 's/\x1b\[[0-9;]*m//g')"
+cmd="$(printf '%s' "$cmd" | sed "s/$(printf '\033')\[[0-9;]*m//g")"
 
 export Q_ROOT="$q_root"
 # shellcheck disable=SC1091
@@ -656,7 +656,7 @@ _q_write_varhint_helper() {
     cat > "$path" <<'VHEOF'
 #!/usr/bin/env bash
 cmd="$1"
-cmd="$(printf '%s' "$cmd" | sed 's/\x1b\[[0-9;]*m//g')"
+cmd="$(printf '%s' "$cmd" | sed "s/$(printf '\033')\[[0-9;]*m//g")"
 printf '%s' "$cmd" | grep -oE '\{\{[^}]+\}\}' | awk '
 BEGIN {
   g["TARGET"]="target host or IP"; g["RHOST"]="target / remote host"

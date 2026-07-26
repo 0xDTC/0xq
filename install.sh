@@ -86,9 +86,9 @@ install_deps() {
     # Command name -> package name, per platform. Clipboard: macOS uses the
     # built-in pbcopy/pbpaste, so xclip is Linux-only. `batcat` is the Debian
     # binary name for bat; on macOS/brew it installs as `bat`.
-    local want_cmds=(fzf batcat xclip)
-    local -A brew_pkg=( [fzf]="fzf" [batcat]="bat" [xclip]="" )
-    local -A apt_pkg=(  [fzf]="fzf" [batcat]="bat" [xclip]="xclip" )
+    local want_cmds=(fzf batcat xclip ggrep)
+    local -A brew_pkg=( [fzf]="fzf" [batcat]="bat" [xclip]="" [ggrep]="grep" )
+    local -A apt_pkg=(  [fzf]="fzf" [batcat]="bat" [xclip]="xclip" [ggrep]="" )
 
     local to_install=()
     local cmd
@@ -96,6 +96,9 @@ install_deps() {
         # macOS: `bat` satisfies `batcat`, and pbcopy replaces xclip.
         [[ "$cmd" == batcat ]] && command -v bat &>/dev/null && continue
         [[ "$cmd" == xclip && "$OS" == Darwin ]] && continue
+        # ggrep (Perl-regex grep for `q promote`) only needed on macOS; Linux
+        # grep already supports -P.
+        [[ "$cmd" == ggrep && "$OS" != Darwin ]] && continue
         command -v "$cmd" &>/dev/null && continue
         if [[ "$OS" == Darwin ]]; then
             [[ -n "${brew_pkg[$cmd]}" ]] && to_install+=("${brew_pkg[$cmd]}")
