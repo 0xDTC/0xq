@@ -229,6 +229,20 @@ bindkey '^[^H' backward-kill-word
 KEYS_EOF
         success "zsh word-delete bindings added to ${rc_file}"
     fi
+
+    # --- Disable XON/XOFF flow control so Ctrl+Q reaches the widget --------
+    # Terminals map Ctrl+S/Ctrl+Q to XOFF/XON (freeze/resume output) by default,
+    # which swallows Ctrl+Q before zsh's ZLE sees it.
+    if grep -q 'q: disable flow control' "$rc_file" 2>/dev/null; then
+        info "flow-control tweak already present in ${rc_file} — skipping."
+    else
+        cat >> "$rc_file" << 'FLOW_EOF'
+
+# q: disable flow control — free Ctrl+S/Ctrl+Q from XOFF/XON so Ctrl+Q reaches the widget
+[ -t 0 ] && stty -ixon 2>/dev/null
+FLOW_EOF
+        success "flow-control tweak added to ${rc_file}"
+    fi
 }
 
 setup_bash() {
@@ -280,6 +294,20 @@ bind '"\e\C-?": backward-kill-word' 2>/dev/null
 bind '"\e\C-h": backward-kill-word' 2>/dev/null
 KEYS_EOF
         success "bash word-delete binding added to ${rc_file}"
+    fi
+
+    # --- Disable XON/XOFF flow control so Ctrl+Q reaches the widget --------
+    # Terminals map Ctrl+S/Ctrl+Q to XOFF/XON (freeze/resume output) by default,
+    # which swallows Ctrl+Q before the shell sees it.
+    if grep -q 'q: disable flow control' "$rc_file" 2>/dev/null; then
+        info "flow-control tweak already present in ${rc_file} — skipping."
+    else
+        cat >> "$rc_file" << 'FLOW_EOF'
+
+# q: disable flow control — free Ctrl+S/Ctrl+Q from XOFF/XON so Ctrl+Q reaches the widget
+[ -t 0 ] && stty -ixon 2>/dev/null
+FLOW_EOF
+        success "flow-control tweak added to ${rc_file}"
     fi
 }
 
