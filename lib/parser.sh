@@ -273,10 +273,11 @@ q_ensure_index() {
 # _q_sheets_checksum — Compute a fingerprint of all .md files
 # ---------------------------------------------------------------------------
 _q_sheets_checksum() {
-    # Use find -printf to avoid forking a separate stat process.
-    # Single pipeline: find -printf is ~2ms vs find -exec stat ~6ms.
-    find "$Q_SHEETS_DIR" -name '*.md' -printf '%T@\t%p\n' 2>/dev/null \
-        | sort \
-        | md5sum \
-        | cut -d' ' -f1
+    # Content + path-list fingerprint. Portable across GNU and BSD/macOS (no
+    # `find -printf`, no `md5sum`). Catches added, removed, renamed, or edited
+    # cheatsheets — a content change flips the digest, which is what matters.
+    local list
+    list="$(find "$Q_SHEETS_DIR" -type f -name '*.md' | LC_ALL=C sort)"
+    { printf '%s\n' "$list"; printf '%s\n' "$list" | xargs cat 2>/dev/null; } \
+        | $Q_HASH | awk '{print $1}'
 }

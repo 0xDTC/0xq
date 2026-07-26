@@ -29,6 +29,33 @@ fi
 export Q_GREP_P
 
 # ===========================================================================
+# Portable hash command — first whitespace field is the digest. Linux has
+# md5sum; macOS has md5 (bare hash on stdin); fall back to shasum, then cksum.
+# ===========================================================================
+if command -v md5sum >/dev/null 2>&1; then Q_HASH="md5sum"
+elif command -v md5 >/dev/null 2>&1; then Q_HASH="md5"
+elif command -v shasum >/dev/null 2>&1; then Q_HASH="shasum"
+else Q_HASH="cksum"; fi
+export Q_HASH
+
+# Portable file mtime in epoch seconds. GNU stat uses -c '%Y'; BSD/macOS stat
+# uses -f '%m'. GNU stat has --version; BSD does not.
+if stat --version >/dev/null 2>&1; then
+    q_mtime() { stat -c '%Y' "$1" 2>/dev/null || echo 0; }
+else
+    q_mtime() { stat -f '%m' "$1" 2>/dev/null || echo 0; }
+fi
+
+# List files newest-first — portable replacement for GNU `find -printf '%T@ %p'`.
+# Usage: q_ls_newest DIR MAXDEPTH NAMEGLOB   (MAXDEPTH may be empty for no limit)
+q_ls_newest() {
+    local dir="$1" depth="$2" glob="$3" f
+    find "$dir" ${depth:+-maxdepth "$depth"} -type f -name "$glob" 2>/dev/null \
+        | while IFS= read -r f; do printf '%s\t%s\n' "$(q_mtime "$f")" "$f"; done \
+        | sort -k1,1nr | cut -f2-
+}
+
+# ===========================================================================
 # ANSI color constants
 # ===========================================================================
 if [[ -t 2 ]]; then

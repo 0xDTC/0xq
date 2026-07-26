@@ -254,8 +254,7 @@ q_run_show() {
 
     # Find the most recent file with this safe_name prefix.
     local newest
-    newest="$(find "$runs_dir" -maxdepth 1 -type f -name "${safe_name}-*.out" \
-        -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)"
+    newest="$(q_ls_newest "$runs_dir" 1 "${safe_name}-*.out" | head -1)"
 
     if [[ -z "$newest" ]] || [[ ! -f "$newest" ]]; then
         q_warn "No output found for target: ${target}"

@@ -41,7 +41,7 @@ q_log_target_slug() {
             ;;
         file|str|*)
             local hash
-            hash="$(printf '%s' "$value" | md5sum | cut -c1-8)"
+            hash="$(printf '%s' "$value" | $Q_HASH | awk '{print $1}' | cut -c1-8)"
             printf 'file_%s' "$hash"
             ;;
     esac
@@ -194,11 +194,13 @@ q_log_ls() {
         target_slug="$(q_log_target_slug "$filter_target")"
     fi
 
-    # Find all .log files with mtime + size, sort newest first
-    # Use find -printf "%T@\t%p\t%s\n" then sort -nr
+    # Find all .log files with mtime + size, sort newest first. Portable
+    # (no GNU find -printf): stat each via q_mtime, size via wc -c.
     local entries
-    entries="$(find "$runs_dir" -type f -name '*.log' \
-        -printf '%T@\t%p\t%s\n' 2>/dev/null | sort -nr)" || true
+    entries="$(find "$runs_dir" -type f -name '*.log' 2>/dev/null \
+        | while IFS= read -r _f; do
+            printf '%s\t%s\t%s\n' "$(q_mtime "$_f")" "$_f" "$(wc -c < "$_f" 2>/dev/null | tr -d ' ')"
+          done | sort -k1,1nr)" || true
 
     [[ -z "$entries" ]] && return 0
 
@@ -251,8 +253,7 @@ q_log_show() {
 
     # Find newest <tool>-*.log under search_dir
     local newest
-    newest="$(find "$search_dir" -type f -name "${tool}-*.log" \
-        -printf '%T@\t%p\n' 2>/dev/null | sort -nr | head -1 | cut -f2-)"
+    newest="$(q_ls_newest "$search_dir" "" "${tool}-*.log" | head -1)"
 
     [[ -z "$newest" || ! -f "$newest" ]] && return 1
 
@@ -327,11 +328,7 @@ q_log_prune() {
             for tool_name in "${!_tools_seen[@]}"; do
                 # Newest-first list of matching logs
                 local -a files=()
-                mapfile -t files < <(
-                    find "$target_dir" -maxdepth 1 -type f -name "${tool_name}-*.log" \
-                        -printf '%T@\t%p\n' 2>/dev/null |
-                        sort -nr | cut -f2-
-                )
+                mapfile -t files < <(q_ls_newest "$target_dir" 1 "${tool_name}-*.log")
 
                 if [[ ${#files[@]} -gt $keep_n ]]; then
                     local victim2
