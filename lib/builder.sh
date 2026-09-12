@@ -357,12 +357,43 @@ q_builder_run() {
     done < <(printf '%s\n' "$raw" | tail -n +2)
     [[ ${#picked[@]} -eq 0 ]] && return 0
 
+    # Follow-up: which of the picked flags are OPTIONAL? A second, smaller
+    # multi-select limited to the flags just marked. Optional flags get
+    # wrapped in {{?flagname}}...{{/flagname}} — at fill time, q_fill_vars
+    # asks "include flagname? [y/N]" and drops the whole segment on 'no'.
+    # Enter with nothing marked = everything required.
+    local opt_cands=""
+    for pflag in "${picked[@]}"; do
+        # Look up desc for a nicer display
+        local _pd=""
+        for _i in "${!flags[@]}"; do
+            if [[ "${flags[$_i]}" == "$pflag" ]]; then _pd="${descs[$_i]}"; break; fi
+        done
+        opt_cands="${opt_cands}${pflag}"$'\t'"${_pd}"$'\n'
+    done
+    local opt_raw
+    opt_raw="$(printf '%s' "$opt_cands" | fzf --multi --print-query --reverse \
+                --border --no-info \
+                --prompt="which flags are OPTIONAL (ask at fill time)? " \
+                --header="Tab: mark optional  |  Enter: continue  |  Esc: all required" \
+                --bind='ctrl-a:select-all,ctrl-d:deselect-all' \
+                --tabstop=20 2>/dev/tty)" || opt_raw=""
+    local -A is_optional=()
+    if [[ -n "$opt_raw" ]]; then
+        local _ol
+        while IFS= read -r _ol; do
+            [[ -z "$_ol" ]] && continue
+            is_optional["${_ol%%$'\t'*}"]=1
+        done < <(printf '%s\n' "$opt_raw" | tail -n +2)
+    fi
+
     # Assemble template: tool + selected flags + value placeholders where
     # declared. Values are LEFT as {{PLACEHOLDER}} — the normal fill flow
     # in q_main handles prompting, so file/dir/choice pickers (with size
     # hints, absolute paths, multi-select) apply to a built command too.
+    # Optional flags get their whole segment wrapped in {{?tag}}...{{/tag}}.
     local assembled="$tool"
-    local pflag idx placeholder
+    local pflag idx placeholder segment tag
     for pflag in "${picked[@]}"; do
         # Locate flag index (linear scan — a builder catalog has 20-40
         # flags so this is negligible).
@@ -371,14 +402,24 @@ q_builder_run() {
             if [[ "${flags[$_i]}" == "$pflag" ]]; then idx="$_i"; break; fi
         done
         [[ -z "$idx" ]] && continue
-        assembled="$assembled $pflag"
+        # Build the flag segment (flag + optional value placeholder).
+        segment="$pflag"
         if [[ -n "${vnames[$idx]}" ]]; then
             placeholder="{{${vnames[$idx]}"
             [[ -n "${vtypes[$idx]}" ]]    && placeholder="${placeholder}:${vtypes[$idx]}"
             [[ -n "${vdefaults[$idx]}" ]] && placeholder="${placeholder}:${vdefaults[$idx]}"
             placeholder="${placeholder}}}"
-            assembled="$assembled $placeholder"
+            segment="${segment} ${placeholder}"
         fi
+        # Wrap in {{?tag}}...{{/tag}} when optional. Tag = flag stripped
+        # of leading dashes so the name is a valid identifier.
+        if [[ -n "${is_optional[$pflag]:-}" ]]; then
+            tag="${pflag##-}"; tag="${tag##-}"
+            tag="${tag//[^A-Za-z0-9_]/_}"
+            [[ -z "$tag" ]] && tag="opt"
+            segment="{{?${tag}}}${segment}{{/${tag}}}"
+        fi
+        assembled="${assembled} ${segment}"
     done
 
     # Positional arguments — YAML only (auto-parsed --help doesn't tell us

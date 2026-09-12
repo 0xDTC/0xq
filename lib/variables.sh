@@ -123,11 +123,83 @@ _q_subst_var() {
 }
 
 # ===========================================================================
+# q_has_optional_blocks CMD — 0 if CMD contains any {{?NAME}}...{{/NAME}} block
+# ===========================================================================
+q_has_optional_blocks() {
+    [[ "$1" == *"{{?"*"}}"* ]]
+}
+
+# ===========================================================================
+# q_process_optional_blocks CMD — expand each {{?NAME}}...{{/NAME}} inline
+# ===========================================================================
+# For every {{?NAME}}CONTENT{{/NAME}} block: prompt `include NAME? [y/N]` on
+# /dev/tty. If yes → keep CONTENT (any nested {{...}} placeholders inside
+# get filled by the normal pass afterwards). If no → drop the whole block
+# and collapse any double spaces it leaves behind.
+#
+# Nesting is not supported (an inner {{?...}} inside another optional block
+# would confuse the naive matcher). If you need nested optionals, add a
+# second layer of markers by hand — 95% of cases are flat.
+q_process_optional_blocks() {
+    local cmd="$1"
+    local out="" before content after name open close
+    while [[ "$cmd" == *"{{?"*"}}"*"{{/"*"}}"* ]]; do
+        # Extract the first {{?NAME}} opener
+        before="${cmd%%\{\{\?*}"
+        local afteropen="${cmd#*\{\{\?}"
+        name="${afteropen%%\}\}*}"
+        open="{{?${name}}}"
+        close="{{/${name}}}"
+
+        # Guard: matching close must exist AFTER the opener
+        local rest="${cmd#*"$open"}"
+        if [[ "$rest" != *"$close"* ]]; then
+            # Malformed — leave the rest as-is and stop scanning.
+            out="${out}${cmd}"
+            cmd=""
+            break
+        fi
+        content="${rest%%"$close"*}"
+        after="${rest#*"$close"}"
+
+        # Prompt (falls back to /dev/tty; if no tty, default = no)
+        local key="n"
+        if [[ -w /dev/tty && -r /dev/tty ]]; then
+            printf '  %s[?]%s include %s%s%s ? [y/N] ' \
+                "$Q_YELLOW" "$Q_RESET" "$Q_BOLD" "$name" "$Q_RESET" >&2
+            read -rsn1 key < /dev/tty || key="n"
+            printf '\n' >&2
+        fi
+        if [[ "$key" == "y" || "$key" == "Y" ]]; then
+            out="${out}${before}${content}"
+        else
+            out="${out}${before}"
+        fi
+        cmd="$after"
+    done
+    out="${out}${cmd}"
+    # Collapse runs of spaces that removals may have left behind (but keep
+    # newlines intact for multi-line commands).
+    printf '%s' "$out" | awk '{
+        gsub(/[[:space:]]+/, " ")
+        sub(/^ +/, ""); sub(/ +$/, "")
+        print
+    }'
+}
+
+# ===========================================================================
 # q_fill_vars — main entry point: fill all placeholders in a command string
 # ===========================================================================
 q_fill_vars() {
     local cmd="$1"
     local -A filled_vars    # associative array: VAR_NAME -> value
+
+    # Optional blocks first — resolve {{?NAME}}...{{/NAME}} inclusions
+    # BEFORE the normal placeholder extraction so a "no" answer removes
+    # placeholders that would otherwise be prompted for.
+    if q_has_optional_blocks "$cmd"; then
+        cmd="$(q_process_optional_blocks "$cmd")"
+    fi
 
     # Extract unique variable names (preserve order of first occurrence)
     local vars_raw
@@ -222,6 +294,14 @@ q_fill_vars() {
 # q_fill_vars. No fzf prompts are ever shown.
 q_fill_vars_auto() {
     local cmd="$1"
+
+    # If the command has any {{?NAME}}...{{/NAME}} block, auto-fill can't
+    # answer the include-yes/no question — signal the caller to go
+    # interactive so q_fill_vars runs the prompts.
+    if q_has_optional_blocks "$cmd"; then
+        return 1
+    fi
+
     local result="$cmd"
 
     local vars_raw
