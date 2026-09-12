@@ -81,6 +81,15 @@ q_main() {
         rm -f "$_last_query_file"
     fi
 
+    # 3b. Combo capture — bump the hit-count for this template under its
+    #     tool so future picker sessions can surface "used 42×" combos
+    #     alongside cheatsheet entries. Uses the template (with placeholders
+    #     intact), NOT the filled command, so re-selection prompts for
+    #     today's values instead of pinning yesterday's TARGET/OUT/etc.
+    if declare -f q_combo_bump >/dev/null 2>&1; then
+        q_combo_bump "$command" 2>/dev/null || true
+    fi
+
     # 4. Ctrl+E requested "edit raw": drop the user straight into $EDITOR with
     #    the raw command (placeholders intact) so they can rewrite the whole
     #    selection — fill vars manually, change flags, add pipes, etc. No
@@ -141,7 +150,7 @@ q_source_all_libs() {
     local lib
     for lib in parser.sh search.sh variables.sh executor.sh session.sh \
                logger.sh promote.sh chains.sh runner.sh sync.sh tmux.sh \
-               authoring.sh; do
+               authoring.sh combos.sh; do
         if [[ -f "${Q_ROOT}/lib/${lib}" ]]; then
             # shellcheck source=/dev/null
             source "${Q_ROOT}/lib/${lib}"
@@ -325,6 +334,22 @@ case "${1:-}" in
         q_config_load
         q_ensure_index >/dev/null 2>&1 || true
         q_lint
+        exit $?
+        ;;
+
+    # -- Personal combo library (auto-captured on every pick) -------------
+    combos|combo)
+        source "${Q_ROOT}/lib/combos.sh"
+        q_ensure_dirs
+        q_config_load
+        case "${2:-list}" in
+            list)  q_combo_list "${3:-}" ;;
+            forget) q_combo_forget "${3:-}" "${4:-}" ;;
+            path)  _q_combos_dir; printf '\n' ;;
+            *)     q_error "Unknown combos subcommand: ${2}"
+                   q_error "Valid: list [TOOL], forget TOOL [TEMPLATE], path"
+                   exit 1 ;;
+        esac
         exit $?
         ;;
 

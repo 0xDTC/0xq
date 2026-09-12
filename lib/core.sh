@@ -455,6 +455,7 @@ ${Q_BOLD}UTILITY${Q_RESET}
     q rebuild                   Force-rebuild the cheatsheet index cache
     q config [list|get|set]     Manage config knobs (~/.config/q/config.sh)
     q lint                      Report cross-file duplicate commands
+    q combos [list|forget]      List personal combos (auto-captured per tool)
     q --os {windows|linux|any}  Filter cheatsheets by target OS (once)
     q --version, -v             Print version
     q --help, -h                Show this help

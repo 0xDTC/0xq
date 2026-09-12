@@ -288,8 +288,18 @@ PREVIEW_EOF
             # OS filter: keep rows tagged "any" always, or matching the filter.
             if (os_filter != "" && platform != "any" && platform != os_filter) next
 
-            mark = (title in mru_rank) ? (magenta "★" reset " ") : "  "
-            rank = (title in mru_rank) ? mru_rank[title] : 999999
+            # Combos always sort above MRU cheatsheets. Their display gets
+            # a distinct wrench marker instead of the MRU star. Since combo
+            # rows are emitted before the index, their NR is already small
+            # and already sorted by hit count desc — so rank=0 + NR
+            # tiebreak gives top combo first.
+            if (cat == "combo") {
+                mark = magenta "\xE2\x9A\x99" reset " "   # ⚙
+                rank = 0
+            } else {
+                mark = (title in mru_rank) ? (magenta "\xE2\x98\x85" reset " ") : "  "
+                rank = (title in mru_rank) ? mru_rank[title] : 999999
+            }
 
             # Build colored, padded display: TOOL | TITLE | DESCRIPTION
             tool_col  = mark cyan pad(tool, tool_w - 2) reset
@@ -307,7 +317,7 @@ PREVIEW_EOF
             printf "%010d\t%010d\t%s\t%s\t%s\t%s\t%s\n", \
                 rank, NR, display, title, cmd, src, keywords
         }
-        ' "$index_file" \
+        ' <({ declare -f q_combo_emit_index_rows >/dev/null 2>&1 && q_combo_emit_index_rows 2>/dev/null; } ; cat "$index_file") \
         | sort -k1,1n -k2,2n \
         | cut -f3- \
         | fzf \
