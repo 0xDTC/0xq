@@ -60,21 +60,18 @@ q_main() {
     local selected
     selected="$(q_search "$@")" || true
 
-    # 2a. Builder sideband — Ctrl+B inside the picker writes a chosen tool
-    #     name to .builder_tool and aborts fzf. Dispatch here to open the
-    #     flag composer; the resulting template flows through the same fill
-    #     path as any picked cheatsheet or combo.
-    local _builder_sideband="${Q_CACHE_DIR}/.builder_tool"
+    # 2a. Built-command sideband — Ctrl+B, Ctrl+M, Ctrl+X all write the
+    #     ASSEMBLED template to .built_cmd and abort fzf. That template
+    #     flows through the same fill path as any picked cheatsheet or
+    #     combo. Delete (Ctrl+D) doesn't write here — it just deletes
+    #     and returns to a "no selection" state; the user re-opens the
+    #     picker to continue.
+    local _built_sideband="${Q_CACHE_DIR}/.built_cmd"
     local command title
-    if [[ -s "$_builder_sideband" ]]; then
-        local _btool; _btool="$(<"$_builder_sideband")"
-        rm -f "$_builder_sideband"
-        command="$(q_builder_run "$_btool")"
-        if [[ -z "$command" ]]; then
-            q_info "Builder cancelled — no command composed."
-            return 0
-        fi
-        title="[built] ${_btool}"
+    if [[ -s "$_built_sideband" ]]; then
+        command="$(<"$_built_sideband")"
+        rm -f "$_built_sideband"
+        title="[built]"
     elif [[ -z "$selected" ]]; then
         q_info "No command selected."
         return 0
@@ -154,8 +151,10 @@ q_main() {
     # Clear the sideband flag so it doesn't leak into the next invocation
     rm -f "$force_edit"
 
-    # 5c. Normal mode: confirm and execute
-    q_confirm_and_run "$filled_command"
+    # 5c. Normal mode: confirm and execute.
+    #     Pass the pre-fill TEMPLATE too so [s] Save persists the shape
+    #     with {{PLACEHOLDERS}} intact (rather than today's concrete values).
+    q_confirm_and_run "$filled_command" "$command"
 }
 
 # ---------------------------------------------------------------------------

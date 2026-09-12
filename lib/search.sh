@@ -226,15 +226,27 @@ PREVIEW_EOF
     local fill_script="${Q_CACHE_DIR}/.q_fill_var.sh"
     local decide_script="${Q_CACHE_DIR}/.q_decide.sh"
     local builder_script="${Q_CACHE_DIR}/.q_builder_pick.sh"
+    local modify_script="${Q_CACHE_DIR}/.q_modify.sh"
+    local delete_script="${Q_CACHE_DIR}/.q_delete.sh"
+    local chain_script="${Q_CACHE_DIR}/.q_chain_pick.sh"
     _q_helper_stale "$fill_script"    && _q_write_fill_helper    "$fill_script"
     _q_helper_stale "$decide_script"  && _q_write_decide_helper  "$decide_script"
     _q_helper_stale "$varhint_script" && _q_write_varhint_helper "$varhint_script"
     _q_helper_stale "$builder_script" && _q_write_builder_pick_helper "$builder_script"
+    _q_helper_stale "$modify_script"  && _q_write_modify_helper       "$modify_script"
+    _q_helper_stale "$delete_script"  && _q_write_delete_helper       "$delete_script"
+    _q_helper_stale "$chain_script"   && _q_write_chain_pick_helper   "$chain_script"
     unset -f _q_helper_stale
 
-    # Reset the builder sideband so a stale value doesn't leak from a
-    # previous invocation.
-    rm -f "${Q_CACHE_DIR}/.builder_tool"
+    # Reset sidebands so stale values don't leak between invocations.
+    rm -f "${Q_CACHE_DIR}/.built_cmd" "${Q_CACHE_DIR}/.builder_tool"
+
+    # Save the full picker feed (combos + index) so keybind helpers can
+    # read the exact rows fzf is showing without re-generating them.
+    local feed_file="${Q_CACHE_DIR}/.picker_feed"
+    { declare -f q_combo_emit_index_rows >/dev/null 2>&1 && \
+        q_combo_emit_index_rows 2>/dev/null; \
+      cat "$index_file"; } > "$feed_file"
 
     # -----------------------------------------------------------------------
     # Build the display list and run fzf.
@@ -326,15 +338,14 @@ PREVIEW_EOF
             printf "%010d\t%010d\t%s\t%s\t%s\t%s\t%s\n", \
                 rank, NR, display, title, cmd, src, keywords
         }
-        ' <({ declare -f q_combo_emit_index_rows   >/dev/null 2>&1 && q_combo_emit_index_rows   2>/dev/null; } ; \
-             cat "$index_file") \
+        ' "$feed_file" \
         | sort -k1,1n -k2,2n \
         | cut -f3- \
         | fzf \
             --ansi \
             --print-query \
             --prompt='q> ' \
-            --header='★=recent  ⚙=combo   ^F fill  ^S set  ^T cycle  ^Y copy  ^E edit  ^N new  ^B build  Tab preview  Esc quit' \
+            --header='★ recent  ⚙ combo  ^F fill  ^S set  ^T cycle  ^Y copy  ^E edit  ^B build  ^M modify  ^X chain  ^D delete  ^N new  Esc quit' \
             --preview="$preview_cmd" \
             --preview-window="${Q_PREVIEW_POS:-down:50%:wrap}" \
             --query="$initial_query" \
@@ -345,7 +356,10 @@ PREVIEW_EOF
             --bind="ctrl-t:execute-silent('${cycle_script}' '${targets_file}' '${cycle_file}')+refresh-preview" \
             --bind="ctrl-s:execute('${setvar_script}' {3} '${vars_file}' '${q_bin}')+refresh-preview" \
             --bind="ctrl-n:execute('${q_bin}' new)+abort" \
-            --bind="ctrl-b:execute('${builder_script}' '${Q_ROOT}' '${Q_CACHE_DIR}/.builder_tool')+abort" \
+            --bind="ctrl-b:execute('${builder_script}' '${Q_ROOT}' '${Q_CACHE_DIR}/.built_cmd')+abort" \
+            --bind="ctrl-m:execute('${modify_script}' '${Q_ROOT}' '${Q_CACHE_DIR}/.built_cmd' {3})+abort" \
+            --bind="ctrl-x:execute('${chain_script}' '${Q_ROOT}' '${Q_CACHE_DIR}/.built_cmd' '${feed_file}')+abort" \
+            --bind="ctrl-d:execute('${delete_script}' '${Q_ROOT}' {2} {3} {4})+abort" \
             --bind='tab:toggle-preview' \
             --delimiter=$'\t' \
             --with-nth=1 \
@@ -852,7 +866,327 @@ sel="$(printf '%s' "$lines" | fzf \
 
 sel="${sel%%$'\t'*}"
 [[ -z "$sel" ]] && exit 0
-printf '%s' "$sel" > "$sideband"
+
+# Invoke the flag composer inline so we can write the FULL assembled
+# template to the unified sideband (.built_cmd). q_main reads that.
+built="$(q_builder_run "$sel" 2>/dev/tty)"
+[[ -z "$built" ]] && exit 0
+printf '%s' "$built" > "$sideband"
 BUILDERPICKEOF
+    chmod +x "$path"
+}
+
+# ===========================================================================
+# _q_write_modify_helper — emit the Ctrl+M "modify current row" script
+# ===========================================================================
+# On Ctrl+M in the picker the highlighted row's command is passed in.
+# Extract the tool and the flags actually present, then open the builder
+# multi-select with those flags PRE-SELECTED. User Tabs to add/remove,
+# hits Enter, and the assembled template lands in the shared .built_cmd
+# sideband (same path Ctrl+B uses).
+_q_write_modify_helper() {
+    local path="$1"
+    cat > "$path" <<'MODIFYEOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+Q_ROOT="$1"
+sideband="$2"
+raw_cmd="$3"
+
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/core.sh"
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/builder.sh"
+q_config_load 2>/dev/null || true
+
+# Strip ANSI + placeholder tokens so the flag extractor sees the actual
+# shape of the command.
+cmd="$(printf '%s' "$raw_cmd" | sed "s/$(printf '\033')\[[0-9;]*m//g")"
+tool="$(_q_combo_tool_for "$cmd" 2>/dev/null)"
+if [[ -z "$tool" ]]; then
+    printf '\n\033[1;33m[!]\033[0m Could not detect tool from that row.\n' > /dev/tty
+    printf '    Press any key...\n' > /dev/tty
+    read -rsn1 -t 5 _ < /dev/tty 2>/dev/null || true
+    exit 0
+fi
+
+# Ensure the tool has a builder catalog. If not, hint the user how to
+# enable it and bail out (falling back to raw $EDITOR is what Ctrl+E is for).
+have_catalog=0
+if _q_builder_path "$tool" >/dev/null 2>&1; then
+    have_catalog=1
+elif [[ -s "$(_q_builder_auto_cache "$tool")" ]]; then
+    have_catalog=1
+fi
+if [[ "$have_catalog" -eq 0 ]]; then
+    printf '\n\033[1;33m[!]\033[0m %s has no builder catalog yet.\n' "$tool" > /dev/tty
+    printf '    Enable it:  \033[1mq build add %s\033[0m  (parses --help)\n' "$tool" > /dev/tty
+    printf '    Or use Ctrl+E to edit the raw command.\n' > /dev/tty
+    printf '    Press any key...\n' > /dev/tty
+    read -rsn1 -t 5 _ < /dev/tty 2>/dev/null || true
+    exit 0
+fi
+
+# Collect the flags the current command already uses. Simple lexical scan:
+# any token starting with '-' after the tool binary. Skip placeholders and
+# redirect operators. Empty result is fine — user just picks fresh flags.
+used=""
+seen_tool=0
+for tok in $cmd; do
+    [[ "$tok" == "sudo" || "$tok" == "$tool" ]] && { seen_tool=1; continue; }
+    [[ "$seen_tool" -eq 0 ]] && continue
+    case "$tok" in
+        -*) used="${used}${tok}"$'\n' ;;
+    esac
+done
+
+# Load the catalog into arrays via the same yq/tsv path q_builder_run uses.
+tmpdir="$(mktemp -d /tmp/q_modify_XXXXXX)"
+trap 'rm -rf "$tmpdir"' EXIT
+_flag_src=""
+if _q_builder_path "$tool" >/dev/null 2>&1; then
+    catalog_path="$(_q_builder_path "$tool")"
+    _flag_src=$(yq -r '.flags[] | [.flag // "", .desc // "", .value.name // "", .value.type // "", .value.default // ""] | @tsv' "$catalog_path" 2>/dev/null)
+else
+    _flag_src=$(cat "$(_q_builder_auto_cache "$tool")")
+fi
+
+# Build the candidate list, and while at it record which row indices match
+# a "used" flag so we can pre-select them via `load:pos(N)+select+...`.
+cands_file="$tmpdir/cands"
+: > "$cands_file"
+pre_marks=""
+idx=0
+while IFS=$'\t' read -r f d vn vt vd; do
+    [[ -z "$f" ]] && continue
+    idx=$((idx + 1))
+    printf '%s\t%s\n' "$f" "$d" >> "$cands_file"
+    if grep -qxF "$f" <<< "$used"; then
+        # fzf pos() is 1-indexed; chain pos(N)+select for each match.
+        pre_marks="${pre_marks:+${pre_marks}+}pos(${idx})+select"
+    fi
+done <<< "$_flag_src"
+
+if [[ -z "$pre_marks" ]]; then
+    load_bind="pos(1)"
+else
+    load_bind="${pre_marks}+pos(1)"
+fi
+
+raw="$(fzf --multi --print-query --reverse --border --no-info \
+        --prompt="modify ${tool}> " \
+        --header="pre-marked = current flags  |  Tab: toggle  |  Ctrl-A: all  |  Enter: rebuild  |  Esc: cancel" \
+        --bind='ctrl-a:select-all,ctrl-d:deselect-all' \
+        --bind="load:${load_bind}" \
+        --tabstop=20 \
+        --delimiter=$'\t' --with-nth=1,2 \
+        < "$cands_file" 2>/dev/tty)" || exit 0
+[[ -z "$raw" ]] && exit 0
+
+# Parse (line 1 = query, then each selected row as flag\tdesc).
+picked=()
+while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    picked+=("${line%%$'\t'*}")
+done < <(printf '%s\n' "$raw" | tail -n +2)
+[[ ${#picked[@]} -eq 0 ]] && exit 0
+
+# Reassemble template using the same value-placeholder rules as the
+# fresh builder — pick up value definitions from the flag catalog by
+# matching flag → row in _flag_src.
+declare -A vname vtype vdefault
+while IFS=$'\t' read -r f d vn vt vd; do
+    [[ -z "$f" ]] && continue
+    vname["$f"]="$vn"; vtype["$f"]="$vt"; vdefault["$f"]="$vd"
+done <<< "$_flag_src"
+
+assembled="$tool"
+for pf in "${picked[@]}"; do
+    assembled="$assembled $pf"
+    _vn="${vname[$pf]:-}"; _vt="${vtype[$pf]:-}"; _vd="${vdefault[$pf]:-}"
+    if [[ -n "$_vn" ]]; then
+        ph="{{${_vn}"
+        [[ -n "$_vt" ]] && ph="${ph}:${_vt}"
+        [[ -n "$_vd" ]] && ph="${ph}:${_vd}"
+        assembled="$assembled ${ph}}}"
+    fi
+done
+
+# Preserve any positional {{TARGET}} the original had (nmap etc.).
+for tok in $cmd; do
+    if [[ "$tok" == '{{'*'}}' ]]; then
+        # Skip placeholder tokens the flag catalog already inserted.
+        case "$assembled" in
+            *"$tok"*) ;;
+            *) assembled="$assembled $tok" ;;
+        esac
+    fi
+done
+
+printf '%s' "$assembled" > "$sideband"
+MODIFYEOF
+    chmod +x "$path"
+}
+
+# ===========================================================================
+# _q_write_delete_helper — emit the Ctrl+D "delete current row" script
+# ===========================================================================
+# Dispatches by source of the highlighted row:
+#   src starts with "combo:"     → q_combo_forget TOOL TEMPLATE
+#   src ends with ".md"          → cheatsheet delete (uses q_author_delete_entry)
+# Always confirms before deleting. After a cheatsheet edit, reindexes.
+_q_write_delete_helper() {
+    local path="$1"
+    cat > "$path" <<'DELETEEOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+Q_ROOT="$1"
+title="$2"
+raw_cmd="$3"
+src="$4"
+
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/core.sh"
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/session.sh"
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/combos.sh"
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/parser.sh"
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/authoring.sh"
+q_config_load 2>/dev/null || true
+
+strip_ansi() { sed "s/$(printf '\033')\[[0-9;]*m//g"; }
+title="$(printf '%s' "$title" | strip_ansi)"
+cmd="$(printf '%s' "$raw_cmd" | strip_ansi)"
+src="$(printf '%s' "$src" | strip_ansi)"
+
+case "$src" in
+    combo:*)
+        # Extract tool from "combo:<tool>.tsv"
+        rest="${src#combo:}"; tool="${rest%.tsv}"
+        printf '\n\033[1;31m[?]\033[0m Delete combo:\n' > /dev/tty
+        printf '      tool: \033[1m%s\033[0m\n' "$tool" > /dev/tty
+        printf '      cmd:  %s\n' "$cmd" > /dev/tty
+        printf '    [y] confirm  [any other key] cancel: ' > /dev/tty
+        read -rsn1 reply < /dev/tty
+        printf '\n' > /dev/tty
+        if [[ "$reply" == "y" || "$reply" == "Y" ]]; then
+            q_combo_forget "$tool" "$cmd"
+        else
+            printf '  (cancelled)\n' > /dev/tty
+            sleep 0.5
+        fi
+        ;;
+    *.md|*.md\ *)
+        # Cheatsheet row — src is the source .md path relative to cheatsheets/
+        rel="${src%% *}"
+        file="${Q_SHEETS_DIR}/${rel}"
+        if [[ ! -f "$file" ]]; then
+            printf '\n\033[1;33m[!]\033[0m Source file not found: %s\n' "$rel" > /dev/tty
+            sleep 1
+            exit 0
+        fi
+        printf '\n\033[1;31m[?]\033[0m Delete cheatsheet entry:\n' > /dev/tty
+        printf '      file:  %s\n' "$rel" > /dev/tty
+        printf '      title: \033[1m%s\033[0m\n' "$title" > /dev/tty
+        printf '      cmd:   %s\n' "$cmd" > /dev/tty
+        printf '    [y] confirm  [any other key] cancel: ' > /dev/tty
+        read -rsn1 reply < /dev/tty
+        printf '\n' > /dev/tty
+        if [[ "$reply" == "y" || "$reply" == "Y" ]]; then
+            if q_author_delete_entry "$file" "$title"; then
+                q_rebuild_index >/dev/null 2>&1 || true
+                printf '  \033[1;32m[+]\033[0m Deleted "%s" from %s\n' "$title" "$rel" > /dev/tty
+                sleep 1
+            else
+                printf '  \033[1;31m[-]\033[0m Could not find "%s" in %s\n' "$title" "$rel" > /dev/tty
+                sleep 1
+            fi
+        else
+            printf '  (cancelled)\n' > /dev/tty
+            sleep 0.5
+        fi
+        ;;
+    *)
+        printf '\n\033[1;33m[!]\033[0m This row cannot be deleted (src="%s")\n' "$src" > /dev/tty
+        sleep 1
+        ;;
+esac
+DELETEEOF
+    chmod +x "$path"
+}
+
+# ===========================================================================
+# _q_write_chain_pick_helper — emit the Ctrl+X chain composer script
+# ===========================================================================
+# Multi-select from the same picker feed (combos + cheatsheets). Selected
+# commands get joined with " && " into one template. Placeholders that
+# appear in multiple commands only get prompted once by the fill flow.
+_q_write_chain_pick_helper() {
+    local path="$1"
+    cat > "$path" <<'CHAINEOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+Q_ROOT="$1"
+sideband="$2"
+feed_file="$3"
+
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/core.sh"
+q_config_load 2>/dev/null || true
+
+if [[ ! -s "$feed_file" ]]; then
+    printf '\n\033[1;33m[!]\033[0m Picker feed missing. Reopen Ctrl+Q and try again.\n' > /dev/tty
+    sleep 1
+    exit 0
+fi
+
+# Feed rows are 10-column TSV (parser.sh layout):
+#   1 CATEGORY 2 TOOL 3 TITLE 4 DESC 5 CMD 6 RISK 7 PHASE 8 TAGS 9 SRC 10 PLATFORM
+# We display "TOOL │ TITLE" and let fzf multi-select. Selected rows come
+# back as the full TSV so we can grab field 5 (CMD).
+raw="$(awk -F'\t' '
+    { printf "%s\t%s | %s\n", NR, $2 " │ " $3, $5 }
+' "$feed_file" | fzf --multi --print-query --reverse --border --no-info \
+        --prompt='chain (Tab: mark, Enter: build)> ' \
+        --header='Selected commands get joined with && in the order you mark them' \
+        --bind='ctrl-a:select-all,ctrl-d:deselect-all' \
+        --delimiter=$'\t' --with-nth=2 \
+        2>/dev/tty)" || exit 0
+[[ -z "$raw" ]] && exit 0
+
+# Skip the query (line 1); each remaining line is "NR\tdisplay\tcmd".
+# But because our awk emitted "NR\tdisplay | cmd" we need to split on
+# " | " to recover the cmd. Cleaner: re-read the feed by NR and grab
+# column 5 directly.
+nrs=()
+while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    nrs+=("${line%%$'\t'*}")
+done < <(printf '%s\n' "$raw" | tail -n +2)
+[[ ${#nrs[@]} -eq 0 ]] && exit 0
+
+# Look up each picked NR in the feed file, extract command (field 5).
+# Preserve the user's pick ORDER (nrs[] is in tab order which is the
+# selection order from fzf --print-query --multi).
+assembled=""
+for nr in "${nrs[@]}"; do
+    cmd="$(awk -F'\t' -v want="$nr" 'NR == want { print $5 }' "$feed_file")"
+    [[ -z "$cmd" ]] && continue
+    if [[ -z "$assembled" ]]; then
+        assembled="$cmd"
+    else
+        assembled="${assembled} && ${cmd}"
+    fi
+done
+
+[[ -z "$assembled" ]] && exit 0
+printf '%s' "$assembled" > "$sideband"
+CHAINEOF
     chmod +x "$path"
 }

@@ -467,3 +467,53 @@ q_author_edit() {
             ;;
     esac
 }
+
+# ===========================================================================
+# q_author_add_from_template TEMPLATE — save a pre-assembled command
+# ===========================================================================
+# The command comes in already-composed (from the builder, modifier, or
+# chain composer). Prompts for title / description / category / tags,
+# then reuses q_author_build_entry + q_author_append_entry to write a
+# real cheatsheet entry that shows up in the picker on the next rebuild.
+# Skips the interactive command entry that q_author_add does — that's
+# already done for us.
+q_author_add_from_template() {
+    local template="$1"
+    [[ -z "$template" ]] && { q_error "q_author_add_from_template: empty template"; return 1; }
+    command -v fzf >/dev/null 2>&1 || { q_error "fzf is required to save cheatsheets."; return 1; }
+    q_ensure_index >/dev/null 2>&1 || true
+
+    {
+        printf '\n%s─── save as cheatsheet ───%s\n' "${Q_BOLD:-}" "${Q_RESET:-}"
+        printf '%s\n\n' "$template"
+    } 2>/dev/null > /dev/tty || true
+
+    # File picker (existing) — pick or create the .md the entry goes into.
+    local file; file="$(_q_author_pick_file)" || { q_info "Cancelled."; return 0; }
+    [[ -z "$file" ]] && { q_info "Cancelled."; return 0; }
+
+    local title; title="$(_q_author_read 'Title (search-query style, lowercase): ')"
+    [[ -z "$title" ]] && { q_info "No title — cancelled."; return 0; }
+    local desc;  desc="$(_q_author_read 'Description (one line, optional): ')"
+    local risk;  # shellcheck disable=SC2086
+    risk="$(printf '%s\n' $_Q_AUTHOR_RISKS  | _q_author_fzf 'Risk [low]> ')";   risk="${risk:-low}"
+    local phase; # shellcheck disable=SC2086
+    phase="$(printf '%s\n' $_Q_AUTHOR_PHASES | _q_author_fzf 'Phase [misc]> ')"; phase="${phase:-misc}"
+    local tags;  tags="$(_q_author_read 'Tags (comma-separated, optional): ')"
+    tags="$(printf '%s' "$tags" | tr -d '[:space:]')"
+
+    local block
+    if ! block="$(q_author_build_entry "$title" "$desc" "$template" "$risk" "$phase" "$tags")"; then
+        return 1
+    fi
+    {
+        printf '\n%s───── preview ─────%s\n%s\n%sfile:%s %s\n\n' \
+            "${Q_DIM:-}" "${Q_RESET:-}" "$block" \
+            "${Q_DIM:-}" "${Q_RESET:-}" "${file#"${Q_SHEETS_DIR}"/}"
+    } 2>/dev/null > /dev/tty || true
+    _q_author_confirm 'Save this entry? [Y/n] ' y || { q_info "Not saved."; return 0; }
+
+    q_author_append_entry "$file" "$block"
+    q_rebuild_index >/dev/null 2>&1 || true
+    q_success "Saved '${title}' → ${file#"${Q_SHEETS_DIR}"/}"
+}

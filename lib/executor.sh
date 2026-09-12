@@ -169,6 +169,10 @@ _q_edit_command() {
 # ===========================================================================
 q_confirm_and_run() {
     local command="$1"
+    # Optional second arg: the pre-fill TEMPLATE (with placeholders). If
+    # given, [s] Save persists the template shape; otherwise falls back to
+    # the filled command.
+    local template="${2:-$command}"
 
     # Display the final command prominently
     printf '\n' >&2
@@ -187,6 +191,7 @@ q_confirm_and_run() {
         printf '%s[Enter]%s Run  ' "$Q_BOLD" "$Q_RESET" >&2
         printf '%s[e]%s Edit  '    "$Q_BOLD" "$Q_RESET" >&2
         printf '%s[c]%s Copy  '    "$Q_BOLD" "$Q_RESET" >&2
+        printf '%s[s]%s Save  '    "$Q_BOLD" "$Q_RESET" >&2
         printf '%s[q]%s Cancel  '  "$Q_BOLD" "$Q_RESET" >&2
         printf '\n' >&2
 
@@ -218,6 +223,16 @@ q_confirm_and_run() {
                 if _q_copy_to_clipboard "$command"; then
                     q_success "Copied to clipboard."
                 fi
+                ;;
+            # Save the TEMPLATE as a new cheatsheet entry, then loop back
+            # to the confirm prompt so the user can still run it.
+            s|S)
+                if declare -f q_author_add_from_template >/dev/null 2>&1; then
+                    q_author_add_from_template "$template" || true
+                else
+                    q_warn "Authoring lib not available — skipping save."
+                fi
+                q_confirm_and_run "$command" "$template"
                 ;;
             # Cancel (q, Escape, or anything else)
             *)
