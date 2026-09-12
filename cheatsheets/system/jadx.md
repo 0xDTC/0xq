@@ -87,7 +87,7 @@ jadx --class-filter={{CLASS:str:com.example.Foo}} {{INFILE:file:app.apk}} -d {{O
 Use a larger heap for big apps.
 
 ```bash
-jadx --max-memory-size={{MEM:choice:4G,2G,8G,16G,1G,512M}} {{INFILE:file:app.apk}} -d {{OUTDIR:dir:./out}}
+jadx --max-memory-size={{MEM:choice:4G=4 GB heap,2G=2 GB heap,8G=8 GB heap,16G=16 GB heap,1G=1 GB heap,512M=512 MB heap}} {{INFILE:file:app.apk}} -d {{OUTDIR:dir:./out}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=memory -->

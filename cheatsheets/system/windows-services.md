@@ -22,7 +22,7 @@ sc query
 Show configuration and current state for a single named service.
 
 ```bash
-sc query {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
+sc query {{SERVICE:choice:Spooler=Print Spooler,wuauserv=Windows Update,WinDefend=Defender antivirus,WinRM=remote management,TermService=RDP service,MpsSvc=Windows Firewall,LanmanServer=SMB server,LanmanWorkstation=SMB client,Schedule=Task Scheduler,EventLog=event logging,BITS=Bg Intelligent Transfer,W32Time=time sync}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=services,sc,cmd -->
@@ -33,7 +33,7 @@ sc query {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,La
 Start a service by name using the Service Control manager.
 
 ```bash
-sc start {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
+sc start {{SERVICE:choice:Spooler=Print Spooler,wuauserv=Windows Update,WinDefend=Defender antivirus,WinRM=remote management,TermService=RDP service,MpsSvc=Windows Firewall,LanmanServer=SMB server,LanmanWorkstation=SMB client,Schedule=Task Scheduler,EventLog=event logging,BITS=Bg Intelligent Transfer,W32Time=time sync}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,sc,start -->
@@ -44,7 +44,7 @@ sc start {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,La
 Stop a running service by name using the Service Control manager.
 
 ```bash
-sc stop {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
+sc stop {{SERVICE:choice:Spooler=Print Spooler,wuauserv=Windows Update,WinDefend=Defender antivirus,WinRM=remote management,TermService=RDP service,MpsSvc=Windows Firewall,LanmanServer=SMB server,LanmanWorkstation=SMB client,Schedule=Task Scheduler,EventLog=event logging,BITS=Bg Intelligent Transfer,W32Time=time sync}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,sc,stop -->
@@ -55,7 +55,7 @@ sc stop {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,Lan
 Set a service start type to disabled so it will not launch at boot.
 
 ```bash
-sc config {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}} start= disabled
+sc config {{SERVICE:choice:Spooler=Print Spooler,wuauserv=Windows Update,WinDefend=Defender antivirus,WinRM=remote management,TermService=RDP service,MpsSvc=Windows Firewall,LanmanServer=SMB server,LanmanWorkstation=SMB client,Schedule=Task Scheduler,EventLog=event logging,BITS=Bg Intelligent Transfer,W32Time=time sync}} start= disabled
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,sc,config,disable -->
@@ -132,7 +132,7 @@ Get-Service | where DisplayName -like '*{{PATTERN:str:defender}}*' | ft DisplayN
 Start a named service using PowerShell.
 
 ```bash
-Start-Service {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
+Start-Service {{SERVICE:choice:Spooler=Print Spooler,wuauserv=Windows Update,WinDefend=Defender antivirus,WinRM=remote management,TermService=RDP service,MpsSvc=Windows Firewall,LanmanServer=SMB server,LanmanWorkstation=SMB client,Schedule=Task Scheduler,EventLog=event logging,BITS=Bg Intelligent Transfer,W32Time=time sync}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,powershell,start -->
@@ -143,7 +143,7 @@ Start-Service {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsS
 Stop a named service using PowerShell.
 
 ```bash
-Stop-Service {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
+Stop-Service {{SERVICE:choice:Spooler=Print Spooler,wuauserv=Windows Update,WinDefend=Defender antivirus,WinRM=remote management,TermService=RDP service,MpsSvc=Windows Firewall,LanmanServer=SMB server,LanmanWorkstation=SMB client,Schedule=Task Scheduler,EventLog=event logging,BITS=Bg Intelligent Transfer,W32Time=time sync}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,powershell,stop -->
@@ -154,7 +154,7 @@ Stop-Service {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSv
 Set a service start type to disabled using PowerShell.
 
 ```bash
-Set-Service -Name {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}} -StartType Disabled
+Set-Service -Name {{SERVICE:choice:Spooler=Print Spooler,wuauserv=Windows Update,WinDefend=Defender antivirus,WinRM=remote management,TermService=RDP service,MpsSvc=Windows Firewall,LanmanServer=SMB server,LanmanWorkstation=SMB client,Schedule=Task Scheduler,EventLog=event logging,BITS=Bg Intelligent Transfer,W32Time=time sync}} -StartType Disabled
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,powershell,disable -->
@@ -209,7 +209,7 @@ schtasks /query /V /FO list
 Register a new scheduled task that runs a program on a given schedule.
 
 ```bash
-schtasks /create /sc {{SCHEDULE:choice:ONLOGON,ONSTART,MINUTE,HOURLY,DAILY,WEEKLY,MONTHLY,ONCE,ONIDLE,ONEVENT}} /tn {{TASK:str:Updater}} /tr {{PROGRAM:str:C:\Windows\Temp\payload.exe}}
+schtasks /create /sc {{SCHEDULE:choice:ONLOGON=at user logon,ONSTART=at system boot,MINUTE=every N minutes,HOURLY=hourly,DAILY=daily,WEEKLY=weekly,MONTHLY=monthly,ONCE=one-time run,ONIDLE=on host idle,ONEVENT=on event log entry}} /tn {{TASK:str:Updater}} /tr {{PROGRAM:str:C:\Windows\Temp\payload.exe}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=schtasks,tasks,create -->

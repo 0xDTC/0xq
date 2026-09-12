@@ -143,7 +143,7 @@ Get-LocalGroup
 Show the members of a local group such as Administrators.
 
 ```bash
-Get-LocalGroupMember -Name "{{GROUP:choice:Administrators,Users,Guests,Backup Operators,Remote Desktop Users,Power Users,Remote Management Users,Hyper-V Administrators}}"
+Get-LocalGroupMember -Name "{{GROUP:choice:Administrators=local admins,Users=default users,Guests=guest accounts,Backup Operators=backup/restore rights,Remote Desktop Users=RDP allowed,Power Users=legacy semi-admin,Remote Management Users=WinRM allowed,Hyper-V Administrators=VM admins}}"
 ```
 
 <!-- meta: risk=low | phase=enum | tags=powershell,localgroup,members -->
@@ -176,7 +176,7 @@ $Password = Read-Host -AsSecureString; Set-LocalUser -Name "{{USERNAME:str}}" -P
 Add a user to a local group such as Administrators for privilege escalation.
 
 ```bash
-Add-LocalGroupMember -Group "{{GROUP:choice:Administrators,Users,Guests,Backup Operators,Remote Desktop Users,Power Users,Remote Management Users,Hyper-V Administrators}}" -Member "{{USERNAME:str}}"
+Add-LocalGroupMember -Group "{{GROUP:choice:Administrators=local admins,Users=default users,Guests=guest accounts,Backup Operators=backup/restore rights,Remote Desktop Users=RDP allowed,Power Users=legacy semi-admin,Remote Management Users=WinRM allowed,Hyper-V Administrators=VM admins}}" -Member "{{USERNAME:str}}"
 ```
 
 <!-- meta: risk=med | phase=privesc | tags=powershell,localgroup,admin -->

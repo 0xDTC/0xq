@@ -63,7 +63,7 @@ for s in $(cat {{SUBDOMAINS:file:subdomains.txt}}); do echo "Q" | openssl s_clie
 Probe STARTTLS-enabled services.
 
 ```bash
-openssl s_client -connect {{TARGET:ip}}:{{PORT:port:25}} -starttls {{PROTO:choice:smtp,pop3,imap,ftp,xmpp,ldap,mysql,postgres,irc,nntp,sieve,lmtp}}
+openssl s_client -connect {{TARGET:ip}}:{{PORT:port:25}} -starttls {{PROTO:choice:smtp=Mail submission,pop3=Mail retrieval,imap=Mail sync,ftp=File transfer,xmpp=Jabber chat,ldap=Directory service,mysql=MySQL DB,postgres=PostgreSQL DB,irc=IRC chat,nntp=Usenet news,sieve=Mail filtering,lmtp=Local mail delivery}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=openssl,starttls,smtp,pop3 -->

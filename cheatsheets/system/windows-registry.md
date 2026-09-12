@@ -96,7 +96,7 @@ Get-ChildItem -Path {{KEYPATH:str:HKLM:\SOFTWARE}}
 Recursively search a hive for a pattern in value data (great for stored creds).
 
 ```bash
-reg query {{HIVE:choice:HKLM,HKCU,HKU,HKCR,HKCC}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
+reg query {{HIVE:choice:HKLM=local machine,HKCU=current user,HKU=all loaded users,HKCR=file assoc + COM,HKCC=current hardware config}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,reg,creds,search -->
@@ -107,7 +107,7 @@ reg query {{HIVE:choice:HKLM,HKCU,HKU,HKCR,HKCC}} /f "{{PATTERN:str:password}}" 
 Search for a pattern in KEY names only (/k), recursively.
 
 ```bash
-reg query {{HIVE:choice:HKCU,HKLM,HKU,HKCR,HKCC}} /f "{{PATTERN:str:Password}}" /t REG_SZ /s /k
+reg query {{HIVE:choice:HKCU=current user,HKLM=local machine,HKU=all loaded users,HKCR=file assoc + COM,HKCC=current hardware config}} /f "{{PATTERN:str:Password}}" /t REG_SZ /s /k
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,reg,search -->

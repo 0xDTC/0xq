@@ -11,7 +11,7 @@
 Start a stopped service immediately.
 
 ```bash
-sudo systemctl start {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
+sudo systemctl start {{SERVICE:choice:apache2=Apache web server,nginx=Nginx web server,sshd=OpenSSH daemon,ssh=OpenSSH (Debian alias),mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=start,service -->
@@ -22,7 +22,7 @@ sudo systemctl start {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,do
 Stop a running service immediately.
 
 ```bash
-sudo systemctl stop {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
+sudo systemctl stop {{SERVICE:choice:apache2=Apache web server,nginx=Nginx web server,sshd=OpenSSH daemon,ssh=OpenSSH (Debian alias),mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=stop,service -->
@@ -33,7 +33,7 @@ sudo systemctl stop {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,doc
 Restart a service (stop then start).
 
 ```bash
-sudo systemctl restart {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
+sudo systemctl restart {{SERVICE:choice:apache2=Apache web server,nginx=Nginx web server,sshd=OpenSSH daemon,ssh=OpenSSH (Debian alias),mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=restart,service -->
@@ -44,7 +44,7 @@ sudo systemctl restart {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,
 Enable a service to start automatically on boot.
 
 ```bash
-sudo systemctl enable {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
+sudo systemctl enable {{SERVICE:choice:ssh=OpenSSH (Debian alias),sshd=OpenSSH daemon,apache2=Apache web server,nginx=Nginx web server,mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=enable,boot,autostart -->
@@ -55,7 +55,7 @@ sudo systemctl enable {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,d
 Disable a service from starting on boot.
 
 ```bash
-sudo systemctl disable {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
+sudo systemctl disable {{SERVICE:choice:apache2=Apache web server,nginx=Nginx web server,sshd=OpenSSH daemon,ssh=OpenSSH (Debian alias),mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=disable,boot -->
@@ -66,7 +66,7 @@ sudo systemctl disable {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,
 Check the current status and recent logs of a service.
 
 ```bash
-systemctl status {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
+systemctl status {{SERVICE:choice:ssh=OpenSSH (Debian alias),sshd=OpenSSH daemon,apache2=Apache web server,nginx=Nginx web server,mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=status,check,health -->
@@ -99,7 +99,7 @@ systemctl --failed
 Follow real-time logs for a specific service.
 
 ```bash
-sudo journalctl -u {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}} -f
+sudo journalctl -u {{SERVICE:choice:ssh=OpenSSH (Debian alias),sshd=OpenSSH daemon,apache2=Apache web server,nginx=Nginx web server,mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}} -f
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=journalctl,follow,realtime,logs -->
@@ -110,7 +110,7 @@ sudo journalctl -u {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,dock
 View logs since a specific time or date.
 
 ```bash
-sudo journalctl -u {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}} --since "{{SINCE:choice:1 hour ago,today,yesterday,1 day ago,1 week ago,boot}}" --no-pager
+sudo journalctl -u {{SERVICE:choice:ssh=OpenSSH (Debian alias),sshd=OpenSSH daemon,apache2=Apache web server,nginx=Nginx web server,mysql=MySQL DB,postgresql=PostgreSQL DB,docker=Docker daemon,cron=cron scheduler,NetworkManager=network manager,systemd-resolved=DNS resolver,firewalld=firewall daemon}} --since "{{SINCE:choice:1 hour ago=last hour,today=since midnight,yesterday=previous calendar day,1 day ago=last 24h,1 week ago=last 7d,boot=since last boot}}" --no-pager
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=journalctl,since,time,filter -->
@@ -121,7 +121,7 @@ sudo journalctl -u {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,dock
 View logs filtered by priority level (0=emerg through 7=debug).
 
 ```bash
-sudo journalctl -p {{PRIORITY:choice:err,warning,info,debug,notice,crit,alert,emerg}} --no-pager -n {{LINES:int:50}}
+sudo journalctl -p {{PRIORITY:choice:err=error (3),warning=warn (4),info=info (6),debug=debug (7),notice=notice (5),crit=critical (2),alert=alert (1),emerg=emergency (0)}} --no-pager -n {{LINES:int:50}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=journalctl,priority,severity -->

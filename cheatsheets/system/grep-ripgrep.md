@@ -109,7 +109,7 @@ rg "{{PATTERN:str:password}}" {{PATH:dir:.}}
 Search only specific file types with ripgrep.
 
 ```bash
-rg -t {{TYPE:choice:py,js,ts,go,rust,c,cpp,java,sh,md,json,yaml,html,css,sql}} "{{PATTERN:str:import}}" {{PATH:dir:.}}
+rg -t {{TYPE:choice:py=Python source,js=JavaScript source,ts=TypeScript source,go=Go source,rust=Rust source,c=C source,cpp=C++ source,java=Java source,sh=shell scripts,md=Markdown docs,json=JSON files,yaml=YAML files,html=HTML files,css=CSS files,sql=SQL files}} "{{PATTERN:str:import}}" {{PATH:dir:.}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=rg,filetype,filter -->

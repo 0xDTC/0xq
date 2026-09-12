@@ -32,7 +32,7 @@ john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/word
 Apply mangling rules to increase wordlist coverage.
 
 ```bash
-john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --rules={{RULES:choice:best64,all,single,wordlist,extra,jumbo,korelogic,NT,T0XlC}}
+john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --rules={{RULES:choice:best64=top 64 rules,all=every rule,single=single mode,wordlist=wordlist mode,extra=extra transforms,jumbo=jumbo bundle,korelogic=KoreLogic set,NT=NT-optimised,T0XlC=heavy mangling}}
 ```
 
 <!-- meta: risk=safe | phase=passwords | tags=rules,mangling -->
@@ -44,7 +44,7 @@ Specify a hash format explicitly when auto-detection fails.
 <!-- Common formats: raw-md5, raw-sha1, raw-sha256, raw-sha512, nt, bcrypt, sha512crypt, krb5tgs, krb5asrep -->
 
 ```bash
-john {{HASHFILE:file:hashes.txt}} --format={{FORMAT:choice:raw-md5,raw-sha1,raw-sha256,raw-sha512,nt,lm,bcrypt,sha512crypt,krb5tgs,krb5asrep,net-ntlmv2,mysql,mysql-sha1,oracle}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
+john {{HASHFILE:file:hashes.txt}} --format={{FORMAT:choice:raw-md5=raw MD5,raw-sha1=raw SHA-1,raw-sha256=raw SHA-256,raw-sha512=raw SHA-512,nt=NT hash,lm=LM hash,bcrypt=Blowfish crypt,sha512crypt=Unix SHA-512,krb5tgs=Kerberos TGS-REP,krb5asrep=Kerberos AS-REP,net-ntlmv2=NetNTLMv2 responder,mysql=MySQL hash,mysql-sha1=MySQL SHA-1,oracle=Oracle hash}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
 ```
 
 <!-- meta: risk=safe | phase=passwords | tags=format,specific -->

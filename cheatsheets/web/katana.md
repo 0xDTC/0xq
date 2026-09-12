@@ -65,7 +65,7 @@ katana -u {{URL:url:http://target}} -o {{OUTFILE:file:katana-endpoints.txt}}
 Restrict crawling to a single domain scope to avoid wandering off target.
 
 ```bash
-katana -u {{URL:url:http://target}} -fs {{SCOPE:choice:fqdn,rdn,dn}} -d {{DEPTH:int:3}}
+katana -u {{URL:url:http://target}} -fs {{SCOPE:choice:fqdn=exact host only,rdn=root domain,dn=domain name}} -d {{DEPTH:int:3}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=crawl,scope -->

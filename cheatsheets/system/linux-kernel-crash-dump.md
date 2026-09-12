@@ -42,7 +42,7 @@ crash {{VMLINUX:file:./vmlinux-dbgsym}} {{VMCORE:file:./vmcore}}
 Run one command and exit (scriptable / non-interactive).
 
 ```bash
-echo "{{CMD:choice:sys,ps,bt,log,mod,net,mount,files,dev,vm,kmem,runq,swap}}" | crash {{VMLINUX:file:./vmlinux-dbgsym}} {{VMCORE:file:./vmcore}}
+echo "{{CMD:choice:sys=system + panic summary,ps=process list,bt=backtrace of panic,log=kernel dmesg,mod=loaded modules,net=network devices,mount=mount table,files=open FDs,dev=device stats,vm=virtual memory info,kmem=kernel slab/mem,runq=CPU run queue,swap=swap usage}}" | crash {{VMLINUX:file:./vmlinux-dbgsym}} {{VMCORE:file:./vmcore}}
 ```
 
 <!-- meta: risk=safe | phase=dfir | tags=crash,batch -->

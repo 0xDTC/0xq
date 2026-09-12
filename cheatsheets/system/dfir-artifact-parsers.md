@@ -99,7 +99,7 @@ while pos<len(d):
     fl=struct.unpack('<H', d[pos+56:pos+58])[0]
     fo=struct.unpack('<H', d[pos+58:pos+60])[0]
     fn=d[pos+fo:pos+fo+fl].decode('utf-16-le','replace')
-    if any(k in fn.lower() for k in ['{{KW:choice:mimikatz,psexec,rubeus,cobaltstrike,meterpreter,bloodhound,sharphound,seatbelt,procdump,lazagne,nanodump}}']):
+    if any(k in fn.lower() for k in ['{{KW:choice:mimikatz=credential dumper,psexec=SysInternals remote exec,rubeus=Kerberos toolkit,cobaltstrike=C2 framework beacon,meterpreter=Metasploit payload,bloodhound=AD attack-path mapping,sharphound=BloodHound collector,seatbelt=Windows host recon,procdump=SysInternals mem dumper,lazagne=cred harvester,nanodump=stealth LSASS dumper}}']):
         t=datetime.datetime.fromtimestamp(ts/1e7-11644473600, datetime.timezone.utc)
         print(f'{t} r=0x{r:x} {fn}')
     pos+=l"

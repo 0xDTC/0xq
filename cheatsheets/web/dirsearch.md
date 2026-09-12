@@ -43,7 +43,7 @@ dirsearch -u {{URL:url:http://target.com/}} -i 200,403,302 -r -F --max-rate {{RA
 Scan using a non-default HTTP method (e.g., POST, PUT, OPTIONS).
 
 ```bash
-dirsearch -u {{URL:url:http://target.com/}} -m {{METHOD:choice:POST,GET,PUT,DELETE,PATCH,HEAD,OPTIONS}} --max-rate {{RATE:int:10}} -e {{EXTENSIONS:str:php,html,bak}} --exclude-sizes={{EXCLUDE_SIZE:str:0B}}
+dirsearch -u {{URL:url:http://target.com/}} -m {{METHOD:choice:POST=submit data,GET=fetch resource,PUT=replace resource,DELETE=remove resource,PATCH=partial update,HEAD=headers only,OPTIONS=allowed methods}} --max-rate {{RATE:int:10}} -e {{EXTENSIONS:str:php,html,bak}} --exclude-sizes={{EXCLUDE_SIZE:str:0B}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=method,post,options -->

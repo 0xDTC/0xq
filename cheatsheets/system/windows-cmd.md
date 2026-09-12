@@ -165,7 +165,7 @@ schtasks /query /fo LIST /v
 Recursively search HKLM for the string "password".
 
 ```bash
-reg query {{HIVE:choice:HKLM,HKCU,HKU,HKCR,HKCC}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
+reg query {{HIVE:choice:HKLM=local machine,HKCU=current user,HKU=all loaded users,HKCR=file assoc + COM,HKCC=current hardware config}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,password,search -->
@@ -297,7 +297,7 @@ set
 Set a persistent (global) environment variable with setx, or a session variable with set.
 
 ```bash
-setx {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WINDIR,PROGRAMFILES,PROGRAMDATA,COMSPEC}} {{DATA:str:value}}
+setx {{VAR:choice:PATH=command search path,TEMP=user temp dir,TMP=user temp alias,USERPROFILE=user home dir,APPDATA=roaming AppData,LOCALAPPDATA=local AppData,SYSTEMROOT=Windows dir,WINDIR=Windows dir alias,PROGRAMFILES=Program Files path,PROGRAMDATA=machine-wide app data,COMSPEC=cmd.exe path}} {{DATA:str:value}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=env,setx,persistent -->
@@ -308,7 +308,7 @@ setx {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WIND
 Set an environment variable for the current shell session only.
 
 ```bash
-set {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WINDIR,PROGRAMFILES,PROGRAMDATA,COMSPEC}}={{DATA:str:value}}
+set {{VAR:choice:PATH=command search path,TEMP=user temp dir,TMP=user temp alias,USERPROFILE=user home dir,APPDATA=roaming AppData,LOCALAPPDATA=local AppData,SYSTEMROOT=Windows dir,WINDIR=Windows dir alias,PROGRAMFILES=Program Files path,PROGRAMDATA=machine-wide app data,COMSPEC=cmd.exe path}}={{DATA:str:value}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=env,set,session -->
@@ -319,7 +319,7 @@ set {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WINDI
 Delete a persistent (global) environment variable by setting it empty with setx.
 
 ```bash
-setx {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WINDIR,PROGRAMFILES,PROGRAMDATA,COMSPEC}} ""
+setx {{VAR:choice:PATH=command search path,TEMP=user temp dir,TMP=user temp alias,USERPROFILE=user home dir,APPDATA=roaming AppData,LOCALAPPDATA=local AppData,SYSTEMROOT=Windows dir,WINDIR=Windows dir alias,PROGRAMFILES=Program Files path,PROGRAMDATA=machine-wide app data,COMSPEC=cmd.exe path}} ""
 ```
 
 <!-- meta: risk=med | phase=post | tags=env,setx,delete -->

@@ -131,7 +131,7 @@ shodan search "country:{{COUNTRY:str:US}} city:\"{{CITY:str:New York}}\""
 Find systems running a specific product (e.g., mongodb, elasticsearch).
 
 ```bash
-shodan search "product:{{PRODUCT:choice:mongodb,mysql,redis,apache,nginx,iis,elasticsearch,memcached,postgresql,docker,kubernetes,jenkins}}"
+shodan search "product:{{PRODUCT:choice:mongodb=MongoDB server,mysql=MySQL server,redis=Redis server,apache=Apache httpd,nginx=nginx server,iis=Microsoft IIS,elasticsearch=Elasticsearch node,memcached=memcached server,postgresql=Postgres server,docker=Docker daemon,kubernetes=Kubernetes API,jenkins=Jenkins CI}}"
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=shodan,product,fingerprint -->
@@ -175,7 +175,7 @@ shodan search "ssl.cert.expired:true"
 Find hosts tagged by Shodan (industrial control, compromised, webcams).
 
 ```bash
-shodan search "tag:{{TAG:choice:ics,iot,vpn,cloud,database,honeypot,malware,tor,cdn,self-signed,scada,eol-os}}"
+shodan search "tag:{{TAG:choice:ics=industrial control systems,iot=IoT device,vpn=VPN endpoint,cloud=cloud-hosted,database=exposed DB,honeypot=known honeypot,malware=malware C2,tor=Tor node,cdn=CDN edge,self-signed=self-signed cert,scada=SCADA system,eol-os=end-of-life OS}}"
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=shodan,tag,ics -->
@@ -186,7 +186,7 @@ shodan search "tag:{{TAG:choice:ics,iot,vpn,cloud,database,honeypot,malware,tor,
 Aggregate top values by facet (e.g., top ports for an org).
 
 ```bash
-shodan stats "{{QUERY:str:apache}}" --facets {{FACET:choice:port,country,city,org,asn,product,version,os,isp,domain,tag,vuln}} --limit {{LIMIT:int:10}}
+shodan stats "{{QUERY:str:apache}}" --facets {{FACET:choice:port=aggregate by port,country=aggregate by country,city=aggregate by city,org=aggregate by org,asn=aggregate by ASN,product=aggregate by product,version=aggregate by version,os=aggregate by OS,isp=aggregate by ISP,domain=aggregate by domain,tag=aggregate by tag,vuln=aggregate by CVE}} --limit {{LIMIT:int:10}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=shodan,stats,facets -->

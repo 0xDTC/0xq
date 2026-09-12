@@ -76,7 +76,7 @@ hashcat -m {{MODE:int:1000}} {{HASHFILE:file:hashes.txt}} --show
 Look up a hashcat mode number by example hash or name.
 
 ```bash
-hashcat --example-hashes | grep -B 3 -i '{{HASH_TYPE:choice:ntlm,md5,sha1,sha256,sha512,bcrypt,mysql,kerberos,netntlmv2,wpa,sha512crypt,bitlocker,keepass,wordpress}}'
+hashcat --example-hashes | grep -B 3 -i '{{HASH_TYPE:choice:ntlm=NT hash,md5=raw MD5,sha1=raw SHA-1,sha256=raw SHA-256,sha512=raw SHA-512,bcrypt=Blowfish crypt,mysql=MySQL hash,kerberos=Kerberos hash,netntlmv2=NetNTLMv2 responder,wpa=WPA handshake,sha512crypt=Unix SHA-512,bitlocker=BitLocker recovery,keepass=KeePass DB,wordpress=WordPress hash}}'
 ```
 
 <!-- meta: risk=safe | phase=passwords | tags=identify,mode -->

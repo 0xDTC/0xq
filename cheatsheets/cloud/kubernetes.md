@@ -53,7 +53,7 @@ kubectl auth whoami
 Test whether the current identity is allowed a specific verb on a resource in a namespace.
 
 ```bash
-kubectl auth can-i {{VERB:choice:get,list,watch,create,update,patch,delete,deletecollection}} {{RESOURCE:choice:secrets,pods,deployments,services,configmaps,namespaces,nodes,roles,rolebindings,serviceaccounts}} -n {{NAMESPACE:str:default}}
+kubectl auth can-i {{VERB:choice:get=Read one,list=Read many,watch=Stream changes,create=Add new,update=Replace existing,patch=Modify fields,delete=Remove one,deletecollection=Remove many}} {{RESOURCE:choice:secrets=Sensitive credentials,pods=Container groups,deployments=Managed replicas,services=Network endpoints,configmaps=Config key/values,namespaces=Cluster partitions,nodes=Worker hosts,roles=RBAC permissions,rolebindings=RBAC assignments,serviceaccounts=Pod identities}} -n {{NAMESPACE:str:default}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=rbac,can-i,privesc,enum -->
@@ -130,7 +130,7 @@ kubectl get deployments -n {{NAMESPACE:str:default}}
 Show full spec, mounted secrets, service accounts, and events for a named resource.
 
 ```bash
-kubectl describe {{RESOURCE:choice:pod,deployment,service,secret,configmap,node,namespace,statefulset,daemonset,job,cronjob,ingress}}/{{NAME:str:web-0}} -n {{NAMESPACE:str:default}}
+kubectl describe {{RESOURCE:choice:pod=Container group,deployment=Managed replicas,service=Network endpoint,secret=Sensitive credentials,configmap=Config key/values,node=Worker host,namespace=Cluster partition,statefulset=Ordered pods,daemonset=Per-node pods,job=Run-once task,cronjob=Scheduled task,ingress=HTTP routing}}/{{NAME:str:web-0}} -n {{NAMESPACE:str:default}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=describe,enum,events -->

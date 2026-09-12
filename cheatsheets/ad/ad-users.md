@@ -95,7 +95,7 @@ Get-ADGroup -Filter * -Properties Description
 Enumerate the members of a group recursively — confirm who actually holds membership of e.g. Domain Admins.
 
 ```bash
-Get-ADGroupMember -Identity "{{GROUP:choice:Domain Admins,Enterprise Admins,Administrators,Schema Admins,Backup Operators,Server Operators,Account Operators,Print Operators,DnsAdmins,Group Policy Creator Owners,Remote Desktop Users,Domain Users,Domain Computers,Domain Controllers}}" -Recursive
+Get-ADGroupMember -Identity "{{GROUP:choice:Domain Admins=full domain rights,Enterprise Admins=forest-wide rights,Administrators=local admin group,Schema Admins=schema modification rights,Backup Operators=backup/restore rights,Server Operators=server management,Account Operators=user account mgmt,Print Operators=printer management,DnsAdmins=DNS admin (RCE-prone),Group Policy Creator Owners=GPO creation,Remote Desktop Users=RDP access,Domain Users=all domain accounts,Domain Computers=all domain hosts,Domain Controllers=all DCs}}" -Recursive
 ```
 
 <!-- meta: risk=low | phase=enum | tags=groups,members,get-adgroupmember -->

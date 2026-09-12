@@ -208,7 +208,7 @@ sudo nmap -A -sS -sU -sV -v -p T:{{TCP_PORTS:str}},U:{{UDP_PORTS:str}} --max-rat
 Pull a comma-separated port list from an nmap -oG file — feed the result back into -p N,N,N.
 
 ```bash
-grep -oE '[0-9]+/open/{{PROTO:choice:tcp,udp,sctp}}' {{INFILE:file:tcp-ports.gnmap}} | cut -d/ -f1 | paste -sd,
+grep -oE '[0-9]+/open/{{PROTO:choice:tcp=TCP scan,udp=UDP scan,sctp=SCTP scan}}' {{INFILE:file:tcp-ports.gnmap}} | cut -d/ -f1 | paste -sd,
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=parse,ports,extract,gnmap,utility -->

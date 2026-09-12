@@ -65,7 +65,7 @@ sort {{FILE:file:input.txt}} | uniq -d
 Replace or transliterate characters (e.g., lowercase to uppercase).
 
 ```bash
-cat {{FILE:file:input.txt}} | tr '{{FROM:choice:a-z,A-Z,0-9,[:alpha:],[:digit:],[:space:]}}' '{{TO:choice:A-Z,a-z,0-9,[:alpha:],[:digit:],[:space:]}}'
+cat {{FILE:file:input.txt}} | tr '{{FROM:choice:a-z=lowercase letters,A-Z=uppercase letters,0-9=digits,[:alpha:]=alpha class,[:digit:]=digit class,[:space:]=whitespace class}}' '{{TO:choice:A-Z=to uppercase,a-z=to lowercase,0-9=to digits,[:alpha:]=to alpha,[:digit:]=to digits,[:space:]=to spaces}}'
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=tr,translate,case -->
@@ -76,7 +76,7 @@ cat {{FILE:file:input.txt}} | tr '{{FROM:choice:a-z,A-Z,0-9,[:alpha:],[:digit:],
 Remove specific characters from input.
 
 ```bash
-cat {{FILE:file:input.txt}} | tr -d '{{CHARS:choice:\r\n,\r,\n,\t,[:space:],[:cntrl:]}}'
+cat {{FILE:file:input.txt}} | tr -d '{{CHARS:choice:\r\n=CRLF line endings,\r=carriage return,\n=newline only,\t=tab char,[:space:]=all whitespace,[:cntrl:]=control chars}}'
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=tr,delete,strip -->

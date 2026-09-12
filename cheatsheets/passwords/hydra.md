@@ -131,7 +131,7 @@ hydra -l {{USERNAME:str:root}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rocky
 Spray passwords across a list of usernames.
 
 ```bash
-hydra -L {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} {{PROTOCOL:choice:ssh,ftp,smb,rdp,mysql,postgres,mssql,telnet,vnc,ldap,http-get,http-post-form,pop3,imap}} -t {{THREADS:int:4}} -V
+hydra -L {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} {{PROTOCOL:choice:ssh=SSH login,ftp=FTP login,smb=SMB login,rdp=RDP login,mysql=MySQL login,postgres=Postgres login,mssql=MSSQL login,telnet=telnet login,vnc=VNC login,ldap=LDAP bind,http-get=HTTP basic GET,http-post-form=HTTP form POST,pop3=POP3 login,imap=IMAP login}} -t {{THREADS:int:4}} -V
 ```
 
 <!-- meta: risk=med | phase=passwords | tags=userlist,spray -->
@@ -142,7 +142,7 @@ hydra -L {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists
 Use a colon-separated credentials file (user:pass).
 
 ```bash
-hydra -C {{CREDFILE:file:creds.txt}} {{TARGET:ip}} {{PROTOCOL:choice:ftp,ssh,smb,rdp,mysql,postgres,mssql,telnet,vnc,ldap,http-get,http-post-form,pop3,imap}} -t {{THREADS:int:10}} -V
+hydra -C {{CREDFILE:file:creds.txt}} {{TARGET:ip}} {{PROTOCOL:choice:ftp=FTP login,ssh=SSH login,smb=SMB login,rdp=RDP login,mysql=MySQL login,postgres=Postgres login,mssql=MSSQL login,telnet=telnet login,vnc=VNC login,ldap=LDAP bind,http-get=HTTP basic GET,http-post-form=HTTP form POST,pop3=POP3 login,imap=IMAP login}} -t {{THREADS:int:10}} -V
 ```
 
 <!-- meta: risk=med | phase=passwords | tags=credentials,combo -->

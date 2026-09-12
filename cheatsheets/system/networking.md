@@ -65,7 +65,7 @@ sudo ip addr add {{IP:ip:192.168.1.100}}/{{MASK:int:24}} dev {{IFACE:iface:eth0}
 Enable or disable a network interface.
 
 ```bash
-sudo ip link set {{IFACE:iface:eth0}} {{STATE:choice:up,down}}
+sudo ip link set {{IFACE:iface:eth0}} {{STATE:choice:up=bring interface up,down=bring interface down}}
 ```
 
 <!-- meta: risk=med | phase=misc | tags=interface,up,down,link -->
@@ -87,7 +87,7 @@ sudo iptables -L -n -v --line-numbers
 Allow incoming traffic on a specific port.
 
 ```bash
-sudo iptables -A INPUT -p {{PROTO:choice:tcp,udp,icmp,all}} --dport {{PORT:port:443}} -j ACCEPT
+sudo iptables -A INPUT -p {{PROTO:choice:tcp=TCP transport,udp=UDP transport,icmp=ICMP (ping),all=any protocol}} --dport {{PORT:port:443}} -j ACCEPT
 ```
 
 <!-- meta: risk=med | phase=misc | tags=iptables,allow,accept,port -->
@@ -131,7 +131,7 @@ sudo iptables -F && sudo iptables -X && sudo iptables -t nat -F
 Perform DNS lookups for a domain.
 
 ```bash
-dig {{DOMAIN:domain:target.com}} {{TYPE:choice:ANY,A,AAAA,MX,NS,TXT,SOA,CNAME,PTR,SRV,CAA}} +short @{{DNS:ip:8.8.8.8}}
+dig {{DOMAIN:domain:target.com}} {{TYPE:choice:ANY=all record types,A=IPv4 address,AAAA=IPv6 address,MX=mail exchanger,NS=nameserver,TXT=text (SPF/DKIM),SOA=start of authority,CNAME=alias record,PTR=reverse lookup,SRV=service locator,CAA=cert authority auth}} +short @{{DNS:ip:8.8.8.8}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=dns,dig,resolve,lookup -->

@@ -75,7 +75,7 @@ chainsaw search {{PATTERN:str:cmd.exe}} {{EVTXDIR:path:./winevt/logs}} --tau /us
 Only events whose EventID matches. Common IDs: 4624 (logon), 4688 (proc create), 4104 (PS scriptblock), 7036 (service state), 1102 (audit log cleared).
 
 ```bash
-chainsaw search -e "^{{EID:choice:4688,4624,4625,4634,4648,4672,4697,4720,4732,5140,5145,7045,1102,4104,7036}}$" {{EVTXDIR:path:./winevt/logs}}
+chainsaw search -e "^{{EID:choice:4688=process create,4624=logon success,4625=logon failure,4634=logoff,4648=explicit-cred logon,4672=admin privs granted,4697=service installed,4720=account created,4732=added to sec group,5140=share accessed,5145=share access check,7045=new service (System),1102=audit log cleared,4104=PS script block,7036=service state change}}$" {{EVTXDIR:path:./winevt/logs}}
 ```
 
 <!-- meta: risk=safe | phase=dfir | tags=chainsaw,eventid,filter -->

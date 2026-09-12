@@ -9,7 +9,7 @@
 Convert a whole hive to a Windows-style .reg text file (import-back-friendly, human readable).
 
 ```bash
-hivexregedit --export {{HIVE:file:./NTUSER.DAT}} {{PREFIX:choice:HKEY_CURRENT_USER,HKEY_LOCAL_MACHINE,HKEY_USERS,HKEY_CLASSES_ROOT,HKEY_CURRENT_CONFIG}} > {{OUT:file:./ntuser.reg}}
+hivexregedit --export {{HIVE:file:./NTUSER.DAT}} {{PREFIX:choice:HKEY_CURRENT_USER=NTUSER.DAT hive,HKEY_LOCAL_MACHINE=SAM/SYSTEM/SOFTWARE,HKEY_USERS=all loaded user hives,HKEY_CLASSES_ROOT=file assoc + COM,HKEY_CURRENT_CONFIG=current hardware profile}} > {{OUT:file:./ntuser.reg}}
 ```
 
 <!-- meta: risk=safe | phase=dfir | tags=hivex,hivexregedit,export,reg -->
