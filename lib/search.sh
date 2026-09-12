@@ -294,8 +294,11 @@ PREVIEW_EOF
             # and already sorted by hit count desc — so rank=0 + NR
             # tiebreak gives top combo first.
             if (cat == "combo") {
-                mark = magenta "\xE2\x9A\x99" reset " "   # ⚙
+                mark = magenta "\xE2\x9A\x99" reset " "   # ⚙ combo
                 rank = 0
+            } else if (cat == "builder") {
+                mark = magenta "+" reset " "              # +  build fresh
+                rank = 1
             } else {
                 mark = (title in mru_rank) ? (magenta "\xE2\x98\x85" reset " ") : "  "
                 rank = (title in mru_rank) ? mru_rank[title] : 999999
@@ -317,7 +320,9 @@ PREVIEW_EOF
             printf "%010d\t%010d\t%s\t%s\t%s\t%s\t%s\n", \
                 rank, NR, display, title, cmd, src, keywords
         }
-        ' <({ declare -f q_combo_emit_index_rows >/dev/null 2>&1 && q_combo_emit_index_rows 2>/dev/null; } ; cat "$index_file") \
+        ' <({ declare -f q_combo_emit_index_rows   >/dev/null 2>&1 && q_combo_emit_index_rows   2>/dev/null; \
+              declare -f q_builder_emit_index_rows >/dev/null 2>&1 && q_builder_emit_index_rows 2>/dev/null; } ; \
+             cat "$index_file") \
         | sort -k1,1n -k2,2n \
         | cut -f3- \
         | fzf \
@@ -609,46 +614,58 @@ while IFS=$'\t' read -r name vtype vdefault; do
 
     cands="$(_q_build_candidates "$name" "$vtype" "$vdefault")"
     prompt="  {{${name}}}> "
-    header="Enter: select | Type: custom value | Esc: skip"
+    header="Enter: select | Tab: multi | Ctrl-A: all | Type: custom | Esc: skip"
     out="$tmpdir/out"; : > "$out"
 
     if [[ -n "${TMUX:-}" && -z "${Q_NO_POPUP:-}" ]]; then
         printf '%s\n' "$cands" > "$tmpdir/cands"
         tmux display-popup -E -w '75%' -h '45%' \
-          "fzf --print-query --reverse --border --no-info --no-multi --prompt='$prompt' --header='$header' < '$tmpdir/cands' > '$out'" || true
+          "fzf --print-query --reverse --border --no-info --multi --bind=ctrl-a:select-all,ctrl-d:deselect-all --prompt='$prompt' --header='$header' < '$tmpdir/cands' > '$out'" || true
     else
         printf '%s\n' "$cands" \
-          | fzf --print-query --reverse --border --no-info --no-multi \
+          | fzf --print-query --reverse --border --no-info --multi \
+                --bind='ctrl-a:select-all,ctrl-d:deselect-all' \
                 --height=14 --prompt="$prompt" --header="$header" > "$out" 2>/dev/tty || true
     fi
 
-    # --print-query: line 1 = query, line 2 = selection (if any).
-    typed=""; sel=""
+    # --print-query: line 1 = query, then one line per selected item
+    # (0 or many with --multi).
+    typed=""
     IFS= read -r typed < "$out" || true
-    sel="$(sed -n '2p' "$out")"
+    _sels=()
+    while IFS= read -r _sl; do
+        [[ -z "$_sl" ]] && continue
+        _sels+=("$_sl")
+    done < <(tail -n +2 "$out")
 
-    # Prefer literal typed text when fzf's fuzzy engine latched onto an
-    # unrelated candidate (e.g. user types "user.txt" and fzf highlights
-    # some pre-existing ./old/user.txt from the [pwd] sweep). Trust the
-    # pick only when the typed string is a substring of it.
-    #
-    # Also strip any trailing `\t<description>` hint that curated
-    # candidates carry (e.g. `[choice] userassist    executed GUI programs`
-    # → `userassist`).
+    # Multi-select join: file/dir/path types with space, everything else
+    # with comma. Overridable via Q_MULTI_SEP_FILE / Q_MULTI_SEP_CHOICE.
     value=""
-    sel_val="${sel#\[*\] }"
-    sel_val="${sel_val%%$'\t'*}"
-    if [[ -n "$typed" && -n "$sel_val" ]]; then
-        typed_lc="${typed,,}"; sel_lc="${sel_val,,}"
-        if [[ "$sel_lc" == *"$typed_lc"* ]]; then
-            value="$sel_val"
-        else
+    if [[ ${#_sels[@]} -ge 2 ]]; then
+        _upper="${vtype^^}"
+        case "$_upper" in
+            FILE|DIR|OUTFILE|OUTPUT_FILE|WORDLIST|PATH) _sep="${Q_MULTI_SEP_FILE:- }" ;;
+            *) _sep="${Q_MULTI_SEP_CHOICE:-,}" ;;
+        esac
+        _clean=()
+        for _v in "${_sels[@]}"; do
+            _v="${_v#\[*\] }"; _v="${_v%%$'\t'*}"
+            _clean+=("$_v")
+        done
+        _IFS_bak="$IFS"; IFS="$_sep"; value="${_clean[*]}"; IFS="$_IFS_bak"
+    else
+        # Single-select — original typed-vs-picked precedence.
+        sel="${_sels[0]:-}"
+        sel_val="${sel#\[*\] }"
+        sel_val="${sel_val%%$'\t'*}"
+        if [[ -n "$typed" && -n "$sel_val" ]]; then
+            typed_lc="${typed,,}"; sel_lc="${sel_val,,}"
+            if [[ "$sel_lc" == *"$typed_lc"* ]]; then value="$sel_val"; else value="$typed"; fi
+        elif [[ -n "$typed" ]]; then
             value="$typed"
+        elif [[ -n "$sel_val" ]]; then
+            value="$sel_val"
         fi
-    elif [[ -n "$typed" ]]; then
-        value="$typed"
-    elif [[ -n "$sel_val" ]]; then
-        value="$sel_val"
     fi
     [[ -z "$value" ]] && continue   # Esc / empty → leave unfilled
 

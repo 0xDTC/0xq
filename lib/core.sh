@@ -456,6 +456,8 @@ ${Q_BOLD}UTILITY${Q_RESET}
     q config [list|get|set]     Manage config knobs (~/.config/q/config.sh)
     q lint                      Report cross-file duplicate commands
     q combos [list|forget]      List personal combos (auto-captured per tool)
+    q build TOOL                Interactive flag composer for a tool (also in Ctrl+Q as [+])
+    q builders                  List tools that have a builder catalog
     q --os {windows|linux|any}  Filter cheatsheets by target OS (once)
     q --version, -v             Print version
     q --help, -h                Show this help

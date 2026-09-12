@@ -69,6 +69,19 @@ q_main() {
     title="$(printf '%s' "$selected" | cut -f2)"
     command="$(printf '%s' "$selected" | cut -f3)"
 
+    # 3.0 Builder sentinel — the [+] compose-fresh rows carry
+    #     __BUILDER__:<tool> instead of a real template. Run the flag
+    #     composer to build one, then continue with the normal fill flow.
+    if [[ "$command" == __BUILDER__:* ]]; then
+        local _tool="${command#__BUILDER__:}"
+        command="$(q_builder_run "$_tool")"
+        if [[ -z "$command" ]]; then
+            q_info "Builder cancelled — no command composed."
+            return 0
+        fi
+        title="[built] ${_tool}"
+    fi
+
     # Track this title in the MRU so it floats to top next time
     q_mru_add "$title" 2>/dev/null || true
 
@@ -150,7 +163,7 @@ q_source_all_libs() {
     local lib
     for lib in parser.sh search.sh variables.sh executor.sh session.sh \
                logger.sh promote.sh chains.sh runner.sh sync.sh tmux.sh \
-               authoring.sh combos.sh; do
+               authoring.sh combos.sh builder.sh; do
         if [[ -f "${Q_ROOT}/lib/${lib}" ]]; then
             # shellcheck source=/dev/null
             source "${Q_ROOT}/lib/${lib}"
@@ -351,6 +364,42 @@ case "${1:-}" in
                    exit 1 ;;
         esac
         exit $?
+        ;;
+
+    # -- Interactive flag composer for a specific tool --------------------
+    build|b)
+        q_source_all_libs
+        q_check_deps
+        q_ensure_dirs
+        q_config_load
+        if [[ -z "${2:-}" ]]; then
+            q_builder_list
+            exit 0
+        fi
+        # Compose the template, then run it through the normal fill+
+        # confirm+execute flow just like a picked cheatsheet would.
+        local _built; _built="$(q_builder_run "$2")"
+        if [[ -z "$_built" ]]; then
+            q_info "Builder cancelled."
+            exit 0
+        fi
+        Q_INLINE_MODE="${Q_INLINE_MODE:-no}"
+        local _filled
+        if ! _filled="$(q_fill_vars_auto "$_built" 2>/dev/null)"; then
+            _filled="$(q_fill_vars "$_built")"
+        fi
+        q_combo_bump "$_built" 2>/dev/null || true
+        q_confirm_and_run "$_filled"
+        exit $?
+        ;;
+
+    # -- List builder catalogs --------------------------------------------
+    builders)
+        q_source_all_libs
+        q_ensure_dirs
+        q_config_load
+        q_builder_list
+        exit 0
         ;;
 
     # -- Fast target shortcuts ---------------------------------------------

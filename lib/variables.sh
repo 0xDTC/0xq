@@ -906,13 +906,18 @@ q_fill_single_var() {
     fzf_args+=(--layout=reverse)
     fzf_args+=(--border)
     fzf_args+=(--no-info)
-    fzf_args+=(--no-multi)
+    # --multi lets the user Tab-mark several items (files to feed to hashcat,
+    # scripts to feed to nmap --script, plugins for a for-loop). Enter with
+    # nothing marked still returns just the highlighted item, so single-pick
+    # UX is unchanged.
+    fzf_args+=(--multi)
+    fzf_args+=(--bind='ctrl-a:select-all,ctrl-d:deselect-all')
 
     # Don't pre-fill query — let the user see all candidates and pick.
     # The session/default value is already the top item in the list.
 
     # Header: context-sensitive help text
-    local header_text="Enter: select | Type: custom value"
+    local header_text="Enter: select | Tab: multi | Ctrl-A: all | Type: custom | Esc: skip"
 
     # Add file browse keybinding for file-like types
     if [[ "$is_file_type" -eq 1 ]]; then
@@ -946,13 +951,42 @@ q_fill_single_var() {
         fzf_output="$(printf '' | fzf "${fzf_args[@]}" 2>/dev/tty)" || true
     fi
 
-    # Parse fzf output: --print-query gives query on line 1, selection on line 2
-    # Use IFS+read instead of head/sed subshells to avoid 2 fork+exec (~4ms)
-    local typed_query="" selected=""
+    # Parse fzf output: --print-query gives query on line 1, then one
+    # line per selected item (0 or many with --multi).
+    local typed_query=""
     IFS=$'\n' read -r typed_query <<< "$fzf_output" || true
-    selected="${fzf_output#*$'\n'}"
-    # If no newline was present, selected == fzf_output — clear it
-    [[ "$selected" == "$fzf_output" ]] && selected=""
+    local -a _sel_lines=()
+    local _sl
+    while IFS= read -r _sl; do
+        [[ -z "$_sl" ]] && continue
+        _sel_lines+=("$_sl")
+    done < <(printf '%s\n' "$fzf_output" | tail -n +2)
+
+    # Multi-select: 2+ picks → join per type. Choice/str values use comma
+    # (nmap --script a,b,c; sqlmap --tamper a,b); files/dirs use space
+    # (hashcat -m 0 hash1 hash2 hash3; grep pattern file1 file2). Config
+    # knobs Q_MULTI_SEP_CHOICE / Q_MULTI_SEP_FILE override.
+    if [[ ${#_sel_lines[@]} -ge 2 ]]; then
+        local _sep
+        case "${upper_type}" in
+            FILE|DIR|OUTFILE|OUTPUT_FILE|WORDLIST|PATH) _sep="${Q_MULTI_SEP_FILE:- }" ;;
+            *) _sep="${Q_MULTI_SEP_CHOICE:-,}" ;;
+        esac
+        local -a _clean=() _v
+        for _v in "${_sel_lines[@]}"; do
+            _v="${_v#\[*\] }"
+            _v="${_v%%$'\t'*}"
+            _clean+=("$_v")
+        done
+        local IFS_bak="$IFS"; IFS="$_sep"
+        printf '%s' "${_clean[*]}"
+        IFS="$IFS_bak"
+        return 0
+    fi
+
+    # Single-select or nothing selected: fall through to the original
+    # typed-vs-picked precedence.
+    local selected="${_sel_lines[0]:-}"
 
     # Determine final value.
     # Precedence:
