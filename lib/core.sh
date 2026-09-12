@@ -457,7 +457,9 @@ ${Q_BOLD}UTILITY${Q_RESET}
     q lint                      Report cross-file duplicate commands
     q combos [list|forget]      List personal combos (auto-captured per tool)
     q build TOOL                Interactive flag composer for a tool (also in Ctrl+Q as [+])
-    q builders                  List tools that have a builder catalog
+    q build add TOOL [TOOL...]  Enable a tool for the builder (parses --help)
+    q build rm TOOL             Disable a tool
+    q build list                List enabled tools (yaml / auto)
     q --os {windows|linux|any}  Filter cheatsheets by target OS (once)
     q --version, -v             Print version
     q --help, -h                Show this help

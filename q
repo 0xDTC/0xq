@@ -366,34 +366,46 @@ case "${1:-}" in
         exit $?
         ;;
 
-    # -- Interactive flag composer for a specific tool --------------------
+    # -- Interactive flag composer + curated per-user tool selection ------
     build|b)
         q_source_all_libs
         q_check_deps
         q_ensure_dirs
         q_config_load
-        if [[ -z "${2:-}" ]]; then
-            q_builder_list
-            exit 0
-        fi
-        # Compose the template, then run it through the normal fill+
-        # confirm+execute flow just like a picked cheatsheet would.
-        local _built; _built="$(q_builder_run "$2")"
-        if [[ -z "$_built" ]]; then
-            q_info "Builder cancelled."
-            exit 0
-        fi
-        Q_INLINE_MODE="${Q_INLINE_MODE:-no}"
-        local _filled
-        if ! _filled="$(q_fill_vars_auto "$_built" 2>/dev/null)"; then
-            _filled="$(q_fill_vars "$_built")"
-        fi
-        q_combo_bump "$_built" 2>/dev/null || true
-        q_confirm_and_run "$_filled"
-        exit $?
+        case "${2:-list}" in
+            add)
+                shift 2
+                q_builder_add "$@"
+                exit $?
+                ;;
+            rm|remove|disable)
+                q_builder_rm "${3:-}"
+                exit $?
+                ;;
+            list|"")
+                q_builder_list
+                exit 0
+                ;;
+            *)
+                # Treat as a tool name: compose, fill, run.
+                local _built; _built="$(q_builder_run "$2")"
+                if [[ -z "$_built" ]]; then
+                    q_info "Builder cancelled."
+                    exit 0
+                fi
+                Q_INLINE_MODE="${Q_INLINE_MODE:-no}"
+                local _filled
+                if ! _filled="$(q_fill_vars_auto "$_built" 2>/dev/null)"; then
+                    _filled="$(q_fill_vars "$_built")"
+                fi
+                q_combo_bump "$_built" 2>/dev/null || true
+                q_confirm_and_run "$_filled"
+                exit $?
+                ;;
+        esac
         ;;
 
-    # -- List builder catalogs --------------------------------------------
+    # -- List enabled builders (alias for `q build list`) -----------------
     builders)
         q_source_all_libs
         q_ensure_dirs
