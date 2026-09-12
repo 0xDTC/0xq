@@ -50,9 +50,12 @@ q_build_index() {
         desc = trim(description)
         cmd  = trim(command)
 
-        # Defaults for risk / phase
+        # Defaults for risk / phase / platform. Platform "any" means
+        # cross-platform (attacker tooling, protocols, etc.). Explicit
+        # entry values override the file-level default.
         if (risk  == "") risk  = "low"
         if (phase == "") phase = "misc"
+        eff_platform = (platform != "") ? platform : ((file_platform != "") ? file_platform : "any")
 
         # Merge file-level tags and entry-level tags
         merged_tags = ""
@@ -64,6 +67,34 @@ q_build_index() {
             merged_tags = entry_tags
         }
 
+        # Also index every CHOICE value from the command as a search keyword
+        # so typing e.g. "regripper userassist" finds the command whose
+        # PLUGIN choice list contains "userassist". Descriptions (after `=`)
+        # are dropped; only the raw value is indexed.
+        choice_kw = ""
+        cmd_scan = cmd
+        while (match(cmd_scan, /\{\{[A-Za-z_][A-Za-z0-9_]*:choice:[^}]+\}\}/)) {
+            token = substr(cmd_scan, RSTART, RLENGTH)
+            cmd_scan = substr(cmd_scan, RSTART + RLENGTH)
+            # Strip `{{NAME:choice:` prefix and `}}` suffix
+            body = token
+            sub(/^\{\{[A-Za-z_][A-Za-z0-9_]*:choice:/, "", body)
+            sub(/\}\}$/, "", body)
+            n_opts = split(body, opts, ",")
+            for (oi = 1; oi <= n_opts; oi++) {
+                opt = opts[oi]
+                eq = index(opt, "=")
+                if (eq > 0) opt = substr(opt, 1, eq - 1)
+                if (opt == "") continue
+                if (choice_kw == "") choice_kw = opt
+                else choice_kw = choice_kw "," opt
+            }
+        }
+        if (choice_kw != "") {
+            if (merged_tags == "") merged_tags = choice_kw
+            else merged_tags = merged_tags "," choice_kw
+        }
+
         # Collapse any internal tabs/newlines in text fields
         gsub(/\t/, " ", desc)
         gsub(/\n/, " ", desc)
@@ -73,9 +104,9 @@ q_build_index() {
         gsub(/  +/, " ", desc)
         gsub(/  +/, " ", cmd)
 
-        printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
+        printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
             category, current_tool, current_title, desc, cmd, \
-            risk, phase, merged_tags, source_file
+            risk, phase, merged_tags, source_file, eff_platform
     }
 
     # ------------------------------------------------------------------
@@ -88,6 +119,7 @@ q_build_index() {
         risk          = ""
         phase         = ""
         entry_tags    = ""
+        platform      = ""
         in_code_block = 0
         in_entry      = 0
     }
@@ -100,8 +132,9 @@ q_build_index() {
         flush_entry()
 
         # Reset everything for the new file
-        current_tool  = ""
-        file_tags     = ""
+        current_tool   = ""
+        file_tags      = ""
+        file_platform  = ""
         reset_entry()
 
         # Derive category and source_file by stripping sheets_dir prefix
@@ -124,6 +157,18 @@ q_build_index() {
         gsub(/[[:space:]]*-->.*$/, "", s)
         gsub(/[[:space:]]+/, "", s)
         file_tags = s
+        next
+    }
+
+    # ------------------------------------------------------------------
+    # File-level platform: <!-- platform: windows|linux|macos|any -->
+    # ------------------------------------------------------------------
+    /^<!--[[:space:]]*platform:/ && in_entry == 0 {
+        s = $0
+        gsub(/^<!--[[:space:]]*platform:[[:space:]]*/, "", s)
+        gsub(/[[:space:]]*-->.*$/, "", s)
+        gsub(/[[:space:]]+/, "", s)
+        file_platform = tolower(s)
         next
     }
 
@@ -195,9 +240,10 @@ q_build_index() {
             if (eq > 0) {
                 k = trim(substr(kv, 1, eq - 1))
                 v = trim(substr(kv, eq + 1))
-                if (k == "risk")  risk = v
-                if (k == "phase") phase = v
-                if (k == "tags")  entry_tags = v
+                if (k == "risk")     risk = v
+                if (k == "phase")    phase = v
+                if (k == "tags")     entry_tags = v
+                if (k == "platform") platform = tolower(v)
             }
         }
         next

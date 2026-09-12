@@ -142,7 +142,7 @@ nc -lvnp {{LPORT:port:4444}} > {{OUTFILE:file:recv.bin}}
 Sweep a port range with netcat when nmap is unavailable.
 
 ```bash
-nc -zv {{TARGET:ip}} {{PORTS:str:1-1000}}
+nc -zv {{TARGET:ip}} {{PORTS:choice:1-1000,1-65535,1-1024,1-100,1-10000,22,80,443}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=nc,scan,ports -->

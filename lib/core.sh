@@ -243,6 +243,145 @@ q_config_load() {
 }
 
 # ===========================================================================
+# q_config_keys — canonical list of user-settable Q_* knobs
+# ===========================================================================
+# Ordered for readability; used by `q config list/get/set`. Anything not on
+# this list can still be set manually in ~/.config/q/config.sh — the list
+# just controls what the CLI surfaces.
+_q_config_keys() {
+    printf '%s\n' \
+        Q_CONFIRM_EXEC \
+        Q_FZF_OPTS \
+        Q_PREVIEW_SIZE \
+        Q_PREVIEW_POS \
+        Q_SESSION_NAME \
+        Q_SESSION_USE_TAIL \
+        Q_OS_FILTER \
+        Q_CLIPBOARD_CANDIDATE \
+        Q_FILE_MAXDEPTH \
+        Q_FILE_MAXCOUNT \
+        Q_HOME_MAXDEPTH \
+        Q_HOME_MAXCOUNT
+}
+
+# ===========================================================================
+# q_config — list / get / set knobs in ~/.config/q/config.sh
+# ===========================================================================
+q_config() {
+    local sub="${1:-list}"
+    local cfg="${HOME}/.config/q/config.sh"
+    mkdir -p "$(dirname "$cfg")"; touch "$cfg"
+
+    case "$sub" in
+        list)
+            printf '%s%sConfig%s  %s\n' "$Q_BOLD" "$Q_CYAN" "$Q_RESET" "$cfg" >&2
+            local k v src
+            while IFS= read -r k; do
+                v="${!k:-}"
+                if grep -qE "^[[:space:]]*(export[[:space:]]+)?${k}=" "$cfg" 2>/dev/null; then
+                    src="user"
+                else
+                    src="default"
+                fi
+                printf '  %s%-20s%s %s%s%s  %s(%s)%s\n' \
+                    "$Q_BOLD" "$k" "$Q_RESET" \
+                    "$Q_GREEN" "${v:-<unset>}" "$Q_RESET" \
+                    "$Q_DIM" "$src" "$Q_RESET"
+            done < <(_q_config_keys)
+            ;;
+        get)
+            [[ -z "${2:-}" ]] && { q_error "Usage: q config get NAME"; return 1; }
+            local key="${2^^}"
+            [[ "$key" == Q_* ]] || key="Q_${key}"
+            printf '%s\n' "${!key:-}"
+            ;;
+        set)
+            [[ $# -lt 3 ]] && { q_error "Usage: q config set NAME VALUE"; return 1; }
+            local key="${2^^}" val="$3"
+            [[ "$key" == Q_* ]] || key="Q_${key}"
+            # Strip existing line for this key, append new one. Portable
+            # in-place edit (BSD/GNU sed differ on -i argument shape).
+            local tmp="${cfg}.tmp.$$"
+            grep -vE "^[[:space:]]*(export[[:space:]]+)?${key}=" "$cfg" > "$tmp" 2>/dev/null || true
+            printf '%s=%q\n' "$key" "$val" >> "$tmp"
+            mv "$tmp" "$cfg"
+            q_success "${key}=${val}  →  ${cfg}"
+            ;;
+        unset)
+            [[ -z "${2:-}" ]] && { q_error "Usage: q config unset NAME"; return 1; }
+            local key="${2^^}"
+            [[ "$key" == Q_* ]] || key="Q_${key}"
+            local tmp="${cfg}.tmp.$$"
+            grep -vE "^[[:space:]]*(export[[:space:]]+)?${key}=" "$cfg" > "$tmp" 2>/dev/null || true
+            mv "$tmp" "$cfg"
+            q_success "unset ${key} in ${cfg}"
+            ;;
+        path)
+            printf '%s\n' "$cfg"
+            ;;
+        *)
+            q_error "Unknown config subcommand: ${sub}"
+            q_error "Valid: list, get NAME, set NAME VALUE, unset NAME, path"
+            return 1
+            ;;
+    esac
+}
+
+# ===========================================================================
+# q_lint — cross-file duplicate command detection
+# ===========================================================================
+# Normalises each command (collapse whitespace, drop {{VAR:type:default}}
+# metadata leaving just VAR) and groups by that key. Any group with >1
+# source file is reported. Useful after a big content sweep to catch the
+# "same command in multiple cheatsheets" the user flagged.
+q_lint() {
+    local index_file="${Q_CACHE_DIR}/index.tsv"
+    if [[ ! -s "$index_file" ]]; then
+        q_error "Index empty. Run: q rebuild"
+        return 1
+    fi
+    local dupes
+    dupes="$(awk -F'\t' '
+        {
+            cmd = $5
+            # Strip placeholder metadata so {{FOO:str:bar}} and {{FOO:file:baz}}
+            # collide. IMPORTANT: replace with a sentinel that does NOT match
+            # the {{...}} pattern (otherwise the loop rematches the replacement
+            # forever). [[NAME]] fits the bill.
+            while (match(cmd, /\{\{[A-Za-z_][A-Za-z0-9_]*[^}]*\}\}/)) {
+                token = substr(cmd, RSTART, RLENGTH)
+                inner = substr(token, 3, length(token) - 4)
+                colon = index(inner, ":")
+                name  = (colon > 0) ? substr(inner, 1, colon - 1) : inner
+                cmd = substr(cmd, 1, RSTART - 1) "[[" name "]]" substr(cmd, RSTART + RLENGTH)
+            }
+            gsub(/[[:space:]]+/, " ", cmd)
+            sub(/^[[:space:]]+/, "", cmd); sub(/[[:space:]]+$/, "", cmd)
+            key = cmd
+            count[key]++
+            if (files[key] == "") files[key] = $9 ":" $3
+            else                  files[key] = files[key] "\n    " $9 ":" $3
+            keep[key] = cmd
+        }
+        END {
+            for (k in count) if (count[k] > 1) {
+                printf "─── x%d ───\n  cmd:  %s\n  seen: %s\n\n", count[k], keep[k], files[k]
+            }
+        }
+    ' "$index_file")"
+    if [[ -z "$dupes" ]]; then
+        q_success "No cross-file duplicate commands found."
+        return 0
+    fi
+    printf '%s%sDuplicate commands (same normalized template in >1 file):%s\n\n' \
+        "$Q_BOLD" "$Q_YELLOW" "$Q_RESET" >&2
+    printf '%s' "$dupes"
+    local groups
+    groups="$(printf '%s' "$dupes" | grep -c '^─── ')"
+    printf '\n%s%d duplicate group(s).%s\n' "$Q_DIM" "$groups" "$Q_RESET" >&2
+}
+
+# ===========================================================================
 # q_help — print usage information
 # ===========================================================================
 q_help() {
@@ -314,6 +453,9 @@ ${Q_BOLD}CHEATSHEET SYNC${Q_RESET}
 ${Q_BOLD}UTILITY${Q_RESET}
     q history                   Show command execution history
     q rebuild                   Force-rebuild the cheatsheet index cache
+    q config [list|get|set]     Manage config knobs (~/.config/q/config.sh)
+    q lint                      Report cross-file duplicate commands
+    q --os {windows|linux|any}  Filter cheatsheets by target OS (once)
     q --version, -v             Print version
     q --help, -h                Show this help
 

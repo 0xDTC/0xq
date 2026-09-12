@@ -45,6 +45,14 @@ source "${Q_ROOT}/lib/core.sh"
 q_main() {
     local inline="${Q_INLINE_MODE:-no}"
 
+    # Optional --os {windows,linux,macos,any} filter. Consumes the flag +
+    # value before passing the rest through as the query. Also honors
+    # Q_OS_FILTER from the environment / config.sh.
+    if [[ "${1:-}" == "--os" ]] && [[ $# -ge 2 ]]; then
+        export Q_OS_FILTER="$2"
+        shift 2
+    fi
+
     # 1. Ensure the cheatsheet index is built and current
     q_ensure_index
 
@@ -63,6 +71,15 @@ q_main() {
 
     # Track this title in the MRU so it floats to top next time
     q_mru_add "$title" 2>/dev/null || true
+
+    # 3a. Auto-pre-fill any {{VAR:choice:...}} whose option value appears in
+    #     the user's search query. Lets `q regripper userassist` land the
+    #     right command WITH PLUGIN pre-filled and skip the fill picker.
+    local _last_query_file="${Q_CACHE_DIR}/.last_query"
+    if [[ -s "$_last_query_file" ]]; then
+        q_prefill_choices_from_query "$command" "$(<"$_last_query_file")" 2>/dev/null || true
+        rm -f "$_last_query_file"
+    fi
 
     # 4. Ctrl+E requested "edit raw": drop the user straight into $EDITOR with
     #    the raw command (placeholders intact) so they can rewrite the whole
@@ -87,6 +104,19 @@ q_main() {
     else
         if ! filled_command="$(q_fill_vars_auto "$command" 2>/dev/null)"; then
             filled_command="$(q_fill_vars "$command")"
+        fi
+    fi
+
+    # 4b. Path sanity — warn about missing input paths / 0-byte input files
+    #     BEFORE either inline output or the confirm-and-run flow so the
+    #     Ctrl+Q widget users (whose widget does `2>/dev/null`) still see
+    #     the warnings. Output goes to /dev/tty so widget stderr redirects
+    #     can't swallow it.
+    if declare -f _q_check_paths_in_cmd >/dev/null 2>&1; then
+        local _pathchk_out
+        _pathchk_out="$(_q_check_paths_in_cmd "$filled_command" 2>&1 || true)"
+        if [[ -n "$_pathchk_out" ]] && [[ -w /dev/tty ]]; then
+            printf '%s\n' "$_pathchk_out" > /dev/tty
         fi
     fi
 
@@ -277,6 +307,25 @@ case "${1:-}" in
         q_rebuild_index
         q_success "Index rebuilt."
         exit 0
+        ;;
+
+    # -- Config knobs -----------------------------------------------------
+    config)
+        q_ensure_dirs
+        q_config_load
+        shift
+        q_config "$@"
+        exit $?
+        ;;
+
+    # -- Cross-file duplicate detection -----------------------------------
+    lint)
+        source "${Q_ROOT}/lib/parser.sh"
+        q_ensure_dirs
+        q_config_load
+        q_ensure_index >/dev/null 2>&1 || true
+        q_lint
+        exit $?
         ;;
 
     # -- Fast target shortcuts ---------------------------------------------

@@ -10,7 +10,7 @@
 Retrieve every SNMP object using community string `public`.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,v2c,public -->
@@ -21,7 +21,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}}
 Limit walk to a specific OID or named subtree (e.g., system).
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} {{OID:str:1.3.6.1.2.1.1}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} {{OID:str:1.3.6.1.2.1.1}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,oid,subtree -->
@@ -32,7 +32,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} {{OID:str:1.3.6.1.2.1.1}
 Use SNMP version 1 for legacy devices that reject v2c.
 
 ```bash
-snmpwalk -v1 -c {{COMMUNITY:str:public}} {{TARGET:ip}}
+snmpwalk -v1 -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,v1,legacy -->
@@ -54,7 +54,7 @@ snmpwalk -v3 -u {{USERNAME:str}} -l authPriv -a MD5 -A {{AUTHPASS:str}} -x DES -
 Enumerate network interface details.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} ifTable
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} ifTable
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,interfaces,iftable -->
@@ -65,7 +65,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} ifTable
 Retrieve the device ARP cache via ipNetToMediaTable.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} ipNetToMediaTable
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} ipNetToMediaTable
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,arp,cache -->
@@ -76,7 +76,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} ipNetToMediaTable
 Read just the system uptime OID.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.1.3
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} 1.3.6.1.2.1.1.3
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,uptime,system -->
@@ -87,7 +87,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.1.3
 Tune timeout and retry count for slow or unreliable devices.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} -t {{TIMEOUT:int:10}} -r {{RETRIES:int:3}} {{TARGET:ip}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} -t {{TIMEOUT:int:10}} -r {{RETRIES:int:3}} {{TARGET:ip}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,timeout,retries -->
@@ -98,7 +98,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} -t {{TIMEOUT:int:10}} -r {{RETRIES:int
 Walk SNMP exposed on a non-standard port.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}}:{{PORT:port:161}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}}:{{PORT:port:161}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=snmpwalk,port,custom -->
@@ -109,7 +109,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}}:{{PORT:port:161}}
 Use snmpbulkwalk for faster mass enumeration. Don't forget the trailing dot.
 
 ```bash
-snmpbulkwalk -c {{COMMUNITY:str:public}} -v2c {{TARGET:ip}} .
+snmpbulkwalk -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} -v2c {{TARGET:ip}} .
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpbulkwalk,bulk,fast -->
@@ -120,7 +120,7 @@ snmpbulkwalk -c {{COMMUNITY:str:public}} -v2c {{TARGET:ip}} .
 Retrieve extended objects, often containing custom command output on misconfigured agents.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} NET-SNMP-EXTEND-MIB::nsExtendObjects
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} NET-SNMP-EXTEND-MIB::nsExtendObjects
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpwalk,extend,nsextend -->
@@ -153,7 +153,7 @@ onesixtyone -c {{COMMLIST:wordlist:/usr/share/wordlists/seclists/Discovery/SNMP/
 Mass-query OIDs across many hosts using braa's own SNMP stack.
 
 ```bash
-braa {{COMMUNITY:str:public}}@{{TARGET:ip}}:.1.3.6.*
+braa {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}}@{{TARGET:ip}}:.1.3.6.*
 ```
 
 <!-- meta: risk=low | phase=enum | tags=braa,mass,oid -->

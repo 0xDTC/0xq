@@ -109,7 +109,7 @@ aws --profile {{PROFILE:str:assessment}} iam list-policies --scope Local | grep 
 Retrieve the JSON document for a policy to inspect its permissions.
 
 ```bash
-aws --profile {{PROFILE:str:assessment}} iam get-policy-version --policy-arn {{POLICY_ARN:str}} --version-id {{VERSION:str:v1}}
+aws --profile {{PROFILE:str:assessment}} iam get-policy-version --policy-arn {{POLICY_ARN:str}} --version-id {{VERSION:choice:v1,v2,v3,v4,v5}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=iam,policy,document -->

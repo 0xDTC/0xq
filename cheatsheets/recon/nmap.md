@@ -87,7 +87,7 @@ sudo nmap --script vuln -p {{PORTS:port:22,80,443,445}} {{TARGET:ip}} -oN {{OUTF
 Run a targeted NSE script against the target.
 
 ```bash
-sudo nmap --script {{SCRIPT:str:http-enum}} -p {{PORTS:port:80,443}} {{TARGET:ip}} -oN {{OUTFILE:file:nse-output.txt}}
+sudo nmap --script {{SCRIPT:choice:http-enum=web app enumeration,smb-enum-shares=SMB shares listing,smb-vuln-ms17-010=EternalBlue MS17-010 check,ssl-heartbleed=Heartbleed CVE-2014-0160,ssh-brute=SSH password brute,ftp-anon=anonymous FTP check,http-title=fetch HTTP titles,http-headers=dump response headers,http-methods=allowed HTTP verbs,dns-brute=subdomain brute,vuln=all vuln scripts,default=safe defaults}} -p {{PORTS:port:80,443}} {{TARGET:ip}} -oN {{OUTFILE:file:nse-output.txt}}
 ```
 
 <!-- meta: risk=med | phase=enum | tags=nse,targeted,scripts -->
@@ -208,7 +208,7 @@ sudo nmap -A -sS -sU -sV -v -p T:{{TCP_PORTS:str}},U:{{UDP_PORTS:str}} --max-rat
 Pull a comma-separated port list from an nmap -oG file — feed the result back into -p N,N,N.
 
 ```bash
-grep -oE '[0-9]+/open/{{PROTO:str:tcp}}' {{INFILE:file:tcp-ports.gnmap}} | cut -d/ -f1 | paste -sd,
+grep -oE '[0-9]+/open/{{PROTO:choice:tcp,udp,sctp}}' {{INFILE:file:tcp-ports.gnmap}} | cut -d/ -f1 | paste -sd,
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=parse,ports,extract,gnmap,utility -->

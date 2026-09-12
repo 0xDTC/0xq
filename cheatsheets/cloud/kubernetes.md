@@ -53,7 +53,7 @@ kubectl auth whoami
 Test whether the current identity is allowed a specific verb on a resource in a namespace.
 
 ```bash
-kubectl auth can-i {{VERB:str:get}} {{RESOURCE:str:secrets}} -n {{NAMESPACE:str:default}}
+kubectl auth can-i {{VERB:choice:get,list,watch,create,update,patch,delete,deletecollection}} {{RESOURCE:choice:secrets,pods,deployments,services,configmaps,namespaces,nodes,roles,rolebindings,serviceaccounts}} -n {{NAMESPACE:str:default}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=rbac,can-i,privesc,enum -->
@@ -130,7 +130,7 @@ kubectl get deployments -n {{NAMESPACE:str:default}}
 Show full spec, mounted secrets, service accounts, and events for a named resource.
 
 ```bash
-kubectl describe {{RESOURCE:str:pod}}/{{NAME:str:web-0}} -n {{NAMESPACE:str:default}}
+kubectl describe {{RESOURCE:choice:pod,deployment,service,secret,configmap,node,namespace,statefulset,daemonset,job,cronjob,ingress}}/{{NAME:str:web-0}} -n {{NAMESPACE:str:default}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=describe,enum,events -->

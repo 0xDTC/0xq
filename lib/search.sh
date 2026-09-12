@@ -208,16 +208,27 @@ PREVIEW_EOF
     local cycle_script="${Q_CACHE_DIR}/.q_cycle_target.sh"
     local setvar_script="${Q_CACHE_DIR}/.q_set_var.sh"
 
-    _q_write_copy_helper "$copy_script"
-    _q_write_cycle_helper "$cycle_script"
-    _q_write_setvar_helper "$setvar_script"
+    # Emit helper scripts only when missing or older than search.sh itself
+    # (which contains their source heredocs). Skips ~6 file writes on every
+    # `q` invocation once the cache is warm.
+    local _helpers_src="${Q_ROOT}/lib/search.sh"
+    _q_helper_stale() {
+        local p="$1"
+        [[ ! -f "$p" ]] && return 0
+        local hm sm
+        hm="$(q_mtime "$p")"; sm="$(q_mtime "$_helpers_src")"
+        [[ "${hm:-0}" -lt "${sm:-0}" ]]
+    }
+    _q_helper_stale "$copy_script"    && _q_write_copy_helper    "$copy_script"
+    _q_helper_stale "$cycle_script"   && _q_write_cycle_helper   "$cycle_script"
+    _q_helper_stale "$setvar_script"  && _q_write_setvar_helper  "$setvar_script"
 
     local fill_script="${Q_CACHE_DIR}/.q_fill_var.sh"
     local decide_script="${Q_CACHE_DIR}/.q_decide.sh"
-    _q_write_fill_helper "$fill_script"
-    _q_write_decide_helper "$decide_script"
-
-    _q_write_varhint_helper "$varhint_script"
+    _q_helper_stale "$fill_script"    && _q_write_fill_helper    "$fill_script"
+    _q_helper_stale "$decide_script"  && _q_write_decide_helper  "$decide_script"
+    _q_helper_stale "$varhint_script" && _q_write_varhint_helper "$varhint_script"
+    unset -f _q_helper_stale
 
     # -----------------------------------------------------------------------
     # Build the display list and run fzf.
@@ -231,6 +242,9 @@ PREVIEW_EOF
     local q_bin="${Q_ROOT}/q"
     local mru_file="${Q_DATA_DIR}/mru"
     local selected
+    # Optional OS filter — Q_OS_FILTER (or --os flag captured earlier) drops
+    # rows whose platform column doesn't match. "any" always passes.
+    local _os_filter="${Q_OS_FILTER:-}"
     selected="$(
         awk -F'\t' \
             -v cyan=$'\033[36m' \
@@ -240,6 +254,7 @@ PREVIEW_EOF
             -v reset=$'\033[0m' \
             -v sep=$'\033[2m│\033[0m' \
             -v mru_file="$mru_file" \
+            -v os_filter="$_os_filter" \
         '
         BEGIN {
             # Load MRU titles into rank map (lower rank = more recent)
@@ -260,14 +275,18 @@ PREVIEW_EOF
             return s sprintf("%*s", w - ls, "")
         }
         {
-            cat   = $1
-            tool  = $2
-            title = $3
-            desc  = ($4 != "") ? $4 : "(no description)"
-            cmd   = $5
-            phase = $7
-            tags  = $8
-            src   = $9
+            cat      = $1
+            tool     = $2
+            title    = $3
+            desc     = ($4 != "") ? $4 : "(no description)"
+            cmd      = $5
+            phase    = $7
+            tags     = $8
+            src      = $9
+            platform = ($10 != "") ? tolower($10) : "any"
+
+            # OS filter: keep rows tagged "any" always, or matching the filter.
+            if (os_filter != "" && platform != "any" && platform != os_filter) next
 
             mark = (title in mru_rank) ? (magenta "★" reset " ") : "  "
             rank = (title in mru_rank) ? mru_rank[title] : 999999
@@ -293,6 +312,7 @@ PREVIEW_EOF
         | cut -f3- \
         | fzf \
             --ansi \
+            --print-query \
             --prompt='q> ' \
             --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit raw | Ctrl+N: new | Esc: quit' \
             --preview="$preview_cmd" \
@@ -320,10 +340,20 @@ PREVIEW_EOF
         return 1
     fi
 
-    # With live binds (no --expect), fzf prints only the accepted row.
-    # Ctrl+E sets .force_edit via its bind; q_main opens the RAW command in
-    # $EDITOR (skipping fill) so the user rewrites the selection as a whole.
-    local selection_line="$selected"
+    # --print-query prepends the final typed query on its own line. Split
+    # it off and stash it so q_main can auto-pre-fill any {{X:choice:...}}
+    # values the user mentioned (e.g. `q regripper userassist` → PLUGIN
+    # gets pre-filled without opening the picker).
+    local user_query="${selected%%$'\n'*}"
+    local selection_line="${selected#*$'\n'}"
+    if [[ "$selection_line" == "$selected" ]]; then
+        # No newline in output means fzf printed only the query (no pick).
+        selection_line=""
+    fi
+    if [[ -z "$selection_line" ]]; then
+        return 1
+    fi
+    printf '%s' "$user_query" > "${Q_CACHE_DIR}/.last_query"
 
     # -----------------------------------------------------------------------
     # Emit 3-field TSV expected by q_main: DISPLAY, TITLE, COMMAND.
@@ -587,12 +617,28 @@ while IFS=$'\t' read -r name vtype vdefault; do
     IFS= read -r typed < "$out" || true
     sel="$(sed -n '2p' "$out")"
 
+    # Prefer literal typed text when fzf's fuzzy engine latched onto an
+    # unrelated candidate (e.g. user types "user.txt" and fzf highlights
+    # some pre-existing ./old/user.txt from the [pwd] sweep). Trust the
+    # pick only when the typed string is a substring of it.
+    #
+    # Also strip any trailing `\t<description>` hint that curated
+    # candidates carry (e.g. `[choice] userassist    executed GUI programs`
+    # → `userassist`).
     value=""
-    if [[ -n "$sel" ]]; then
-        value="$sel"
-        value="${value#\[*\] }"
+    sel_val="${sel#\[*\] }"
+    sel_val="${sel_val%%$'\t'*}"
+    if [[ -n "$typed" && -n "$sel_val" ]]; then
+        typed_lc="${typed,,}"; sel_lc="${sel_val,,}"
+        if [[ "$sel_lc" == *"$typed_lc"* ]]; then
+            value="$sel_val"
+        else
+            value="$typed"
+        fi
     elif [[ -n "$typed" ]]; then
         value="$typed"
+    elif [[ -n "$sel_val" ]]; then
+        value="$sel_val"
     fi
     [[ -z "$value" ]] && continue   # Esc / empty → leave unfilled
 

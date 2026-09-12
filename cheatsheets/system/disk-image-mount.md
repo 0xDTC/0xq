@@ -3,6 +3,7 @@
 > Read triage disk images and archives without touching the host filesystem. Covers libguestfs (guestfish / guestmount / qemu-nbd), pyfsntfs (Python NTFS reader), Sleuth Kit (fls / icat / mmls), cabextract, and 7z on nested/AES archives.
 
 <!-- tags: dfir,vhdx,vmdk,ntfs,guestfish,pyfsntfs,sleuthkit,cab,7z,triage -->
+<!-- platform: windows -->
 
 ## guestfish inspect a VHDX/VMDK/qcow2
 List partitions and filesystems inside a virtual disk without mounting it.

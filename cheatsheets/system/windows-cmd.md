@@ -3,6 +3,7 @@
 > Native cmd.exe utilities and Win32 exes: net, ipconfig, netstat, arp, route, netsh, wmic, schtasks, reg, cmdkey, cipher, certutil, where, set/setx, systeminfo. Run from a cmd shell (or `cmd /c` inside PowerShell).
 
 <!-- tags: windows, cmd, cli, post, enum -->
+<!-- platform: windows -->
 
 ---
 
@@ -164,7 +165,7 @@ schtasks /query /fo LIST /v
 Recursively search HKLM for the string "password".
 
 ```bash
-reg query {{HIVE:str:HKLM}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
+reg query {{HIVE:choice:HKLM,HKCU,HKU,HKCR,HKCC}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,password,search -->
@@ -296,7 +297,7 @@ set
 Set a persistent (global) environment variable with setx, or a session variable with set.
 
 ```bash
-setx {{VAR:str:PATH}} {{DATA:str:value}}
+setx {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WINDIR,PROGRAMFILES,PROGRAMDATA,COMSPEC}} {{DATA:str:value}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=env,setx,persistent -->
@@ -307,7 +308,7 @@ setx {{VAR:str:PATH}} {{DATA:str:value}}
 Set an environment variable for the current shell session only.
 
 ```bash
-set {{VAR:str:PATH}}={{DATA:str:value}}
+set {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WINDIR,PROGRAMFILES,PROGRAMDATA,COMSPEC}}={{DATA:str:value}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=env,set,session -->
@@ -318,7 +319,7 @@ set {{VAR:str:PATH}}={{DATA:str:value}}
 Delete a persistent (global) environment variable by setting it empty with setx.
 
 ```bash
-setx {{VAR:str:PATH}} ""
+setx {{VAR:choice:PATH,TEMP,TMP,USERPROFILE,APPDATA,LOCALAPPDATA,SYSTEMROOT,WINDIR,PROGRAMFILES,PROGRAMDATA,COMSPEC}} ""
 ```
 
 <!-- meta: risk=med | phase=post | tags=env,setx,delete -->

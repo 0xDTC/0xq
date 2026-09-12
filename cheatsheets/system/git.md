@@ -43,7 +43,7 @@ git add {{FILES:str:.}} && git commit -m "{{MSG:str:update}}"
 Push local commits to remote or pull latest changes.
 
 ```bash
-git push origin {{BRANCH:str:main}} && git pull origin {{BRANCH:str:main}}
+git push origin {{BRANCH:choice:main,master,develop,dev,staging,production}} && git pull origin {{BRANCH:choice:main,master,develop,dev,staging,production}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=push,pull,sync -->
@@ -87,7 +87,7 @@ git stash push -m "{{MSG:str:wip}}" && git stash list
 Reset the branch to a previous commit (mixed keeps changes unstaged).
 
 ```bash
-git reset --{{MODE:str:mixed}} {{COMMIT:str:HEAD~1}}
+git reset --{{MODE:choice:mixed,soft,hard,keep,merge}} {{COMMIT:str:HEAD~1}}
 ```
 
 <!-- meta: risk=high | phase=misc | tags=reset,undo,revert -->
@@ -109,7 +109,7 @@ git cherry-pick {{COMMIT:str:abc1234}}
 Show the differences between two branches.
 
 ```bash
-git diff {{BRANCH1:str:main}}..{{BRANCH2:str:feature}}
+git diff {{BRANCH1:choice:main,master,develop,dev,staging,production}}..{{BRANCH2:str:feature}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=diff,compare,branches -->

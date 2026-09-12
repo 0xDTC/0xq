@@ -30,7 +30,7 @@ mongo --host {{TARGET:ip}} --port {{PORT:port:27017}}
 Authenticate to MongoDB instance with credentials.
 
 ```bash
-mongo --host {{TARGET:ip}} --port {{PORT:port:27017}} -u {{USERNAME:str}} -p {{PASSWORD:str}} --authenticationDatabase {{DATABASE:str:admin}}
+mongo --host {{TARGET:ip}} --port {{PORT:port:27017}} -u {{USERNAME:str}} -p {{PASSWORD:str}} --authenticationDatabase {{DATABASE:choice:admin,$external,local,config}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=mongodb,auth,connect -->

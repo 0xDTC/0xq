@@ -3,6 +3,7 @@
 > Analyze Linux kernel crash dumps (`.kdump`, vmcore) with the `crash` utility. Handles panic root-cause, loaded modules, running processes, network sockets, filesystem state at the moment of panic. Needs the matching kernel's debug-info vmlinux (dbgsym).
 
 <!-- tags: dfir,linux,kernel,crash,kdump,makedumpfile,vmcore,rootkit -->
+<!-- platform: linux -->
 
 ## identify kdump file
 Check the format and target kernel version (matches which vmlinux-dbgsym to use).
@@ -41,7 +42,7 @@ crash {{VMLINUX:file:./vmlinux-dbgsym}} {{VMCORE:file:./vmcore}}
 Run one command and exit (scriptable / non-interactive).
 
 ```bash
-echo "{{CMD:str:sys}}" | crash {{VMLINUX:file:./vmlinux-dbgsym}} {{VMCORE:file:./vmcore}}
+echo "{{CMD:choice:sys,ps,bt,log,mod,net,mount,files,dev,vm,kmem,runq,swap}}" | crash {{VMLINUX:file:./vmlinux-dbgsym}} {{VMCORE:file:./vmcore}}
 ```
 
 <!-- meta: risk=safe | phase=dfir | tags=crash,batch -->

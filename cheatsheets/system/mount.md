@@ -30,7 +30,7 @@ sudo mount -t cifs //{{TARGET:ip}}/{{SHARE:str:share}} {{MOUNT_POINT:dir:/mnt/sm
 Mount local EXT4 disk partition.
 
 ```bash
-sudo mount /dev/{{DEVICE:str:sda1}} {{MOUNT_POINT:dir:/mnt/disk}}
+sudo mount /dev/{{DEVICE:choice:sda1,sda2,sdb1,nvme0n1p1,xvda1,vda1}} {{MOUNT_POINT:dir:/mnt/disk}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=mount,ext4,local -->
@@ -41,7 +41,7 @@ sudo mount /dev/{{DEVICE:str:sda1}} {{MOUNT_POINT:dir:/mnt/disk}}
 Mount USB drive with FAT32 filesystem.
 
 ```bash
-sudo mount /dev/{{DEVICE:str:sdb1}} {{MOUNT_POINT:dir:/mnt/usb}} -t vfat
+sudo mount /dev/{{DEVICE:choice:sdb1,sda1,sdc1,nvme0n1p1,mmcblk0p1}} {{MOUNT_POINT:dir:/mnt/usb}} -t vfat
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=mount,fat32,usb -->
@@ -96,7 +96,7 @@ sudo mount --bind {{SOURCE:dir:/source}} {{TARGET_DIR:dir:/mnt/bind}}
 Enable a swap partition for use.
 
 ```bash
-sudo swapon /dev/{{DEVICE:str:sda5}}
+sudo swapon /dev/{{DEVICE:choice:sda5,sda2,sda3,nvme0n1p2,sdb2}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=mount,swap -->

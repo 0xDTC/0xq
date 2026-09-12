@@ -8,6 +8,58 @@
 q_fill_state_path() { printf '%s/.fill_state' "${Q_CACHE_DIR}"; }
 
 # ===========================================================================
+# q_prefill_choices_from_query CMD QUERY
+# ===========================================================================
+# Walks every {{VAR:choice:opt1[=desc1],opt2[=desc2],...}} in CMD and, if
+# QUERY (the user's fzf search string) contains any option's raw value as a
+# whitespace-separated token (case-insensitive), pre-fills that variable via
+# the transient .fill_state file so the fill flow skips the picker for it.
+#
+# Enables shortcuts like `q regripper userassist` → the regripper single-
+# plugin command auto-picks PLUGIN=userassist without opening the picker.
+# Nothing is done for STR / IP / FILE / etc. vars — only CHOICE / ENUM.
+# ===========================================================================
+q_prefill_choices_from_query() {
+    local cmd="$1" query="$2"
+    [[ -z "$query" ]] && return 0
+    [[ "$cmd" == *"{{"*":choice:"* ]] || return 0
+
+    local fill_state; fill_state="$(q_fill_state_path)"
+    mkdir -p "$(dirname "$fill_state")"
+    touch "$fill_state"
+
+    # Lowercase, comma/space-normalized query — used for whole-word matches.
+    local q_norm=" ${query,,} "
+    q_norm="${q_norm//,/ }"
+
+    # Extract each {{...:choice:...}} placeholder body and check its options.
+    local placeholder
+    while IFS= read -r placeholder; do
+        [[ -z "$placeholder" ]] && continue
+        # placeholder = {{NAME:choice:opt1=desc1,opt2=desc2,...}}
+        local inner="${placeholder#\{\{}"; inner="${inner%\}\}}"
+        local var_name="${inner%%:*}"
+        local opts="${inner#*:choice:}"
+        # Skip if this var is already in .fill_state (user set it earlier).
+        if grep -q "^${var_name}=" "$fill_state" 2>/dev/null; then
+            continue
+        fi
+
+        local IFS_orig="$IFS" IFS=',' opt opt_val
+        for opt in $opts; do
+            opt_val="${opt%%=*}"
+            [[ -z "$opt_val" ]] && continue
+            local opt_lc=" ${opt_val,,} "
+            if [[ "$q_norm" == *"$opt_lc"* ]]; then
+                printf '%s=%s\n' "$var_name" "$opt_val" >> "$fill_state"
+                break
+            fi
+        done
+        IFS="$IFS_orig"
+    done < <(grep -oE '\{\{[A-Za-z_][A-Za-z0-9_]*:choice:[^}]+\}\}' <<< "$cmd")
+}
+
+# ===========================================================================
 # q_extract_vars — parse {{VAR:type:default}} placeholders from a command
 # ===========================================================================
 # Outputs one line per placeholder: NAME<TAB>TYPE<TAB>DEFAULT
@@ -119,7 +171,15 @@ q_fill_vars() {
         value="$(q_fill_single_var "$name" "$vtype" "$vdefault")"
 
         if [[ -z "$value" ]] && [[ -n "$vdefault" ]]; then
-            value="$vdefault"
+            # CHOICE / ENUM: default is the first comma-split option, with
+            # any inline `=description` hint stripped off.
+            case "${vtype^^}" in
+                CHOICE|ENUM)
+                    value="${vdefault%%,*}"
+                    value="${value%%=*}"
+                    ;;
+                *) value="$vdefault" ;;
+            esac
         fi
 
         filled_vars["$name"]="$value"
@@ -215,7 +275,13 @@ q_fill_vars_auto() {
                 value="$(_q_detect_lhost 2>/dev/null)" || value=""
             fi
             if [[ -z "$value" ]] && [[ -n "$vdefault" ]]; then
-                value="$vdefault"
+                case "${vtype^^}" in
+                    CHOICE|ENUM)
+                        value="${vdefault%%,*}"
+                        value="${value%%=*}"
+                        ;;
+                    *) value="$vdefault" ;;
+                esac
             fi
         fi
 
@@ -332,8 +398,21 @@ _q_build_candidates() {
         candidates="[session] ${session_val}"$'\n'
     fi
 
-    # --- Clipboard entry (if available and type-compatible) ---
-    if q_clipboard_available; then
+    # --- Clipboard entry (opt-in, off by default) ---
+    # Stale clipboard content (e.g. leftover regripper output like
+    # `{9E3995AB-...}\TaskBar\File Explorer.lnk (4)`) noisily lands as a
+    # candidate for whatever variable the picker's opened for next —
+    # especially annoying for CHOICE lists where the options are curated
+    # and the clipboard value is almost never one of them.
+    #
+    # Off by default. Enable with `q config set Q_CLIPBOARD_CANDIDATE on`.
+    # Even when on, CHOICE / ENUM types skip clipboard (options are
+    # curated). When you genuinely need to paste a value, use your
+    # terminal's paste (Ctrl+Shift+V on most Linux terminals, Cmd+V on
+    # macOS) — fzf accepts pasted text as typed input.
+    if [[ "${Q_CLIPBOARD_CANDIDATE:-off}" == "on" ]] \
+       && [[ "$upper_type" != "CHOICE" ]] && [[ "$upper_type" != "ENUM" ]] \
+       && q_clipboard_available; then
         local clip=""
         clip="$(q_clipboard_read 2>/dev/null)" || true
         if [[ -n "$clip" ]] && [[ "$clip" != "$session_val" ]]; then
@@ -352,8 +431,36 @@ _q_build_candidates() {
         fi
     fi
 
-    # --- Default value entry (only if different from session) ---
-    if [[ -n "$vdefault" ]] && [[ "$vdefault" != "$session_val" ]]; then
+    # --- Default value entry ---
+    # For CHOICE / ENUM vars the "default" field carries a comma-separated
+    # list of options; each becomes its own [choice] candidate so the picker
+    # lists exactly what the cheatsheet author declared (regripper plugins,
+    # nmap script categories, mode flags, etc.) instead of only the first
+    # value. The first entry is still the auto-fill default (handled in
+    # q_fill_vars / q_fill_vars_auto / q_fill_single_var).
+    if [[ "$upper_type" == "CHOICE" ]] || [[ "$upper_type" == "ENUM" ]]; then
+        # Each option may carry an inline description: `value=description`.
+        # Rendered tab-separated so the picker can show a dim hint next to
+        # each value (e.g. userassist    executed GUI programs). Value-only
+        # options (no `=`) still work.
+        local _cv _cval _cdesc
+        while IFS= read -r _cv; do
+            [[ -z "$_cv" ]] && continue
+            if [[ "$_cv" == *=* ]]; then
+                _cval="${_cv%%=*}"
+                _cdesc="${_cv#*=}"
+            else
+                _cval="$_cv"
+                _cdesc=""
+            fi
+            [[ "$_cval" == "$session_val" ]] && continue
+            if [[ -n "$_cdesc" ]]; then
+                candidates="${candidates}[choice] ${_cval}"$'\t'"${_cdesc}"$'\n'
+            else
+                candidates="${candidates}[choice] ${_cval}"$'\n'
+            fi
+        done < <(printf '%s\n' "$vdefault" | tr ',' '\n')
+    elif [[ -n "$vdefault" ]] && [[ "$vdefault" != "$session_val" ]]; then
         candidates="${candidates}[default] ${vdefault}"$'\n'
     fi
 
@@ -482,6 +589,115 @@ _q_build_candidates() {
         done
     fi
 
+    # File / dir candidates — walk PWD first (case data / hive dumps / output
+    # files almost always live in the working directory), then a shallow sweep
+    # of HOME so common downloads / evidence dirs are one keystroke away.
+    # Tagged [pwd] / [home] so the picker shows where each option came from.
+    # WORDLIST is skipped — the curated seclists block above handles it.
+    local _is_file=0 _is_dir=0
+    case "$upper_type" in
+        FILE|OUTFILE|OUTPUT_FILE|PATH) _is_file=1 ;;
+        DIR|OUTDIR|OUTPUT_DIR)         _is_dir=1 ;;
+    esac
+    if [[ "$upper_type" != "WORDLIST" ]] && [[ "$upper_name" != *WORDLIST* ]]; then
+        case "$upper_name" in
+            *OUTDIR*|*DIR)  _is_dir=1 ;;
+            *FILE*|*PATH*)  _is_file=1 ;;
+        esac
+    fi
+    # Skip the filesystem sweep entirely for CHOICE / ENUM vars — the
+    # candidate list is authoritative and file suggestions would be noise
+    # even when the var name happens to match *FILE* / *PATH* / *DIR*.
+    if [[ "$upper_type" == "CHOICE" ]] || [[ "$upper_type" == "ENUM" ]]; then
+        _is_file=0
+        _is_dir=0
+    fi
+    if [[ "$_is_file" -eq 1 ]] || [[ "$_is_dir" -eq 1 ]]; then
+        local _find_kind='f'
+        [[ "$_is_dir" -eq 1 ]] && _find_kind='d'
+        # PWD depth + count are generous by default so nested DFIR triage
+        # trees (./Baggage/<case>/<host>/Users/<user>/NTUSER.DAT — 5+ deep)
+        # are reachable, and large case dirs don't get truncated. Override
+        # in ~/.config/q/config.sh via Q_FILE_MAXDEPTH / Q_FILE_MAXCOUNT.
+        local _pwd_max="${Q_FILE_MAXDEPTH:-10}"
+        local _pwd_cap="${Q_FILE_MAXCOUNT:-20000}"
+        local _pwd_out _home_out
+        # Portable size probe: GNU find has -printf, BSD doesn't. Detect
+        # once. The output is `<bytes>\t<path>` regardless; the awk step
+        # below humanises the size and emits `[pwd] path\t4.2M`.
+        local _size_find
+        if find --version 2>/dev/null | grep -q GNU; then
+            # -printf on directories reports the inode size (usually 4096)
+            # which is meaningless — only emit size for files. Dirs get an
+            # empty size column that the awk step tags as "-".
+            if [[ "$_find_kind" == "f" ]]; then
+                _size_find='find . -maxdepth "$_pwd_max" -type f -printf "%s\t%p\n"'
+            else
+                _size_find='find . -maxdepth "$_pwd_max" -type d -printf "\t%p\n"'
+            fi
+        else
+            _size_find='find . -maxdepth "$_pwd_max" -type "$_find_kind" 2>/dev/null | while IFS= read -r _f; do printf "%s\t%s\n" "$(stat -f %z "$_f" 2>/dev/null || echo)" "$_f"; done'
+        fi
+        # awk humaniser: bytes → 4.2K / 3.9M / 1.7G. Empty size → "-".
+        # Output line is `[pwd] path\t<human-size>` so post-fzf tab-strip
+        # returns just the path. Paths are emitted ABSOLUTE (PWD-prefixed)
+        # so a widget-paste survives `cd`ing before Enter — a relative
+        # `./foo/bar` from a stale PWD is exactly the failure mode we saw
+        # in the Baggage/Baggage/ nested-dir case.
+        _pwd_out="$(eval "$_size_find" 2>/dev/null \
+                        | grep -vE '/(\.git|node_modules|__pycache__|\.cache|\.venv|\.tox)(/|$)' \
+                        | sort -k2 | head -"$_pwd_cap" \
+                        | awk -F'\t' -v pwd="$PWD" '
+                            function human(b) {
+                                if (b == "" || b == 0) return (b == "" ? "-" : "0 B")
+                                if (b >= 1073741824) return sprintf("%.1fG", b/1073741824)
+                                if (b >= 1048576)    return sprintf("%.1fM", b/1048576)
+                                if (b >= 1024)       return sprintf("%.1fK", b/1024)
+                                return b " B"
+                            }
+                            {
+                                path = $2
+                                # Strip leading "./" that GNU find prepends,
+                                # then absolutise via $PWD. BSD path already
+                                # starts with a leading token — same strip.
+                                sub(/^\.\//, "", path)
+                                if (path !~ /^\//) path = pwd "/" path
+                                printf "[pwd] %s\t%s\n", path, human($1)
+                            }')"
+        [[ -n "$_pwd_out" ]] && candidates="${candidates}${_pwd_out}"$'\n'
+        # HOME sweep — only when HOME differs from PWD and exists. Shallow
+        # (maxdepth 3, cap 500) and hidden entries under HOME are skipped so
+        # the picker isn't drowned by dotfiles / .cache / .local trees.
+        # Override via Q_HOME_MAXDEPTH / Q_HOME_MAXCOUNT if desired.
+        if [[ -n "${HOME:-}" ]] && [[ "$HOME" != "$PWD" ]] && [[ -d "$HOME" ]]; then
+            local _home_max="${Q_HOME_MAXDEPTH:-3}"
+            local _home_cap="${Q_HOME_MAXCOUNT:-500}"
+            local _size_find_home
+            if find --version 2>/dev/null | grep -q GNU; then
+                if [[ "$_find_kind" == "f" ]]; then
+                    _size_find_home='find "$HOME" -maxdepth "$_home_max" -type f -printf "%s\t%p\n"'
+                else
+                    _size_find_home='find "$HOME" -maxdepth "$_home_max" -type d -printf "\t%p\n"'
+                fi
+            else
+                _size_find_home='find "$HOME" -maxdepth "$_home_max" -type "$_find_kind" 2>/dev/null | while IFS= read -r _f; do printf "%s\t%s\n" "$(stat -f %z "$_f" 2>/dev/null || echo)" "$_f"; done'
+            fi
+            _home_out="$(eval "$_size_find_home" 2>/dev/null \
+                            | grep -vE $'\t.*/\\.' \
+                            | sort -k2 | head -"$_home_cap" \
+                            | awk -F'\t' '
+                                function human(b) {
+                                    if (b == "" || b == 0) return (b == "" ? "-" : "0 B")
+                                    if (b >= 1073741824) return sprintf("%.1fG", b/1073741824)
+                                    if (b >= 1048576)    return sprintf("%.1fM", b/1048576)
+                                    if (b >= 1024)       return sprintf("%.1fK", b/1024)
+                                    return b " B"
+                                }
+                                { printf "[home] %s\t%s\n", $2, human($1) }')"
+            [[ -n "$_home_out" ]] && candidates="${candidates}${_home_out}"$'\n'
+        fi
+    fi
+
     # Network interface candidates
     if [[ "$upper_type" == "IFACE" ]] || [[ "$upper_name" == *IFACE* ]] || [[ "$upper_name" == *INTERFACE* ]]; then
         local ifaces
@@ -493,44 +709,66 @@ _q_build_candidates() {
 
     # Reverse/bind callback presets — LPORT specifically, ranked before the
     # generic service-port list below so listener ports come first.
+    # Each entry is `port=hint`; the picker splits on tab so the hint reads
+    # like a dim column next to the port number.
     if [[ "$upper_type" == "LPORT" ]] || [[ "$upper_name" == *LPORT* ]]; then
-        local _cb
-        for _cb in 4444 9001 443 80 8080 1234 4443 1080; do
-            candidates="${candidates}${_cb}"$'\n'
+        local _cb _cbv _cbd
+        for _cb in \
+            4444=Metasploit default \
+            9001=Cobalt/HTTPS-alt \
+            443=blends with HTTPS egress \
+            80=blends with HTTP egress \
+            8080=HTTP-alt \
+            1234=CTF classic \
+            4443=HTTPS-alt \
+            1080=SOCKS-proxy port; do
+            _cbv="${_cb%%=*}"; _cbd="${_cb#*=}"
+            candidates="${candidates}[lport] ${_cbv}"$'\t'"${_cbd}"$'\n'
         done
     fi
 
-    # Port candidates
+    # Port candidates — service-hint per entry so the picker shows what
+    # each well-known port is for. Range entries omit the hint.
     if [[ "$upper_type" == "PORT" ]] || [[ "$upper_name" == *PORT* ]]; then
+        # Top-tier ports only — the 20-ish services you actually pick without
+        # thinking, plus the two most common scan ranges. Fuzzy-search picks
+        # up more via history/discovery/session-vars anyway.
         local -a common_ports=(
-            "80" "443" "8080" "8443"
-            "21" "22" "23" "25" "53"
-            "135" "139" "445" "3389"
-            "3306" "5432" "1433" "27017"
-            "6379" "11211" "1-1000"
+            "21=FTP" "22=SSH" "23=Telnet" "25=SMTP" "53=DNS"
+            "80=HTTP" "110=POP3" "135=MSRPC" "139=NetBIOS-ssn" "143=IMAP"
+            "389=LDAP" "443=HTTPS" "445=SMB" "636=LDAPS" "1433=MSSQL"
+            "3306=MySQL" "3389=RDP" "5432=PostgreSQL" "5985=WinRM" "6379=Redis"
+            "8080=HTTP-alt" "27017=MongoDB"
+            "1-1000" "1-65535"
         )
-        local p
+        local p pv pd
         for p in "${common_ports[@]}"; do
-            candidates="${candidates}${p}"$'\n'
+            if [[ "$p" == *=* ]]; then
+                pv="${p%%=*}"; pd="${p#*=}"
+                candidates="${candidates}[port] ${pv}"$'\t'"${pd}"$'\n'
+            else
+                candidates="${candidates}[port] ${p}"$'\n'
+            fi
         done
     fi
 
-    # msfvenom payload candidates (-p). Curated; bare strings match -p usage.
+    # msfvenom payload candidates (-p). Curated; each entry is `payload=hint`.
     if [[ "$upper_type" == "PAYLOAD" ]] || [[ "$upper_name" == *PAYLOAD* ]]; then
         if command -v msfvenom >/dev/null 2>&1; then
-            local _pl
+            local _pl _plv _pld
             for _pl in \
-                windows/x64/meterpreter/reverse_tcp \
-                windows/x64/meterpreter/reverse_https \
-                windows/meterpreter/reverse_tcp \
-                windows/x64/shell_reverse_tcp \
-                linux/x64/meterpreter/reverse_tcp \
-                linux/x64/shell_reverse_tcp \
-                java/jsp_shell_reverse_tcp \
-                php/meterpreter/reverse_tcp \
-                cmd/unix/reverse_python \
-                windows/x64/meterpreter/bind_tcp; do
-                candidates="${candidates}${_pl}"$'\n'
+                "windows/x64/meterpreter/reverse_tcp=Windows x64 reverse Meterpreter" \
+                "windows/x64/meterpreter/reverse_https=Windows x64 reverse HTTPS Meterpreter" \
+                "windows/meterpreter/reverse_tcp=Windows x86 reverse Meterpreter" \
+                "windows/x64/shell_reverse_tcp=Windows x64 reverse cmd shell" \
+                "linux/x64/meterpreter/reverse_tcp=Linux x64 reverse Meterpreter" \
+                "linux/x64/shell_reverse_tcp=Linux x64 reverse shell" \
+                "java/jsp_shell_reverse_tcp=JSP reverse shell" \
+                "php/meterpreter/reverse_tcp=PHP reverse Meterpreter" \
+                "cmd/unix/reverse_python=Python one-liner reverse shell" \
+                "windows/x64/meterpreter/bind_tcp=Windows x64 bind Meterpreter"; do
+                _plv="${_pl%%=*}"; _pld="${_pl#*=}"
+                candidates="${candidates}[payload] ${_plv}"$'\t'"${_pld}"$'\n'
             done
         fi
     fi
@@ -716,17 +954,42 @@ q_fill_single_var() {
     # If no newline was present, selected == fzf_output — clear it
     [[ "$selected" == "$fzf_output" ]] && selected=""
 
-    # Determine final value
-    local value=""
-    if [[ -n "$selected" ]]; then
-        # User selected from the list — strip tag prefixes using parameter expansion
-        value="${selected#\[*\] }"
+    # Determine final value.
+    # Precedence:
+    #   1. Typed text that fzf could NOT fuzzy-latch to a candidate → literal.
+    #      This is the case the user cares about: typing "user.txt" when it
+    #      isn't in the list shouldn't yank in some unrelated ./old/user.txt.
+    #   2. Typed text that fzf DID fuzzy-latch to → trust the pick only when
+    #      the typed string appears in it as a substring (fuzzy pick was
+    #      intended). Otherwise still return literal typed text.
+    #   3. No typing but a selection → use the selection.
+    #   4. Neither typed nor picked → fall back to the declared default
+    #      (first comma-split for CHOICE / ENUM, whole value otherwise).
+    #
+    # Strip the tag prefix AND any trailing `\t<description>` hint that a
+    # curated candidate carries (e.g. `[choice] userassist    executed GUI
+    # programs` → `userassist`).
+    local value="" _sel_val="${selected#\[*\] }"
+    _sel_val="${_sel_val%%$'\t'*}"
+    if [[ -n "$typed_query" ]] && [[ -n "$_sel_val" ]]; then
+        local _tq_lc="${typed_query,,}" _sv_lc="${_sel_val,,}"
+        if [[ "$_sv_lc" == *"$_tq_lc"* ]]; then
+            value="$_sel_val"
+        else
+            value="$typed_query"
+        fi
     elif [[ -n "$typed_query" ]]; then
-        # User typed a custom value
         value="$typed_query"
+    elif [[ -n "$_sel_val" ]]; then
+        value="$_sel_val"
     elif [[ -n "$vdefault" ]]; then
-        # User pressed Enter with nothing — use default
-        value="$vdefault"
+        case "${vtype^^}" in
+            CHOICE|ENUM)
+                value="${vdefault%%,*}"
+                value="${value%%=*}"
+                ;;
+            *) value="$vdefault" ;;
+        esac
     fi
 
     printf '%s' "$value"

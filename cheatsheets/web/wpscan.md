@@ -32,7 +32,7 @@ wpscan --url {{URL:url:http://target.com}} --enumerate u --random-user-agent
 Scan for plugins with known vulnerabilities.
 
 ```bash
-wpscan --url {{URL:url:http://target.com}} --enumerate vp --plugins-detection {{DETECTION:str:aggressive}} --random-user-agent
+wpscan --url {{URL:url:http://target.com}} --enumerate vp --plugins-detection {{DETECTION:choice:aggressive,passive,mixed}} --random-user-agent
 ```
 
 <!-- meta: risk=low | phase=vuln | tags=plugins,vulnerable -->
@@ -98,7 +98,7 @@ wpscan --url {{URL:url:http://target.com}} --detection-mode aggressive --plugins
 Scan an HTTPS site with a self-signed or expired certificate.
 
 ```bash
-wpscan --url {{URL:url:https://target.com}} --disable-tls-checks -e {{ENUM:str:ap}}
+wpscan --url {{URL:url:https://target.com}} --disable-tls-checks -e {{ENUM:choice:ap,vp,at,vt,u,m,tt,cb,dbe,p,t}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=tls,disable,selfsigned -->

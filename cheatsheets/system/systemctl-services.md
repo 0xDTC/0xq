@@ -3,6 +3,7 @@
 > Manage systemd services, units, and view system logs with journalctl
 
 <!-- tags: systemctl, systemd, service, journalctl, logs -->
+<!-- platform: linux -->
 
 ---
 
@@ -10,7 +11,7 @@
 Start a stopped service immediately.
 
 ```bash
-sudo systemctl start {{SERVICE:str:apache2}}
+sudo systemctl start {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=start,service -->
@@ -21,7 +22,7 @@ sudo systemctl start {{SERVICE:str:apache2}}
 Stop a running service immediately.
 
 ```bash
-sudo systemctl stop {{SERVICE:str:apache2}}
+sudo systemctl stop {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=stop,service -->
@@ -32,7 +33,7 @@ sudo systemctl stop {{SERVICE:str:apache2}}
 Restart a service (stop then start).
 
 ```bash
-sudo systemctl restart {{SERVICE:str:apache2}}
+sudo systemctl restart {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=restart,service -->
@@ -43,7 +44,7 @@ sudo systemctl restart {{SERVICE:str:apache2}}
 Enable a service to start automatically on boot.
 
 ```bash
-sudo systemctl enable {{SERVICE:str:ssh}}
+sudo systemctl enable {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=enable,boot,autostart -->
@@ -54,7 +55,7 @@ sudo systemctl enable {{SERVICE:str:ssh}}
 Disable a service from starting on boot.
 
 ```bash
-sudo systemctl disable {{SERVICE:str:apache2}}
+sudo systemctl disable {{SERVICE:choice:apache2,nginx,sshd,ssh,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=disable,boot -->
@@ -65,7 +66,7 @@ sudo systemctl disable {{SERVICE:str:apache2}}
 Check the current status and recent logs of a service.
 
 ```bash
-systemctl status {{SERVICE:str:ssh}}
+systemctl status {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=status,check,health -->
@@ -98,7 +99,7 @@ systemctl --failed
 Follow real-time logs for a specific service.
 
 ```bash
-sudo journalctl -u {{SERVICE:str:ssh}} -f
+sudo journalctl -u {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}} -f
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=journalctl,follow,realtime,logs -->
@@ -109,7 +110,7 @@ sudo journalctl -u {{SERVICE:str:ssh}} -f
 View logs since a specific time or date.
 
 ```bash
-sudo journalctl -u {{SERVICE:str:ssh}} --since "{{SINCE:str:1 hour ago}}" --no-pager
+sudo journalctl -u {{SERVICE:choice:ssh,sshd,apache2,nginx,mysql,postgresql,docker,cron,NetworkManager,systemd-resolved,firewalld}} --since "{{SINCE:choice:1 hour ago,today,yesterday,1 day ago,1 week ago,boot}}" --no-pager
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=journalctl,since,time,filter -->
@@ -120,7 +121,7 @@ sudo journalctl -u {{SERVICE:str:ssh}} --since "{{SINCE:str:1 hour ago}}" --no-p
 View logs filtered by priority level (0=emerg through 7=debug).
 
 ```bash
-sudo journalctl -p {{PRIORITY:str:err}} --no-pager -n {{LINES:int:50}}
+sudo journalctl -p {{PRIORITY:choice:err,warning,info,debug,notice,crit,alert,emerg}} --no-pager -n {{LINES:int:50}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=journalctl,priority,severity -->

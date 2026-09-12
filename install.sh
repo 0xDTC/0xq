@@ -217,6 +217,14 @@ WIDGET_EOF
         success "Alias added to ${rc_file}"
     fi
 
+    # --- Completion -------------------------------------------------------
+    if grep -q 'q completion (zsh)' "$rc_file" 2>/dev/null; then
+        info "zsh completion source already present in ${rc_file} — skipping."
+    else
+        printf '\n# q completion (zsh)\nautoload -U compinit && compinit\nsource '\''%s/completions/q.zsh'\''\n' "$SCRIPT_DIR" >> "$rc_file"
+        success "zsh completion sourced from ${rc_file}"
+    fi
+
     # --- Word-delete keybindings (Alt+Backspace; Ctrl+W always works too) -
     if grep -q 'q: word-delete keys' "$rc_file" 2>/dev/null; then
         info "zsh word-delete bindings already present in ${rc_file} — skipping."
@@ -281,6 +289,14 @@ WIDGET_EOF
     else
         printf '\n# q command launcher alias\nalias q='\''%s'\''\n' "$Q_BIN" >> "$rc_file"
         success "Alias added to ${rc_file}"
+    fi
+
+    # --- Completion -------------------------------------------------------
+    if grep -q 'q completion (bash)' "$rc_file" 2>/dev/null; then
+        info "bash completion source already present in ${rc_file} — skipping."
+    else
+        printf '\n# q completion (bash)\nsource '\''%s/completions/q.bash'\''\n' "$SCRIPT_DIR" >> "$rc_file"
+        success "bash completion sourced from ${rc_file}"
     fi
 
     # --- Word-delete keybindings (Alt+Backspace; Ctrl+W always works too) -

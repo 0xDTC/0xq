@@ -3,6 +3,7 @@
 > Read/write BitLocker-encrypted drives on Linux by decrypting to a virtual mount point. Needs a known password or recovery key — this is access, not cracking.
 
 <!-- tags: dislocker, bitlocker, mount, vhd, forensics -->
+<!-- platform: windows -->
 
 ---
 

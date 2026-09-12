@@ -32,7 +32,7 @@ nuclei -u {{URL:url}} -s {{SEVERITY:str:critical,high}} -o {{OUTFILE:file:nuclei
 Run a targeted scan using a specific template or template directory.
 
 ```bash
-nuclei -u {{URL:url}} -t {{TEMPLATE:str:cves/}} -o {{OUTFILE:file:nuclei-template.txt}}
+nuclei -u {{URL:url}} -t {{TEMPLATE:choice:cves/,vulnerabilities/,misconfiguration/,exposures/,panels/,technologies/,http/,network/,dns/,ssl/,file/,headless/,code/}} -o {{OUTFILE:file:nuclei-template.txt}}
 ```
 
 <!-- meta: risk=med | phase=vuln | tags=template,targeted,specific -->

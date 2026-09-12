@@ -131,7 +131,7 @@ shodan search "country:{{COUNTRY:str:US}} city:\"{{CITY:str:New York}}\""
 Find systems running a specific product (e.g., mongodb, elasticsearch).
 
 ```bash
-shodan search "product:{{PRODUCT:str:mongodb}}"
+shodan search "product:{{PRODUCT:choice:mongodb,mysql,redis,apache,nginx,iis,elasticsearch,memcached,postgresql,docker,kubernetes,jenkins}}"
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=shodan,product,fingerprint -->
@@ -175,7 +175,7 @@ shodan search "ssl.cert.expired:true"
 Find hosts tagged by Shodan (industrial control, compromised, webcams).
 
 ```bash
-shodan search "tag:{{TAG:str:ics}}"
+shodan search "tag:{{TAG:choice:ics,iot,vpn,cloud,database,honeypot,malware,tor,cdn,self-signed,scada,eol-os}}"
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=shodan,tag,ics -->
@@ -186,7 +186,7 @@ shodan search "tag:{{TAG:str:ics}}"
 Aggregate top values by facet (e.g., top ports for an org).
 
 ```bash
-shodan stats "{{QUERY:str:apache}}" --facets {{FACET:str:port}} --limit {{LIMIT:int:10}}
+shodan stats "{{QUERY:str:apache}}" --facets {{FACET:choice:port,country,city,org,asn,product,version,os,isp,domain,tag,vuln}} --limit {{LIMIT:int:10}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=shodan,stats,facets -->

@@ -3,6 +3,7 @@
 > PowerShell cmdlets and one-liners for enumeration, post-exploitation, persistence, and lateral movement (Get-*/Set-*/New-* cmdlets, Invoke-Command, PSRemoting, WinRM, IEX cradles, sls/Where-Object pipelines).
 
 <!-- tags: windows, powershell, post, enum, cmdlets -->
+<!-- platform: windows -->
 
 ---
 
@@ -142,7 +143,7 @@ Get-LocalGroup
 Show the members of a local group such as Administrators.
 
 ```bash
-Get-LocalGroupMember -Name "{{GROUP:str:Administrators}}"
+Get-LocalGroupMember -Name "{{GROUP:choice:Administrators,Users,Guests,Backup Operators,Remote Desktop Users,Power Users,Remote Management Users,Hyper-V Administrators}}"
 ```
 
 <!-- meta: risk=low | phase=enum | tags=powershell,localgroup,members -->
@@ -175,7 +176,7 @@ $Password = Read-Host -AsSecureString; Set-LocalUser -Name "{{USERNAME:str}}" -P
 Add a user to a local group such as Administrators for privilege escalation.
 
 ```bash
-Add-LocalGroupMember -Group "{{GROUP:str:Administrators}}" -Member "{{USERNAME:str}}"
+Add-LocalGroupMember -Group "{{GROUP:choice:Administrators,Users,Guests,Backup Operators,Remote Desktop Users,Power Users,Remote Management Users,Hyper-V Administrators}}" -Member "{{USERNAME:str}}"
 ```
 
 <!-- meta: risk=med | phase=privesc | tags=powershell,localgroup,admin -->

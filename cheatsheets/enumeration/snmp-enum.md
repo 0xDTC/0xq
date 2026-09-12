@@ -32,7 +32,7 @@ onesixtyone -c {{WORDLIST:wordlist:/usr/share/seclists/Discovery/SNMP/snmp.txt}}
 Walk the entire SNMP MIB tree using a known community string.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} | tee {{OUTFILE:file:snmpwalk-full.txt}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} | tee {{OUTFILE:file:snmpwalk-full.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpwalk,full,mib -->
@@ -43,7 +43,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} | tee {{OUTFILE:file:snm
 Query the process list OID to discover running services and software.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.25.4.2.1.2 | tee {{OUTFILE:file:snmp-processes.txt}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} 1.3.6.1.2.1.25.4.2.1.2 | tee {{OUTFILE:file:snmp-processes.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpwalk,processes,software -->
@@ -54,7 +54,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.25.4.2.1.2 |
 Query the user account OID to enumerate local user accounts.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.4.1.77.1.2.25 | tee {{OUTFILE:file:snmp-users.txt}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} 1.3.6.1.4.1.77.1.2.25 | tee {{OUTFILE:file:snmp-users.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpwalk,users,accounts -->
@@ -65,7 +65,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.4.1.77.1.2.25 | 
 Query the installed software OID to list applications on the target.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.25.6.3.1.2 | tee {{OUTFILE:file:snmp-software.txt}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} 1.3.6.1.2.1.25.6.3.1.2 | tee {{OUTFILE:file:snmp-software.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpwalk,software,installed -->
@@ -76,7 +76,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.25.6.3.1.2 |
 Query network interface details including IP addresses and interface names.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.2.2.1.2 | tee {{OUTFILE:file:snmp-interfaces.txt}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} 1.3.6.1.2.1.2.2.1.2 | tee {{OUTFILE:file:snmp-interfaces.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpwalk,interfaces,network -->
@@ -87,7 +87,7 @@ snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.2.2.1.2 | te
 Query the TCP connection table to discover open ports and connections.
 
 ```bash
-snmpwalk -v2c -c {{COMMUNITY:str:public}} {{TARGET:ip}} 1.3.6.1.2.1.6.13.1.3 | tee {{OUTFILE:file:snmp-ports.txt}}
+snmpwalk -v2c -c {{COMMUNITY:choice:public,private,community,cisco,admin,manager,snmp,monitor}} {{TARGET:ip}} 1.3.6.1.2.1.6.13.1.3 | tee {{OUTFILE:file:snmp-ports.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=snmpwalk,ports,tcp,connections -->

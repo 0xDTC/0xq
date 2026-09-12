@@ -3,6 +3,7 @@
 > Enumerate, query, export, and clear Windows event logs with wevtutil and Get-WinEvent
 
 <!-- tags: windows,eventlog,wevtutil,powershell,forensics -->
+<!-- platform: windows -->
 
 ---
 
@@ -21,7 +22,7 @@ wevtutil el
 Display configuration info (path, retention, max size) for a named log.
 
 ```bash
-wevtutil gl "{{LOGNAME:str:Security}}"
+wevtutil gl "{{LOGNAME:choice:Security,System,Application,Setup,Microsoft-Windows-PowerShell/Operational,Microsoft-Windows-Sysmon/Operational,Microsoft-Windows-TaskScheduler/Operational,ForwardedEvents}}"
 ```
 
 <!-- meta: risk=low | phase=enum | tags=wevtutil,config,retention -->
@@ -32,7 +33,7 @@ wevtutil gl "{{LOGNAME:str:Security}}"
 Query the most recent events from a log in reverse order as readable text.
 
 ```bash
-wevtutil qe {{LOGNAME:str:Security}} /c:{{COUNT:int:5}} /rd:true /f:text
+wevtutil qe {{LOGNAME:choice:Security,System,Application,Setup,Microsoft-Windows-PowerShell/Operational,Microsoft-Windows-Sysmon/Operational,Microsoft-Windows-TaskScheduler/Operational,ForwardedEvents}} /c:{{COUNT:int:5}} /rd:true /f:text
 ```
 
 <!-- meta: risk=low | phase=enum | tags=wevtutil,query,events -->
@@ -43,7 +44,7 @@ wevtutil qe {{LOGNAME:str:Security}} /c:{{COUNT:int:5}} /rd:true /f:text
 Export a complete event log to an .evtx file for offline analysis.
 
 ```bash
-wevtutil epl {{LOGNAME:str:Security}} {{OUTFILE:file:C:\Windows\Temp\export.evtx}}
+wevtutil epl {{LOGNAME:choice:Security,System,Application,Setup,Microsoft-Windows-PowerShell/Operational,Microsoft-Windows-Sysmon/Operational,Microsoft-Windows-TaskScheduler/Operational,ForwardedEvents}} {{OUTFILE:file:C:\Windows\Temp\export.evtx}}
 ```
 
 <!-- meta: risk=low | phase=post | tags=wevtutil,export,evtx -->
@@ -54,7 +55,7 @@ wevtutil epl {{LOGNAME:str:Security}} {{OUTFILE:file:C:\Windows\Temp\export.evtx
 Clear all entries from a log to destroy audit trails (anti-forensics).
 
 ```bash
-wevtutil cl {{LOGNAME:str:Security}}
+wevtutil cl {{LOGNAME:choice:Security,System,Application,Setup,Microsoft-Windows-PowerShell/Operational,Microsoft-Windows-Sysmon/Operational,Microsoft-Windows-TaskScheduler/Operational,ForwardedEvents}}
 ```
 
 <!-- meta: risk=high | phase=post | tags=wevtutil,clear,antiforensics -->
@@ -76,7 +77,7 @@ Get-WinEvent -ListLog *
 Read the message body of the most recent events from a named log.
 
 ```bash
-Get-WinEvent -LogName '{{LOGNAME:str:Security}}' -MaxEvents {{COUNT:int:5}} | Select-Object -ExpandProperty Message
+Get-WinEvent -LogName '{{LOGNAME:choice:Security,System,Application,Setup,Microsoft-Windows-PowerShell/Operational,Microsoft-Windows-Sysmon/Operational,Microsoft-Windows-TaskScheduler/Operational,ForwardedEvents}}' -MaxEvents {{COUNT:int:5}} | Select-Object -ExpandProperty Message
 ```
 
 <!-- meta: risk=low | phase=enum | tags=powershell,getwinevent,messages -->
@@ -87,7 +88,7 @@ Get-WinEvent -LogName '{{LOGNAME:str:Security}}' -MaxEvents {{COUNT:int:5}} | Se
 Filter the Security log for failed logon events by event ID 4625.
 
 ```bash
-Get-WinEvent -FilterHashTable @{LogName='Security';ID='{{EVENTID:str:4625}}'}
+Get-WinEvent -FilterHashTable @{LogName='Security';ID='{{EVENTID:choice:4625,4624,4634,4648,4672,4688,4697,4720,4732,5140,5145,7045,1102,4104}}'}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=powershell,logon,4625 -->
@@ -98,7 +99,7 @@ Get-WinEvent -FilterHashTable @{LogName='Security';ID='{{EVENTID:str:4625}}'}
 Filter the Security log for successful logon events by event ID 4624.
 
 ```bash
-Get-WinEvent -FilterHashTable @{LogName='Security';ID='{{EVENTID:str:4624}}'}
+Get-WinEvent -FilterHashTable @{LogName='Security';ID='{{EVENTID:choice:4624,4625,4634,4648,4672,4688,4697,4720,4732,5140,5145,7045,1102,4104}}'}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=powershell,logon,4624 -->

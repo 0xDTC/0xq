@@ -54,7 +54,7 @@ nikto -h {{URL:url}} -Format htm -o {{OUTFILE:file:nikto-report.html}}
 Run only specific test categories (1=files, 2=misconfig, 3=info, 4=XSS, 9=SQL injection).
 
 ```bash
-nikto -h {{URL:url}} -Tuning {{TUNING:str:1249}} -o {{OUTFILE:file:nikto-tuned.txt}}
+nikto -h {{URL:url}} -Tuning {{TUNING:choice:1249,1,2,3,4,5,6,8,9,0,a,b,c,x}} -o {{OUTFILE:file:nikto-tuned.txt}}
 ```
 
 <!-- meta: risk=med | phase=vuln | tags=tuning,selective,categories -->
@@ -87,7 +87,7 @@ nikto -h {{URL:url}} -Cgidirs all -o {{OUTFILE:file:nikto-cgi.txt}}
 Use evasion techniques and a custom user-agent to reduce detection.
 
 ```bash
-nikto -h {{URL:url}} -useragent "{{USERAGENT:str:Mozilla/5.0 (Windows NT 10.0; Win64; x64)}}" -evasion {{EVASION:str:1}} -o {{OUTFILE:file:nikto-evasion.txt}}
+nikto -h {{URL:url}} -useragent "{{USERAGENT:str:Mozilla/5.0 (Windows NT 10.0; Win64; x64)}}" -evasion {{EVASION:choice:1,2,3,4,5,6,7,8,A,B,C}} -o {{OUTFILE:file:nikto-evasion.txt}}
 ```
 
 <!-- meta: risk=med | phase=vuln | tags=evasion,stealth,user-agent -->

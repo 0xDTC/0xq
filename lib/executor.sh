@@ -70,6 +70,66 @@ q_pre_exec_check() {
 }
 
 # ===========================================================================
+# _q_check_paths_in_cmd — warn about input paths that don't exist
+# ===========================================================================
+# Scans the fully-filled command for path-shaped tokens (start with /, ./,
+# ~/, or ../) and warns if any of them are missing. Output destinations are
+# skipped: shell redirection targets (> / >> / < / 2> / &>), and tokens that
+# follow common output flags (-o -oN -oX -oG -oA -w -of --out --output
+# --output-file --outfile), plus inline forms like --output=./file. This
+# catches typos like `./Baggage/C/Users/steve/NTUSER.DAT` (extra "Baggage/"
+# after `cd`-ing into the inner dir) BEFORE the tool crashes on stdout.
+#
+# Empty (0-byte) input files are also flagged — Windows registry hives are
+# always ≥ 4KB, so a 0-byte NTUSER.DAT is a stub that will crash RegRipper.
+_q_check_paths_in_cmd() {
+    local cmd="$1"
+    local -a tokens
+    read -ra tokens <<< "$cmd"
+    local i tok prev="" expanded
+
+    # Flags whose next token is an output path — skip that token.
+    local out_flags='|-o|-oN|-oX|-oG|-oA|-w|-of|--out|--output|--output-file|--outfile|--write|--write-to|'
+
+    for (( i=0; i<${#tokens[@]}; i++ )); do
+        tok="${tokens[$i]}"
+        # Skip tokens that follow a redirect operator or an output flag.
+        case "$prev" in
+            \>|\>\>|\<|2\>|\&\>|1\>|2\>\>)
+                prev="$tok"; continue ;;
+        esac
+        if [[ "$out_flags" == *"|${prev}|"* ]]; then
+            prev="$tok"; continue
+        fi
+        # Skip inline redirects / inline output-flag assignments.
+        case "$tok" in
+            \>*|\<*|2\>*|\&\>*|1\>*) prev="$tok"; continue ;;
+            --output=*|--output-file=*|--out=*|--outfile=*|-o=*)
+                prev="$tok"; continue ;;
+        esac
+        # Strip surrounding quotes.
+        tok="${tok#\"}"; tok="${tok%\"}"
+        tok="${tok#\'}"; tok="${tok%\'}"
+        # Path-shaped tokens only.
+        case "$tok" in
+            /*|./*|~/*|../*) ;;
+            *) prev="$tok"; continue ;;
+        esac
+        # Don't touch URLs (file://, http://, smb://, etc.).
+        [[ "$tok" == *://* ]] && { prev="$tok"; continue; }
+        # Expand leading ~.
+        expanded="${tok/#\~/$HOME}"
+        if [[ ! -e "$expanded" ]]; then
+            q_warn "path not found: ${tok}"
+        elif [[ -f "$expanded" ]] && [[ ! -s "$expanded" ]]; then
+            q_warn "empty file: ${tok}"
+        fi
+        prev="$tok"
+    done
+    return 0
+}
+
+# ===========================================================================
 # _q_copy_to_clipboard — copy text to system clipboard
 # ===========================================================================
 # Delegates to q_clipboard_write (session.sh) for the actual clipboard access.
@@ -114,6 +174,10 @@ q_confirm_and_run() {
     printf '\n' >&2
     printf '%s%s %s %s\n' "$Q_BOLD" "$Q_GREEN" "$command" "$Q_RESET" >&2
     printf '\n' >&2
+
+    # (Path sanity is done once in q_main, before the inline/confirm branch,
+    # so both the Ctrl+Q widget and this confirm flow benefit. Not repeated
+    # here to avoid double-warnings.)
 
     if [[ "${Q_CONFIRM_EXEC}" == "yes" ]]; then
         # Flush any stale input left in terminal buffer from fzf/variable fill

@@ -164,7 +164,7 @@ sqlmap -r {{REQ:file:request.txt}} --batch --file-read={{REMOTE_FILE:str:/etc/pa
 Restrict sqlmap to specific injection techniques (B,E,U,S,T,Q).
 
 ```bash
-sqlmap -u "{{URL:url}}" --technique={{TECH:str:BEUSQ}} --batch --random-agent
+sqlmap -u "{{URL:url}}" --technique={{TECH:choice:BEUSQ,BEUSTQ,B,E,U,S,T,Q,BT,UT,BEU,BEUST}} --batch --random-agent
 ```
 
 <!-- meta: risk=med | phase=vuln | tags=technique,filter -->

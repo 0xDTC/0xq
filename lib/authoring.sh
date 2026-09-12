@@ -8,7 +8,7 @@
 # q_author_edit orchestrators drive fzf + /dev/tty prompts around them.
 
 # Vocab offered in the pickers (kept in sync with the cheatsheet conventions).
-_Q_AUTHOR_TYPES="str ip url domain port file dir wordlist int cidr iface"
+_Q_AUTHOR_TYPES="str ip url domain port file dir wordlist int cidr iface choice"
 _Q_AUTHOR_RISKS="safe low med high critical"
 _Q_AUTHOR_PHASES="recon enum exploit post privesc passwords vuln misc"
 

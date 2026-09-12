@@ -32,7 +32,7 @@ john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/word
 Apply mangling rules to increase wordlist coverage.
 
 ```bash
-john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --rules={{RULES:str:best64}}
+john {{HASHFILE:file:hashes.txt}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --rules={{RULES:choice:best64,all,single,wordlist,extra,jumbo,korelogic,NT,T0XlC}}
 ```
 
 <!-- meta: risk=safe | phase=passwords | tags=rules,mangling -->
@@ -44,7 +44,7 @@ Specify a hash format explicitly when auto-detection fails.
 <!-- Common formats: raw-md5, raw-sha1, raw-sha256, raw-sha512, nt, bcrypt, sha512crypt, krb5tgs, krb5asrep -->
 
 ```bash
-john {{HASHFILE:file:hashes.txt}} --format={{FORMAT:str:raw-md5}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
+john {{HASHFILE:file:hashes.txt}} --format={{FORMAT:choice:raw-md5,raw-sha1,raw-sha256,raw-sha512,nt,lm,bcrypt,sha512crypt,krb5tgs,krb5asrep,net-ntlmv2,mysql,mysql-sha1,oracle}} --wordlist={{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
 ```
 
 <!-- meta: risk=safe | phase=passwords | tags=format,specific -->

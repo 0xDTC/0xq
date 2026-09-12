@@ -3,6 +3,7 @@
 > Enumerate and control Windows services and scheduled tasks via CMD and PowerShell
 
 <!-- tags: windows,services,schtasks,powershell -->
+<!-- platform: windows -->
 
 ---
 
@@ -21,7 +22,7 @@ sc query
 Show configuration and current state for a single named service.
 
 ```bash
-sc query {{SERVICE:str:Spooler}}
+sc query {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=services,sc,cmd -->
@@ -32,7 +33,7 @@ sc query {{SERVICE:str:Spooler}}
 Start a service by name using the Service Control manager.
 
 ```bash
-sc start {{SERVICE:str:Spooler}}
+sc start {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,sc,start -->
@@ -43,7 +44,7 @@ sc start {{SERVICE:str:Spooler}}
 Stop a running service by name using the Service Control manager.
 
 ```bash
-sc stop {{SERVICE:str:Spooler}}
+sc stop {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,sc,stop -->
@@ -54,7 +55,7 @@ sc stop {{SERVICE:str:Spooler}}
 Set a service start type to disabled so it will not launch at boot.
 
 ```bash
-sc config {{SERVICE:str:Spooler}} start= disabled
+sc config {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}} start= disabled
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,sc,config,disable -->
@@ -131,7 +132,7 @@ Get-Service | where DisplayName -like '*{{PATTERN:str:defender}}*' | ft DisplayN
 Start a named service using PowerShell.
 
 ```bash
-Start-Service {{SERVICE:str:Spooler}}
+Start-Service {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,powershell,start -->
@@ -142,7 +143,7 @@ Start-Service {{SERVICE:str:Spooler}}
 Stop a named service using PowerShell.
 
 ```bash
-Stop-Service {{SERVICE:str:Spooler}}
+Stop-Service {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,powershell,stop -->
@@ -153,7 +154,7 @@ Stop-Service {{SERVICE:str:Spooler}}
 Set a service start type to disabled using PowerShell.
 
 ```bash
-Set-Service -Name {{SERVICE:str:Spooler}} -StartType Disabled
+Set-Service -Name {{SERVICE:choice:Spooler,wuauserv,WinDefend,WinRM,TermService,MpsSvc,LanmanServer,LanmanWorkstation,Schedule,EventLog,BITS,W32Time}} -StartType Disabled
 ```
 
 <!-- meta: risk=med | phase=post | tags=services,powershell,disable -->
@@ -208,7 +209,7 @@ schtasks /query /V /FO list
 Register a new scheduled task that runs a program on a given schedule.
 
 ```bash
-schtasks /create /sc {{SCHEDULE:str:ONLOGON}} /tn {{TASK:str:Updater}} /tr {{PROGRAM:str:C:\Windows\Temp\payload.exe}}
+schtasks /create /sc {{SCHEDULE:choice:ONLOGON,ONSTART,MINUTE,HOURLY,DAILY,WEEKLY,MONTHLY,ONCE,ONIDLE,ONEVENT}} /tn {{TASK:str:Updater}} /tr {{PROGRAM:str:C:\Windows\Temp\payload.exe}}
 ```
 
 <!-- meta: risk=med | phase=post | tags=schtasks,tasks,create -->

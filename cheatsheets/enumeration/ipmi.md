@@ -76,7 +76,7 @@ msfconsole -q -x "use auxiliary/scanner/ipmi/ipmi_version; set RHOSTS {{TARGET:i
 Remotely control server power state.
 
 ```bash
-ipmitool -I lanplus -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWORD:str}}' chassis power {{ACTION:str:reset}}
+ipmitool -I lanplus -H {{TARGET:ip}} -U {{USERNAME:str:admin}} -P '{{PASSWORD:str}}' chassis power {{ACTION:choice:reset,cycle,off,on,soft,diag,status}}
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=power,control -->

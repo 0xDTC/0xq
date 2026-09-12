@@ -5,12 +5,13 @@
 
 # ===========================================================================
 # Built-in sources (name -> url[#subpath])
-# Kept intentionally small. Users add their own via $Q_DATA_DIR/sync_sources.
+# Empty by default — hacktricks and PayloadsAllTheThings were removed
+# because their markdown doesn't match q's H1/H2/```bash structure, so the
+# parser indexed almost none of it after a huge (~1 GB) clone. Add sources
+# on demand with `q sync add NAME URL[#subpath]` — repos with q-style
+# cheatsheets will index cleanly.
 # ===========================================================================
-declare -gA Q_SYNC_BUILTINS=(
-    [hacktricks]="https://github.com/HackTricks-wiki/hacktricks.git#src"
-    [payloads]="https://github.com/swisskyrepo/PayloadsAllTheThings.git"
-)
+declare -gA Q_SYNC_BUILTINS=()
 
 # ===========================================================================
 # Internal helpers

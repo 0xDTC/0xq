@@ -43,7 +43,7 @@ sslscan --no-ciphersuites --no-renegotiation --no-compression --no-fallback --no
 Probe a service that uses STARTTLS (smtp, ftp, imap, pop3, ldap).
 
 ```bash
-sslscan --starttls-{{PROTO:str:smtp}} {{TARGET:str:mail.example.com:25}}
+sslscan --starttls-{{PROTO:choice:smtp,ftp,imap,pop3,xmpp,mysql,psql,rdp,ldap,irc}} {{TARGET:str:mail.example.com:25}}
 ```
 
 <!-- meta: risk=safe | phase=vuln | tags=sslscan,starttls -->

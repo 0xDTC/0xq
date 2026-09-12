@@ -43,7 +43,7 @@ ln -sf {{TARGET:file:/path/to/target}} {{LINK:file:/path/to/link}}
 Set standard permissions on files or directories recursively.
 
 ```bash
-chmod -R {{MODE:str:755}} {{PATH:dir:./target}}
+chmod -R {{MODE:choice:755,644,700,600,777,750,640,775,4755,2755}} {{PATH:dir:./target}}
 ```
 
 <!-- meta: risk=med | phase=misc | tags=chmod,permissions,recursive -->

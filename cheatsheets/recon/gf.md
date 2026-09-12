@@ -21,7 +21,7 @@ gf -list
 Pipe URL list through a gf pattern (xss, sqli, ssrf, lfi, redirect, etc.).
 
 ```bash
-cat {{URLS:file:urls.txt}} | gf {{PATTERN:str:xss}}
+cat {{URLS:file:urls.txt}} | gf {{PATTERN:choice:xss,sqli,ssrf,lfi,rce,redirect,s3-buckets,aws-keys,base64,urls,jsvar,ip,php-errors,debug-pages}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=filter -->
@@ -32,7 +32,7 @@ cat {{URLS:file:urls.txt}} | gf {{PATTERN:str:xss}}
 Pull historical URLs and filter for vulnerability candidates.
 
 ```bash
-waybackurls {{DOMAIN:domain}} | gf {{PATTERN:str:sqli}}
+waybackurls {{DOMAIN:domain}} | gf {{PATTERN:choice:sqli,xss,ssrf,lfi,rce,redirect,s3-buckets,aws-keys,base64,urls,jsvar,ip,php-errors,debug-pages}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=waybackurls,combo -->

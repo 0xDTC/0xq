@@ -32,7 +32,7 @@ volatility -f {{DUMP:file:memory.raw}} kdbgscan
 List processes (pslist), hidden (psscan), and the tree (pstree).
 
 ```bash
-volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str:Win7SP1x64}} pslist
+volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:choice:Win7SP1x64,Win10x64_19041,Win10x64,WinXPSP2x86,Win2K8R2SP1x64,Win2K16x64,VistaSP2x64,LinuxUbuntu2004x64}} pslist
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=volatility,v2,pslist -->
@@ -43,7 +43,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str:Win7SP1x64}} psli
 Find processes hidden via DKOM by scanning physical memory.
 
 ```bash
-volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str:Win7SP1x64}} psscan
+volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:choice:Win7SP1x64,Win10x64_19041,Win10x64,WinXPSP2x86,Win2K8R2SP1x64,Win2K16x64,VistaSP2x64,LinuxUbuntu2004x64}} psscan
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=volatility,v2,psscan,hidden -->
@@ -153,7 +153,7 @@ volatility -f {{DUMP:file:memory.raw}} --profile {{PROFILE:str}} yarascan -y {{R
 Extract clipboard data captured at dump time.
 
 ```bash
-volatility --profile={{PROFILE:str:Win7SP1x64}} -f {{DUMP:file:memory.raw}} clipboard
+volatility --profile={{PROFILE:choice:Win7SP1x64,Win10x64_19041,Win10x64,WinXPSP2x86,Win2K8R2SP1x64,Win2K16x64,VistaSP2x64,LinuxUbuntu2004x64}} -f {{DUMP:file:memory.raw}} clipboard
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=volatility,v2,clipboard -->

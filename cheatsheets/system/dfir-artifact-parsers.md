@@ -3,6 +3,7 @@
 > Parse Windows filesystem and execution artifacts pulled from a triage: `$MFT` (Master File Table), `$Extend/$J` (USN Journal), `.pf` (Prefetch), `.lnk` (Shell Link). Kali has analyzeMFT (Python) plus libraries `libscca-python` (prefetch) and `pylnk3` (shortcuts). USN parsing done via a small Python loop over the binary format.
 
 <!-- tags: dfir,mft,usn,prefetch,lnk,shellbags,timeline,artifact -->
+<!-- platform: windows -->
 
 ## install python-based parsers
 One-shot install of analyzeMFT (MFT to CSV), libscca-python (prefetch), pylnk3 (shortcut files).
@@ -98,7 +99,7 @@ while pos<len(d):
     fl=struct.unpack('<H', d[pos+56:pos+58])[0]
     fo=struct.unpack('<H', d[pos+58:pos+60])[0]
     fn=d[pos+fo:pos+fo+fl].decode('utf-16-le','replace')
-    if any(k in fn.lower() for k in ['{{KW:str:mimikatz}}']):
+    if any(k in fn.lower() for k in ['{{KW:choice:mimikatz,psexec,rubeus,cobaltstrike,meterpreter,bloodhound,sharphound,seatbelt,procdump,lazagne,nanodump}}']):
         t=datetime.datetime.fromtimestamp(ts/1e7-11644473600, datetime.timezone.utc)
         print(f'{t} r=0x{r:x} {fn}')
     pos+=l"

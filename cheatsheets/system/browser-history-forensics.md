@@ -3,6 +3,7 @@
 > Chrome, Edge, Brave, Vivaldi, Opera, and Firefox all store history / downloads / logins in SQLite databases. Query them offline with `sqlite3` from a triage. Chrome/Edge timestamps are microseconds since 1601-01-01; Firefox is microseconds since Unix epoch.
 
 <!-- tags: dfir,browser,chrome,edge,firefox,history,downloads,sqlite -->
+<!-- platform: windows -->
 
 ## chrome/edge database paths
 Standard on Windows. Copy the whole `Default/` folder if you need cookies, saved passwords, etc.

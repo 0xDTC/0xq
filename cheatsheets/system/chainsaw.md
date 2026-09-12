@@ -3,6 +3,7 @@
 > Fast Windows EVTX (event log) parser and hunter from WithSecure Countercept. Two modes: dump every event to YAML/JSON for offline grep, or hunt against Sigma / Chainsaw rules for known bad patterns. Runs on Kali natively.
 
 <!-- tags: dfir,chainsaw,evtx,windows-event-log,sigma,hunt,triage -->
+<!-- platform: windows -->
 
 ## dump one evtx to yaml
 Convert a single EVTX to YAML for grep/awk work. Best when you know what to look for.
@@ -74,7 +75,7 @@ chainsaw search {{PATTERN:str:cmd.exe}} {{EVTXDIR:path:./winevt/logs}} --tau /us
 Only events whose EventID matches. Common IDs: 4624 (logon), 4688 (proc create), 4104 (PS scriptblock), 7036 (service state), 1102 (audit log cleared).
 
 ```bash
-chainsaw search -e "^{{EID:str:4688}}$" {{EVTXDIR:path:./winevt/logs}}
+chainsaw search -e "^{{EID:choice:4688,4624,4625,4634,4648,4672,4697,4720,4732,5140,5145,7045,1102,4104,7036}}$" {{EVTXDIR:path:./winevt/logs}}
 ```
 
 <!-- meta: risk=safe | phase=dfir | tags=chainsaw,eventid,filter -->
