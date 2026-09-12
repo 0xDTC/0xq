@@ -59,27 +59,29 @@ q_main() {
     # 2. Run interactive search (fzf) — returns a TSV line for the selection
     local selected
     selected="$(q_search "$@")" || true
-    if [[ -z "$selected" ]]; then
-        q_info "No command selected."
-        return 0
-    fi
 
-    # 3. Extract the raw command template + title from the selection
+    # 2a. Builder sideband — Ctrl+B inside the picker writes a chosen tool
+    #     name to .builder_tool and aborts fzf. Dispatch here to open the
+    #     flag composer; the resulting template flows through the same fill
+    #     path as any picked cheatsheet or combo.
+    local _builder_sideband="${Q_CACHE_DIR}/.builder_tool"
     local command title
-    title="$(printf '%s' "$selected" | cut -f2)"
-    command="$(printf '%s' "$selected" | cut -f3)"
-
-    # 3.0 Builder sentinel — the [+] compose-fresh rows carry
-    #     __BUILDER__:<tool> instead of a real template. Run the flag
-    #     composer to build one, then continue with the normal fill flow.
-    if [[ "$command" == __BUILDER__:* ]]; then
-        local _tool="${command#__BUILDER__:}"
-        command="$(q_builder_run "$_tool")"
+    if [[ -s "$_builder_sideband" ]]; then
+        local _btool; _btool="$(<"$_builder_sideband")"
+        rm -f "$_builder_sideband"
+        command="$(q_builder_run "$_btool")"
         if [[ -z "$command" ]]; then
             q_info "Builder cancelled — no command composed."
             return 0
         fi
-        title="[built] ${_tool}"
+        title="[built] ${_btool}"
+    elif [[ -z "$selected" ]]; then
+        q_info "No command selected."
+        return 0
+    else
+        # 3. Extract the raw command template + title from the selection
+        title="$(printf '%s' "$selected" | cut -f2)"
+        command="$(printf '%s' "$selected" | cut -f3)"
     fi
 
     # Track this title in the MRU so it floats to top next time

@@ -225,10 +225,16 @@ PREVIEW_EOF
 
     local fill_script="${Q_CACHE_DIR}/.q_fill_var.sh"
     local decide_script="${Q_CACHE_DIR}/.q_decide.sh"
+    local builder_script="${Q_CACHE_DIR}/.q_builder_pick.sh"
     _q_helper_stale "$fill_script"    && _q_write_fill_helper    "$fill_script"
     _q_helper_stale "$decide_script"  && _q_write_decide_helper  "$decide_script"
     _q_helper_stale "$varhint_script" && _q_write_varhint_helper "$varhint_script"
+    _q_helper_stale "$builder_script" && _q_write_builder_pick_helper "$builder_script"
     unset -f _q_helper_stale
+
+    # Reset the builder sideband so a stale value doesn't leak from a
+    # previous invocation.
+    rm -f "${Q_CACHE_DIR}/.builder_tool"
 
     # -----------------------------------------------------------------------
     # Build the display list and run fzf.
@@ -320,8 +326,7 @@ PREVIEW_EOF
             printf "%010d\t%010d\t%s\t%s\t%s\t%s\t%s\n", \
                 rank, NR, display, title, cmd, src, keywords
         }
-        ' <({ declare -f q_combo_emit_index_rows   >/dev/null 2>&1 && q_combo_emit_index_rows   2>/dev/null; \
-              declare -f q_builder_emit_index_rows >/dev/null 2>&1 && q_builder_emit_index_rows 2>/dev/null; } ; \
+        ' <({ declare -f q_combo_emit_index_rows   >/dev/null 2>&1 && q_combo_emit_index_rows   2>/dev/null; } ; \
              cat "$index_file") \
         | sort -k1,1n -k2,2n \
         | cut -f3- \
@@ -329,7 +334,7 @@ PREVIEW_EOF
             --ansi \
             --print-query \
             --prompt='q> ' \
-            --header='★ = recent | Enter: fill+run | Ctrl+F: fill | Ctrl+S: set | Ctrl+T: cycle | Ctrl+Y: copy | Ctrl+E: edit raw | Ctrl+N: new | Esc: quit' \
+            --header='★=recent  ⚙=combo   ^F fill  ^S set  ^T cycle  ^Y copy  ^E edit  ^N new  ^B build  Tab preview  Esc quit' \
             --preview="$preview_cmd" \
             --preview-window="${Q_PREVIEW_POS:-down:50%:wrap}" \
             --query="$initial_query" \
@@ -340,6 +345,7 @@ PREVIEW_EOF
             --bind="ctrl-t:execute-silent('${cycle_script}' '${targets_file}' '${cycle_file}')+refresh-preview" \
             --bind="ctrl-s:execute('${setvar_script}' {3} '${vars_file}' '${q_bin}')+refresh-preview" \
             --bind="ctrl-n:execute('${q_bin}' new)+abort" \
+            --bind="ctrl-b:execute('${builder_script}' '${Q_ROOT}' '${Q_CACHE_DIR}/.builder_tool')+abort" \
             --bind='tab:toggle-preview' \
             --delimiter=$'\t' \
             --with-nth=1 \
@@ -786,5 +792,67 @@ function purpose(n,   h) {
   printf "  %-12s %s\n", name, purpose(uname)
 }'
 VHEOF
+    chmod +x "$path"
+}
+
+# ===========================================================================
+# _q_write_builder_pick_helper — emit the Ctrl+B tool-picker helper script
+# ===========================================================================
+# Ctrl+B on the main picker fires this via `execute(...)+abort`. It opens
+# a small fzf popup listing the user's enabled builder tools (curated via
+# `q build add`). The chosen tool name is written to the sideband file; the
+# main fzf aborts, and q_main picks up the sideband to invoke q_builder_run.
+_q_write_builder_pick_helper() {
+    local path="$1"
+    cat > "$path" <<'BUILDERPICKEOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+Q_ROOT="$1"
+sideband="$2"
+
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/core.sh"
+# shellcheck disable=SC1091
+source "$Q_ROOT/lib/builder.sh"
+q_config_load 2>/dev/null || true
+
+# Enumerate enabled tools (union of YAML catalogs + user's config).
+tools_out="$(_q_builder_enabled_tools 2>/dev/null)"
+if [[ -z "$tools_out" ]]; then
+    {
+        printf '\n\033[1;33m[!]\033[0m No builder tools enabled yet.\n'
+        printf '    Add some from your shell:\n'
+        printf '      \033[1mq build add TOOL [TOOL...]\033[0m\n'
+        printf '    e.g.  \033[1mq build add smbclient smbmap dirb ffuf hydra\033[0m\n\n'
+        printf '    Press any key to return to the picker...\n'
+    } > /dev/tty
+    read -rsn1 -t 5 _ < /dev/tty 2>/dev/null || true
+    exit 0
+fi
+
+# Small fzf popup — one row per enabled tool, source annotated dim.
+# The user picks ONE tool; writing to sideband triggers q_main dispatch.
+lines=""
+while IFS= read -r t; do
+    [[ -z "$t" ]] && continue
+    if _q_builder_path "$t" >/dev/null 2>&1; then src="yaml"
+    else                                          src="auto"; fi
+    lines="${lines}${t}"$'\t'"${src}"$'\n'
+done <<< "$tools_out"
+
+sel="$(printf '%s' "$lines" | fzf \
+        --reverse --border --height=50% --no-info \
+        --prompt='build for tool > ' \
+        --header='Enter: open flag composer  |  Esc: cancel' \
+        --delimiter=$'\t' --with-nth=1 --nth=1 \
+        --preview='printf "\033[1m%s\033[0m  (%s)\n\nAll flag data from this source loads into the multi-select composer next.\n" {1} {2}' \
+        --preview-window='right:40%:wrap' \
+        2>/dev/tty)" || exit 0
+
+sel="${sel%%$'\t'*}"
+[[ -z "$sel" ]] && exit 0
+printf '%s' "$sel" > "$sideband"
+BUILDERPICKEOF
     chmod +x "$path"
 }
