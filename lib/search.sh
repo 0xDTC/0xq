@@ -992,9 +992,51 @@ while IFS= read -r line; do
 done < <(printf '%s\n' "$raw" | tail -n +2)
 [[ ${#picked[@]} -eq 0 ]] && exit 0
 
-# Reassemble template using the same value-placeholder rules as the
-# fresh builder — pick up value definitions from the flag catalog by
-# matching flag → row in _flag_src.
+# Follow-up: which of the picked flags should be OPTIONAL (asked at fill
+# time via {{?tag}}...{{/tag}})? Same UX as the fresh builder — Enter
+# with nothing marked = everything required. Pre-mark flags that were
+# ALREADY inside optional blocks in the original command so a plain
+# Enter preserves the shape.
+opt_cands_file="$tmpdir/opt_cands"
+: > "$opt_cands_file"
+opt_pre=""
+opt_idx=0
+for pf in "${picked[@]}"; do
+    # Look up description from the flag catalog TSV so the picker shows
+    # what each flag does.
+    _pd=""
+    while IFS=$'\t' read -r f d vn vt vd; do
+        [[ "$f" == "$pf" ]] && { _pd="$d"; break; }
+    done <<< "$_flag_src"
+    opt_idx=$((opt_idx + 1))
+    printf '%s\t%s\n' "$pf" "$_pd" >> "$opt_cands_file"
+    # Was this flag inside a {{?...}}...{{/...}} block in the ORIGINAL
+    # command? Then pre-mark it as optional so plain Enter preserves shape.
+    if [[ "$cmd" == *"{{?"* ]] && \
+       [[ "$cmd" =~ \{\{\?[^}]+\}\}[^{]*"$pf" ]]; then
+        opt_pre="${opt_pre:+${opt_pre}+}pos(${opt_idx})+select"
+    fi
+done
+opt_load="${opt_pre:+${opt_pre}+}pos(1)"
+
+opt_raw="$(fzf --multi --print-query --reverse --border --no-info \
+            --prompt="which flags are OPTIONAL (ask at fill time)? " \
+            --header="pre-marked = already optional  |  Tab: toggle  |  Enter: continue  |  Esc: all required" \
+            --bind='ctrl-a:select-all,ctrl-d:deselect-all' \
+            --bind="load:${opt_load}" \
+            --tabstop=20 --delimiter=$'\t' --with-nth=1,2 \
+            < "$opt_cands_file" 2>/dev/tty)" || opt_raw=""
+declare -A is_optional=()
+if [[ -n "$opt_raw" ]]; then
+    while IFS= read -r ol; do
+        [[ -z "$ol" ]] && continue
+        is_optional["${ol%%$'\t'*}"]=1
+    done < <(printf '%s\n' "$opt_raw" | tail -n +2)
+fi
+
+# Reassemble template. Optional flags get their whole flag+placeholder
+# segment wrapped in {{?tag}}...{{/tag}}. Tag = flag stripped of dashes,
+# non-word chars replaced with _.
 declare -A vname vtype vdefault
 while IFS=$'\t' read -r f d vn vt vd; do
     [[ -z "$f" ]] && continue
@@ -1003,14 +1045,21 @@ done <<< "$_flag_src"
 
 assembled="$tool"
 for pf in "${picked[@]}"; do
-    assembled="$assembled $pf"
+    seg="$pf"
     _vn="${vname[$pf]:-}"; _vt="${vtype[$pf]:-}"; _vd="${vdefault[$pf]:-}"
     if [[ -n "$_vn" ]]; then
         ph="{{${_vn}"
         [[ -n "$_vt" ]] && ph="${ph}:${_vt}"
         [[ -n "$_vd" ]] && ph="${ph}:${_vd}"
-        assembled="$assembled ${ph}}}"
+        seg="${seg} ${ph}}}"
     fi
+    if [[ -n "${is_optional[$pf]:-}" ]]; then
+        tag="${pf##-}"; tag="${tag##-}"
+        tag="${tag//[^A-Za-z0-9_]/_}"
+        [[ -z "$tag" ]] && tag="opt"
+        seg="{{?${tag}}}${seg}{{/${tag}}}"
+    fi
+    assembled="${assembled} ${seg}"
 done
 
 # Preserve any positional {{TARGET}} the original had (nmap etc.).
