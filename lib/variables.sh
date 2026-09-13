@@ -432,21 +432,9 @@ _q_detect_lhost() {
     return 1
 }
 
-# ===========================================================================
-# _q_compatible_target_types — map variable type to compatible target types
-# ===========================================================================
-_q_compatible_target_types() {
-    local vtype="$1"
-    case "${vtype^^}" in
-        URL)                    echo "url" ;;
-        IP)                     echo "ip" ;;
-        DOMAIN)                 echo "url domain" ;;
-        TARGET|HOST|RHOST)      echo "ip url domain" ;;
-        SUBNET|CIDR)            echo "cidr" ;;
-        FILE|OUTFILE|OUTPUT_FILE) echo "file" ;;
-        *)                      echo "" ;;
-    esac
-}
+# (removed dead code: `_q_compatible_target_types` was inlined into
+#  `_q_build_candidates` and the only caller was a comment referencing
+#  that inlining — see git history if the logic is ever needed again.)
 
 # ===========================================================================
 # _q_build_candidates — assemble the candidate list for fzf selection

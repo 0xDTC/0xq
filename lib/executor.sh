@@ -9,37 +9,7 @@
 # is available on the system. Returns 1 with a helpful message if missing.
 q_pre_exec_check() {
     local command="$1"
-
-    # Parse the command to find the actual binary name, skipping env vars and sudo.
-    # Split into words and walk through them.
-    local -a words
-    read -ra words <<< "$command"
-
-    local binary=""
-    local i=0
-
-    # Skip leading environment variable assignments (FOO=bar)
-    while [[ $i -lt ${#words[@]} ]] && [[ "${words[$i]}" == *=* ]] && \
-          [[ "${words[$i]}" =~ ^[A-Za-z_] ]]; do
-        ((i++))
-    done
-
-    # Skip sudo and its flags
-    if [[ $i -lt ${#words[@]} ]] && [[ "${words[$i]}" == "sudo" ]]; then
-        ((i++))
-        while [[ $i -lt ${#words[@]} ]] && [[ "${words[$i]}" == -* ]]; do
-            local flag="${words[$i]}"
-            ((i++))
-            # Flags that consume the next word as an argument
-            case "$flag" in
-                -u|-g|-C|-D) ((i++)) ;;
-            esac
-        done
-    fi
-
-    if [[ $i -lt ${#words[@]} ]]; then
-        binary="${words[$i]}"
-    fi
+    local binary; binary="$(q_extract_tool_binary "$command")"
 
     # Skip check for shell builtins and empty commands
     case "$binary" in

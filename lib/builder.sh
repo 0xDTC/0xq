@@ -254,29 +254,10 @@ q_builder_rm() {
     fi
 }
 
-# ===========================================================================
-# q_builder_emit_index_rows — one virtual index row per ENABLED tool
-# ===========================================================================
-# Columns match parser.sh output exactly (see combos.sh emit for the
-# schema). Sentinel command `__BUILDER__:<tool>` is detected by q_main
-# after selection.
-q_builder_emit_index_rows() {
-    local tool src desc source_marker
-    while IFS= read -r tool; do
-        [[ -z "$tool" ]] && continue
-        if _q_builder_path "$tool" >/dev/null 2>&1; then
-            src="yaml"
-            desc="$(yq -r '.description // ""' "$(_q_builder_path "$tool")" 2>/dev/null)"
-            source_marker="builder:${tool}.yaml"
-        else
-            src="auto"
-            desc="parsed from ${tool} --help"
-            source_marker="builder:auto/${tool}.tsv"
-        fi
-        printf "builder\t%s\t[+] compose fresh command\t%s\t__BUILDER__:%s\tlow\tbuilder\tbuilder,%s,build,compose,%s\t%s\tany\n" \
-            "$tool" "$desc" "$tool" "$tool" "$src" "$source_marker"
-    done < <(_q_builder_enabled_tools)
-}
+# (removed dead code: `q_builder_emit_index_rows` and the __BUILDER__:*
+#  sentinel it produced were replaced by the Ctrl+B keybind flow. Zero
+#  callers survived. See git history if the row-injection style is ever
+#  wanted again.)
 
 # ===========================================================================
 # q_builder_run TOOL — interactive multi-select flag composer

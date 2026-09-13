@@ -293,6 +293,11 @@ q_config() {
             [[ -z "${2:-}" ]] && { q_error "Usage: q config get NAME"; return 1; }
             local key="${2^^}"
             [[ "$key" == Q_* ]] || key="Q_${key}"
+            # Read the config file FIRST, then the current env — the
+            # config file is the source of truth. Previously this just
+            # printed `${!key:-}` from the current shell env, which
+            # returned empty for keys the shell hadn't sourced.
+            [[ -f "$cfg" ]] && source "$cfg"
             printf '%s\n' "${!key:-}"
             ;;
         set)
@@ -384,6 +389,57 @@ q_lint() {
 # ===========================================================================
 # q_help — print usage information
 # ===========================================================================
+# ===========================================================================
+# q_extract_tool_binary CMD — extract the tool name from a command line
+# ===========================================================================
+# Canonical implementation. Skips leading env-var assignments (FOO=bar),
+# skips `sudo` and its argument-consuming flags (-u USER, -g GROUP, -C
+# LEV, -D DIR), skips further short flags, then takes the first survivor
+# and strips its dirname + common suffixes.
+#
+# Lives in core.sh because it's the most-duplicated function in the tree
+# — previously implemented three separate ways in combos.sh, logger.sh,
+# and executor.sh, each subtly different. Since core.sh is sourced by
+# every code path (including every emitted helper via the standard
+# preamble), keeping ONE copy here removes an entire class of "helper
+# didn't source the file that defines X" regressions.
+q_extract_tool_binary() {
+    local cmd="$1"
+    local -a words
+    read -ra words <<< "$cmd"
+
+    local i=0 tool=""
+    # Skip leading env assignments (VAR=value).
+    while [[ $i -lt ${#words[@]} ]] \
+       && [[ "${words[$i]}" == *=* ]] \
+       && [[ "${words[$i]}" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; do
+        ((i++))
+    done
+
+    # Skip sudo + its arg-consuming flags.
+    if [[ $i -lt ${#words[@]} ]] && [[ "${words[$i]}" == "sudo" ]]; then
+        ((i++))
+        while [[ $i -lt ${#words[@]} ]] && [[ "${words[$i]}" == -* ]]; do
+            local flag="${words[$i]}"
+            ((i++))
+            case "$flag" in
+                -u|-g|-C|-D) ((i++)) ;;
+            esac
+        done
+    fi
+
+    # Skip any remaining short flags before the tool.
+    while [[ $i -lt ${#words[@]} ]] && [[ "${words[$i]}" == -* ]]; do
+        ((i++))
+    done
+
+    [[ $i -lt ${#words[@]} ]] && tool="${words[$i]}"
+    tool="${tool##*/}"      # strip dirname
+    tool="${tool%.exe}"      # strip .exe
+    tool="${tool%.py}"       # strip .py
+    printf '%s' "$tool"
+}
+
 q_help() {
     cat <<HELP
 ${Q_BOLD}q${Q_RESET} — Fast command launcher for pentesters  ${Q_DIM}v${Q_VERSION}${Q_RESET}
@@ -442,13 +498,6 @@ ${Q_BOLD}OUTPUT LOGS${Q_RESET}
     q logs ls [--tool T] [--target V]   List per-target log files
     q logs show TOOL [TARGET]   Cat most recent log for tool/target
     q logs prune [--older-than DAYS] [--keep N]   Trim old logs
-
-${Q_BOLD}CHEATSHEET SYNC${Q_RESET}
-    q sync list                 List cheatsheet sources and status
-    q sync run [NAME]           Pull cheatsheets from upstream
-    q sync add NAME URL         Register a custom source
-    q sync disable NAME         Skip a source on sync-all
-    q sync remove NAME [--force] Remove a synced source
 
 ${Q_BOLD}UTILITY${Q_RESET}
     q history                   Show command execution history

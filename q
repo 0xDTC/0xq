@@ -163,7 +163,7 @@ q_main() {
 q_source_all_libs() {
     local lib
     for lib in parser.sh search.sh variables.sh executor.sh session.sh \
-               logger.sh promote.sh chains.sh runner.sh sync.sh tmux.sh \
+               logger.sh promote.sh chains.sh runner.sh tmux.sh \
                authoring.sh combos.sh builder.sh; do
         if [[ -f "${Q_ROOT}/lib/${lib}" ]]; then
             # shellcheck source=/dev/null
@@ -389,13 +389,15 @@ case "${1:-}" in
                 ;;
             *)
                 # Treat as a tool name: compose, fill, run.
-                local _built; _built="$(q_builder_run "$2")"
+                # (Plain assignments — `local` is a function-scope keyword
+                # and errors under strict-mode bash when used inside a
+                # top-level `case` body.)
+                _built="$(q_builder_run "$2")"
                 if [[ -z "$_built" ]]; then
                     q_info "Builder cancelled."
                     exit 0
                 fi
                 Q_INLINE_MODE="${Q_INLINE_MODE:-no}"
-                local _filled
                 if ! _filled="$(q_fill_vars_auto "$_built" 2>/dev/null)"; then
                     _filled="$(q_fill_vars "$_built")"
                 fi
@@ -589,41 +591,9 @@ case "${1:-}" in
         exit $?
         ;;
 
-    # -- Cheatsheet sync from upstream repos ------------------------------
-    sync)
-        source "${Q_ROOT}/lib/session.sh"
-        source "${Q_ROOT}/lib/sync.sh"
-        q_ensure_dirs
-        q_config_load
-        case "${2:-run}" in
-            list)
-                q_sync_list
-                ;;
-            add)
-                [[ $# -lt 4 ]] && { q_error "Usage: q sync add NAME URL"; exit 1; }
-                q_sync_add "$3" "$4"
-                ;;
-            disable)
-                [[ $# -lt 3 ]] && { q_error "Usage: q sync disable NAME"; exit 1; }
-                q_sync_disable "$3"
-                ;;
-            remove|rm)
-                [[ $# -lt 3 ]] && { q_error "Usage: q sync remove NAME [--force]"; exit 1; }
-                q_sync_remove "$3" "${4:-}"
-                ;;
-            run|"")
-                q_sync_run "${3:-}"
-                ;;
-            *)
-                # If second arg looks like a source name, treat it as `q sync run NAME`
-                q_sync_run "$2"
-                ;;
-        esac
-        # After a successful sync, drop the index checksum so the next `q`
-        # invocation re-indexes including new external sheets.
-        rm -f "${Q_CACHE_DIR}/checksum"
-        exit $?
-        ;;
+    # (removed: `q sync` subsystem — Q_SYNC_BUILTINS was already empty
+    #  and the two upstream sources didn't parse as q sheets. See git
+    #  history if the mechanism is ever wanted back.)
 
     # -- Default: main search flow ----------------------------------------
     *)

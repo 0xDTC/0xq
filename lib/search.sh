@@ -239,7 +239,7 @@ PREVIEW_EOF
     unset -f _q_helper_stale
 
     # Reset sidebands so stale values don't leak between invocations.
-    rm -f "${Q_CACHE_DIR}/.built_cmd" "${Q_CACHE_DIR}/.builder_tool"
+    rm -f "${Q_CACHE_DIR}/.built_cmd"
 
     # Save the full picker feed (combos + index) so keybind helpers can
     # read the exact rows fzf is showing without re-generating them.

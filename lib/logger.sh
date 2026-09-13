@@ -75,37 +75,10 @@ q_log_path() {
 }
 
 # ===========================================================================
-# q_log_extract_tool CMD — pull the bare tool name from a full command string
+# q_log_extract_tool — thin alias kept for callers; delegates to the
+# canonical q_extract_tool_binary in core.sh.
 # ===========================================================================
-# Skips env-var assignments (FOO=bar) and `sudo`. Also skips short flags
-# (tokens starting with `-`) that might appear after sudo. Strips dirname
-# and trailing .py / .exe suffixes.
-q_log_extract_tool() {
-    local cmd="$1"
-    # shellcheck disable=SC2206
-    local -a words
-    read -ra words <<< "$cmd"
-
-    local w tool=""
-    for w in "${words[@]}"; do
-        # Skip env assignments like FOO=bar
-        [[ "$w" == *=* && "$w" != *=*/* && "$w" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] && continue
-        # Skip sudo
-        [[ "$w" == "sudo" ]] && continue
-        # Skip flags
-        [[ "$w" == -* ]] && continue
-        tool="$w"
-        break
-    done
-
-    # Strip dirname
-    tool="${tool##*/}"
-    # Strip .exe / .py suffixes
-    tool="${tool%.exe}"
-    tool="${tool%.py}"
-
-    printf '%s' "$tool"
-}
+q_log_extract_tool() { q_extract_tool_binary "$1"; }
 
 # ===========================================================================
 # q_log_extract_target CMD — best-effort target inference from a command line

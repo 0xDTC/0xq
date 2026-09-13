@@ -21,30 +21,10 @@ _q_combos_dir() {
 }
 
 # ===========================================================================
-# _q_combo_tool_for TEMPLATE — extract the tool binary name from a template
+# _q_combo_tool_for — thin alias kept for callers; delegates to the
+# canonical q_extract_tool_binary in core.sh.
 # ===========================================================================
-# Mirrors q_log_extract_tool (logger.sh) — but that lib might not be sourced
-# in every path, so we duplicate the tiny bit of logic here.
-_q_combo_tool_for() {
-    local cmd="$1"
-    local -a words
-    read -ra words <<< "$cmd"
-    local w tool=""
-    for w in "${words[@]}"; do
-        # skip env assignments
-        [[ "$w" == *=* && "$w" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] && continue
-        # skip sudo
-        [[ "$w" == "sudo" ]] && continue
-        # skip short flags
-        [[ "$w" == -* ]] && continue
-        tool="$w"
-        break
-    done
-    tool="${tool##*/}"
-    tool="${tool%.exe}"
-    tool="${tool%.py}"
-    printf '%s' "$tool"
-}
+_q_combo_tool_for() { q_extract_tool_binary "$1"; }
 
 # ===========================================================================
 # q_combo_bump TEMPLATE — increment hit count for TEMPLATE under its tool
