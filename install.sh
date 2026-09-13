@@ -57,9 +57,18 @@ install_widget() {
             cat >> "$rc" <<'ZWIDGET'
 
 # q — Fast command launcher (Ctrl+Q)
+# The =(...) process substitution keeps zsh's globbing from choking
+# on ANSI bytes if the picker misbehaves; setopt localoptions turns
+# NOMATCH off inside the widget so a stray `?` doesn't blow up.
 q-widget() {
+    setopt localoptions no_nomatch no_glob_subst
     local result
-    result="$(command q --inline 2>/dev/null)" || return
+    result="$(command q --inline 2>/dev/null)"
+    # Strip any leaked control bytes (defence in depth — bubbletea
+    # should NOT be writing to stdout, but if a bug leaks some, we
+    # want the widget to fail cleanly rather than paste garbage).
+    result="${result//$'\x1b'[*[!m]*[a-zA-Z]/}"
+    result="${result//$'\r'/}"
     if [[ -n "$result" ]]; then
         BUFFER="$result"
         CURSOR=$#BUFFER
@@ -80,7 +89,11 @@ ZWIDGET
 # q — Fast command launcher (Ctrl+Q)
 q-widget() {
     local result
-    result="$(command q --inline 2>/dev/null)" || return
+    result="$(command q --inline 2>/dev/null)"
+    # Strip leaked control bytes (belt + suspenders — bubbletea
+    # should stay off stdout, but if it leaks we want to fail
+    # cleanly rather than paste garbage).
+    result="${result//$'\r'/}"
     if [[ -n "$result" ]]; then
         READLINE_LINE="$result"
         READLINE_POINT=${#result}

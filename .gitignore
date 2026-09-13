@@ -1,5 +1,7 @@
 # Go binary and test artifacts
 /q
+/q.new
+/q.pre-go
 *.test
 *.out
 

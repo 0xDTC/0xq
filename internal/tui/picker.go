@@ -89,14 +89,27 @@ type Result struct {
 	Cancelled bool
 }
 
-// Show runs the picker as a bubbletea program on /dev/tty. Blocks
-// until the user selects or cancels. Terminal state is restored on
-// exit even under panic/SIGINT.
+// Show runs the picker as a bubbletea program bound to /dev/tty for
+// BOTH input and output. Critical for --inline mode: the shell
+// widget captures q's stdout to slot the final command into BUFFER,
+// so if bubbletea's alt-screen / cursor-hide / mouse-tracking
+// escape sequences leak into stdout they end up as literal text in
+// the user's shell (`zsh: substitution failed` etc.). Piping the
+// UI through /dev/tty keeps stdout clean for the caller no matter
+// how q was invoked.
 func Show(opts Options) (*Result, error) {
+	tty, err := openTTY()
+	if err != nil {
+		return nil, fmt.Errorf("open /dev/tty: %w", err)
+	}
+	defer tty.Close()
+
 	m := initModel(opts)
 	prog := tea.NewProgram(m,
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
+		tea.WithInput(tty),
+		tea.WithOutput(tty),
 	)
 	out, err := prog.Run()
 	if err != nil {
