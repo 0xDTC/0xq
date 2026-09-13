@@ -22,8 +22,8 @@ import (
 	"github.com/0xDTC/0xq/go/internal/config"
 	"github.com/0xDTC/0xq/go/internal/index"
 	"github.com/0xDTC/0xq/go/internal/parser"
-	"github.com/0xDTC/0xq/go/internal/search"
 	"github.com/0xDTC/0xq/go/internal/session"
+	"github.com/0xDTC/0xq/go/internal/tui"
 )
 
 const version = "0.2.0-wip"
@@ -89,7 +89,8 @@ can inspect it; execution+fill lands next session.
 }
 
 // interactive runs the default picker flow: read index + combos,
-// call search.Run, on selection print the raw template.
+// show the NATIVE bubbletea picker, on selection print the raw
+// template. No external fzf dependency.
 func interactive(query string) error {
 	env, err := config.Load()
 	if err != nil {
@@ -97,7 +98,6 @@ func interactive(query string) error {
 	}
 	entries, err := index.ReadFile(env.IndexPath())
 	if err != nil {
-		// Auto-rebuild if the index is missing.
 		fmt.Fprintln(os.Stderr, "[*] Index missing, building...")
 		if err := rebuildIndex(); err != nil {
 			return err
@@ -110,31 +110,111 @@ func interactive(query string) error {
 
 	combRows := combos.EmitPickerRows(env.DataDir)
 	mru := session.MRU(env.DataDir)
+	osFilter := env.Get("Q_OS_FILTER", "")
 
-	sel, err := search.Run(search.Options{
+	// Build MRU rank lookup.
+	mruRank := map[string]int{}
+	for i, t := range mru {
+		if _, ok := mruRank[t]; !ok {
+			mruRank[t] = i + 1
+		}
+	}
+
+	// Assemble tui.Row set: combos rank 0 (top), MRU cheatsheets
+	// rank 101+, everything else 999999.
+	var rows []tui.Row
+	for _, e := range combRows {
+		if !platformOK(e.Platform, osFilter) {
+			continue
+		}
+		rows = append(rows, entryToRow(e, "⚙", 0))
+	}
+	for _, e := range entries {
+		if !platformOK(e.Platform, osFilter) {
+			continue
+		}
+		mark := "  "
+		rk := 999999
+		if r, ok := mruRank[e.Title]; ok {
+			mark = "★ "
+			rk = r + 100
+		}
+		rows = append(rows, entryToRow(e, mark, rk))
+	}
+
+	res, err := tui.Show(tui.Options{
+		Prompt:       "q> ",
+		Header:       "★ recent  ⚙ combo  Enter=run  Esc=quit  ↑↓ = move",
+		Rows:         rows,
 		InitialQuery: query,
-		MRU:          mru,
-		OSFilter:     env.Get("Q_OS_FILTER", ""),
-		Height:       env.Get("Q_PREVIEW_SIZE", "80%"),
-		Combos:       combRows,
-		Entries:      entries,
 	})
 	if err != nil {
 		return err
 	}
-	if sel == nil || sel.Cancelled {
+	if res == nil || res.Cancelled || res.Selected == nil {
 		fmt.Fprintln(os.Stderr, "[*] No command selected.")
 		return nil
 	}
-	// Capture this pick as a combo (template with placeholders intact).
-	_ = combos.Bump(env.DataDir, sel.Entry.Command)
-	_ = session.BumpMRU(env.DataDir, sel.Entry.Title)
+	sel := res.Selected.Payload.(index.Entry)
 
-	// Placeholder-fill flow is not ported yet — for now print the raw
-	// template so the user can copy/paste or pipe to sh manually.
-	fmt.Println(sel.Entry.Command)
-	fmt.Fprintln(os.Stderr, "\n[*] fill / confirm / run flow lands next session — showing raw template above.")
+	// Capture the template as a combo, bump the MRU by title.
+	_ = combos.Bump(env.DataDir, sel.Command)
+	_ = session.BumpMRU(env.DataDir, sel.Title)
+
+	// Placeholder-fill flow lands next iteration — for now print the
+	// raw template so the user can copy or pipe manually.
+	fmt.Println(sel.Command)
+	fmt.Fprintln(os.Stderr, "[*] fill / confirm / run land next iteration — raw template above.")
 	return nil
+}
+
+// entryToRow flattens an index.Entry into a tui.Row. Display carries
+// visible columns (mark, tool, title, description) with ANSI styling;
+// Search is a plain-text concatenation of everything the fuzzy match
+// should hit (title, tool, tags, category).
+func entryToRow(e index.Entry, mark string, rank int) tui.Row {
+	const (
+		cyan    = "\x1b[36m"
+		bold    = "\x1b[1m"
+		dim     = "\x1b[2m"
+		magenta = "\x1b[35m"
+		reset   = "\x1b[0m"
+	)
+	sep := dim + "│" + reset
+	desc := e.Desc
+	if desc == "" {
+		desc = "(no description)"
+	}
+	display := magenta + mark + reset +
+		cyan + padCol(e.Tool, 22) + reset + " " + sep + " " +
+		bold + padCol(e.Title, 38) + reset + " " + sep + " " +
+		dim + desc + reset
+
+	search := strings.Join([]string{
+		e.Tool, e.Title, e.Desc, e.Category, e.Phase,
+		strings.ReplaceAll(e.Tags, ",", " "),
+	}, " ")
+
+	return tui.Row{
+		Display: display,
+		Search:  search,
+		Rank:    rank,
+		Payload: e,
+	}
+}
+
+func padCol(s string, w int) string {
+	if len(s) >= w {
+		return s[:w]
+	}
+	return s + strings.Repeat(" ", w-len(s))
+}
+
+func platformOK(rowPlatform, filter string) bool {
+	if filter == "" || rowPlatform == "" || rowPlatform == "any" {
+		return true
+	}
+	return strings.EqualFold(rowPlatform, filter)
 }
 
 func runCombos(args []string) {
