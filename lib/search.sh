@@ -897,6 +897,8 @@ raw_cmd="$3"
 # shellcheck disable=SC1091
 source "$Q_ROOT/lib/core.sh"
 # shellcheck disable=SC1091
+source "$Q_ROOT/lib/combos.sh"      # provides _q_combo_tool_for
+# shellcheck disable=SC1091
 source "$Q_ROOT/lib/builder.sh"
 q_config_load 2>/dev/null || true
 
