@@ -16,17 +16,26 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/0xDTC/0xq/go/internal/combos"
+	"github.com/0xDTC/0xq/go/internal/config"
 	"github.com/0xDTC/0xq/go/internal/index"
 	"github.com/0xDTC/0xq/go/internal/parser"
+	"github.com/0xDTC/0xq/go/internal/search"
+	"github.com/0xDTC/0xq/go/internal/session"
 )
 
-const version = "0.1.0-wip"
+const version = "0.2.0-wip"
 
 func main() {
+	// No args → default flow: interactive picker.
 	if len(os.Args) < 2 {
-		usage()
-		os.Exit(2)
+		if err := interactive(""); err != nil {
+			fmt.Fprintln(os.Stderr, "[-]", err)
+			os.Exit(1)
+		}
+		return
 	}
 	switch os.Args[1] {
 	case "--version", "-v":
@@ -43,10 +52,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "[-] lint:", err)
 			os.Exit(1)
 		}
+	case "combos", "combo":
+		runCombos(os.Args[2:])
+	case "config":
+		runConfig(os.Args[2:])
+	case "history":
+		runHistory()
 	default:
-		fmt.Fprintf(os.Stderr, "[-] unknown subcommand: %s\n", os.Args[1])
-		usage()
-		os.Exit(2)
+		// Fallback: treat first arg as an initial fzf query. Matches the
+		// bash tree — `q nmap` = interactive picker pre-filtered to nmap.
+		if err := interactive(strings.Join(os.Args[1:], " ")); err != nil {
+			fmt.Fprintln(os.Stderr, "[-]", err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -54,15 +72,152 @@ func usage() {
 	fmt.Fprintf(os.Stderr, `q — Fast command launcher for pentesters (go port %s)
 
 USAGE
+    q [query]                Interactive picker (default; optional initial query)
     q rebuild                Rebuild the cheatsheet index cache
     q lint                   Report cross-file duplicate commands
+    q combos [list|forget]   List / forget captured personal combos
+    q config get NAME        Read config knob (from ~/.config/q/config.sh)
+    q history                Show current session's command history
     q --version | -v
     q --help | -h
 
-The bash tree at repo root is still authoritative for interactive
-search, builder, combos, session, etc. This binary handles the
-non-interactive maintenance commands only, for now.
+Fill / builder / [s] save / Ctrl+B/M/X/D keybinds land in follow-up
+commits as their supporting packages come online. Selecting a command
+today prints the raw template (with {{placeholders}} intact) so you
+can inspect it; execution+fill lands next session.
 `, version)
+}
+
+// interactive runs the default picker flow: read index + combos,
+// call search.Run, on selection print the raw template.
+func interactive(query string) error {
+	env, err := config.Load()
+	if err != nil {
+		return err
+	}
+	entries, err := index.ReadFile(env.IndexPath())
+	if err != nil {
+		// Auto-rebuild if the index is missing.
+		fmt.Fprintln(os.Stderr, "[*] Index missing, building...")
+		if err := rebuildIndex(); err != nil {
+			return err
+		}
+		entries, err = index.ReadFile(env.IndexPath())
+		if err != nil {
+			return err
+		}
+	}
+
+	combRows := combos.EmitPickerRows(env.DataDir)
+	mru := session.MRU(env.DataDir)
+
+	sel, err := search.Run(search.Options{
+		InitialQuery: query,
+		MRU:          mru,
+		OSFilter:     env.Get("Q_OS_FILTER", ""),
+		Height:       env.Get("Q_PREVIEW_SIZE", "80%"),
+		Combos:       combRows,
+		Entries:      entries,
+	})
+	if err != nil {
+		return err
+	}
+	if sel == nil || sel.Cancelled {
+		fmt.Fprintln(os.Stderr, "[*] No command selected.")
+		return nil
+	}
+	// Capture this pick as a combo (template with placeholders intact).
+	_ = combos.Bump(env.DataDir, sel.Entry.Command)
+	_ = session.BumpMRU(env.DataDir, sel.Entry.Title)
+
+	// Placeholder-fill flow is not ported yet — for now print the raw
+	// template so the user can copy/paste or pipe to sh manually.
+	fmt.Println(sel.Entry.Command)
+	fmt.Fprintln(os.Stderr, "\n[*] fill / confirm / run flow lands next session — showing raw template above.")
+	return nil
+}
+
+func runCombos(args []string) {
+	env, err := config.Load()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[-]", err)
+		os.Exit(1)
+	}
+	sub := "list"
+	if len(args) > 0 {
+		sub = args[0]
+	}
+	switch sub {
+	case "list":
+		filter := ""
+		if len(args) > 1 {
+			filter = args[1]
+		}
+		combos.List(env.DataDir, filter, os.Stderr)
+	case "forget":
+		if len(args) < 2 {
+			fmt.Fprintln(os.Stderr, "usage: q combos forget TOOL [TEMPLATE]")
+			os.Exit(1)
+		}
+		template := ""
+		if len(args) > 2 {
+			template = args[2]
+		}
+		if err := combos.Forget(env.DataDir, args[1], template); err != nil {
+			fmt.Fprintln(os.Stderr, "[-]", err)
+			os.Exit(1)
+		}
+		fmt.Fprintln(os.Stderr, "[+] forgotten.")
+	case "path":
+		fmt.Println(filepath.Join(env.DataDir, "combos"))
+	default:
+		fmt.Fprintf(os.Stderr, "unknown combos subcommand: %s\n", sub)
+		fmt.Fprintln(os.Stderr, "valid: list [TOOL], forget TOOL [TEMPLATE], path")
+		os.Exit(1)
+	}
+}
+
+func runConfig(args []string) {
+	env, err := config.Load()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[-]", err)
+		os.Exit(1)
+	}
+	if len(args) < 2 || args[0] != "get" {
+		// Full list.
+		for _, k := range []string{
+			"Q_OS_FILTER", "Q_PREVIEW_SIZE", "Q_SESSION_NAME",
+			"Q_CLIPBOARD_CANDIDATE", "Q_FILE_MAXDEPTH", "Q_FILE_MAXCOUNT",
+			"Q_HOME_MAXDEPTH", "Q_HOME_MAXCOUNT",
+		} {
+			fmt.Printf("  %-24s %s\n", k, env.Get(k, ""))
+		}
+		return
+	}
+	key := args[1]
+	if !strings.HasPrefix(key, "Q_") {
+		key = "Q_" + strings.ToUpper(key)
+	}
+	fmt.Println(env.Get(key, ""))
+}
+
+func runHistory() {
+	env, err := config.Load()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[-]", err)
+		os.Exit(1)
+	}
+	s, err := session.New(env.SessionDir())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[-]", err)
+		os.Exit(1)
+	}
+	b, err := os.ReadFile(filepath.Join(s.Dir, "history.log"))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[*] no history yet.")
+		return
+	}
+	os.Stdout.Write(b)
 }
 
 // qRoot resolves Q_ROOT — the directory containing lib/ and cheatsheets/.
