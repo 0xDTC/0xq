@@ -913,8 +913,11 @@ if [[ -z "$tool" ]]; then
     exit 0
 fi
 
-# Ensure the tool has a builder catalog. If not, hint the user how to
-# enable it and bail out (falling back to raw $EDITOR is what Ctrl+E is for).
+# Ensure the tool has a builder catalog. If not, auto-parse --help on
+# the fly and cache it — no reason to send the user back to a shell
+# command for something we can do right now. Falls through to a Ctrl+E
+# hint only if --help produces nothing usable (uninstalled tool /
+# unparseable output).
 have_catalog=0
 if _q_builder_path "$tool" >/dev/null 2>&1; then
     have_catalog=1
@@ -922,12 +925,34 @@ elif [[ -s "$(_q_builder_auto_cache "$tool")" ]]; then
     have_catalog=1
 fi
 if [[ "$have_catalog" -eq 0 ]]; then
-    printf '\n\033[1;33m[!]\033[0m %s has no builder catalog yet.\n' "$tool" > /dev/tty
-    printf '    Enable it:  \033[1mq build add %s\033[0m  (parses --help)\n' "$tool" > /dev/tty
-    printf '    Or use Ctrl+E to edit the raw command.\n' > /dev/tty
-    printf '    Press any key...\n' > /dev/tty
-    read -rsn1 -t 5 _ < /dev/tty 2>/dev/null || true
-    exit 0
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        printf '\n\033[1;33m[!]\033[0m %s is not installed on this host.\n' "$tool" > /dev/tty
+        printf '    Ctrl+E to edit the raw command instead.\n' > /dev/tty
+        printf '    Press any key...\n' > /dev/tty
+        read -rsn1 -t 5 _ < /dev/tty 2>/dev/null || true
+        exit 0
+    fi
+    printf '  parsing %s --help ...' "$tool" > /dev/tty
+    cache_file="$(_q_builder_auto_cache "$tool")"
+    if _q_builder_parse_help "$tool" > "${cache_file}.tmp" 2>/dev/null \
+       && [[ -s "${cache_file}.tmp" ]]; then
+        mv "${cache_file}.tmp" "$cache_file"
+        # Add to enabled tools list so it stays available in future picks.
+        cfg="$(_q_builder_config_file)"
+        mkdir -p "$(dirname "$cfg")"; touch "$cfg"
+        if ! grep -qxF "$tool" "$cfg" 2>/dev/null; then
+            printf '%s\n' "$tool" >> "$cfg"
+        fi
+        printf ' cached %s flags\n' "$(wc -l < "$cache_file" | tr -d ' ')" > /dev/tty
+        have_catalog=1
+    else
+        rm -f "${cache_file}.tmp"
+        printf '\n\033[1;33m[!]\033[0m %s: --help produced nothing the parser could use.\n' "$tool" > /dev/tty
+        printf '    Ctrl+E to edit the raw command instead.\n' > /dev/tty
+        printf '    Press any key...\n' > /dev/tty
+        read -rsn1 -t 5 _ < /dev/tty 2>/dev/null || true
+        exit 0
+    fi
 fi
 
 # Collect the flags the current command already uses. Simple lexical scan:
