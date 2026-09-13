@@ -156,11 +156,25 @@ func interactive(query string, inline bool) error {
 		rows = append(rows, entryToRow(e, mark, rk))
 	}
 
+	// Preview callback — shows the highlighted row's template + its
+	// session-filled preview + source. Bound to a fresh Session so
+	// we can look up vars without allocating one per keystroke.
+	previewSess, _ := session.New(env.SessionDir())
+	preview := func(r tui.Row) string {
+		e, ok := r.Payload.(index.Entry)
+		if !ok {
+			return ""
+		}
+		return renderPreview(e, previewSess)
+	}
+
 	res, err := tui.Show(tui.Options{
 		Prompt:       "q> ",
 		Header:       "★ recent  ⚙ combo  Enter=run  Esc=quit  ↑↓ = move",
 		Rows:         rows,
 		InitialQuery: query,
+		Preview:      preview,
+		PreviewRatio: 0.4,
 	})
 	if err != nil {
 		return err
@@ -534,4 +548,168 @@ func indexOf(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+// renderPreview builds the bottom-pane content for the highlighted
+// row. Shows the raw template with {{VAR}} placeholders highlighted,
+// then the session-filled version below (unresolved placeholders
+// rendered as <?NAME?> in red), plus the source path. Kept fast
+// because it runs on every cursor move.
+func renderPreview(e index.Entry, sess *session.Session) string {
+	const (
+		bold    = "\x1b[1m"
+		dim     = "\x1b[2m"
+		cyan    = "\x1b[36m"
+		yellow  = "\x1b[33m"
+		green   = "\x1b[32m"
+		red     = "\x1b[31m"
+		magenta = "\x1b[35m"
+		reset   = "\x1b[0m"
+	)
+
+	var b strings.Builder
+
+	// TEMPLATE — the raw command with {{VAR:type:default}} shown in yellow.
+	b.WriteString(bold + cyan + "TEMPLATE" + reset + "\n")
+	b.WriteString("  " + highlightPlaceholders(e.Command, yellow, dim, reset) + "\n\n")
+
+	// FILLED — walk placeholders, substitute from session vars.
+	// Unresolved placeholders render as <?NAME?> in red.
+	filled, missing := previewFill(e.Command, sess)
+	if missing == 0 {
+		b.WriteString(bold + cyan + "FILLED" + reset + " " + green + "[ready — Enter to run]" + reset + "\n")
+	} else {
+		b.WriteString(bold + cyan + "FILLED" + reset + " " +
+			yellow + fmt.Sprintf("[%d unresolved — Enter to prompt]", missing) + reset + "\n")
+	}
+	b.WriteString("  " + filled + "\n\n")
+
+	// Source path in dim.
+	b.WriteString(dim + "source: " + e.Source)
+	if e.Category == "combo" {
+		b.WriteString("  " + magenta + "⚙ combo" + reset)
+	}
+	b.WriteString(reset)
+	return b.String()
+}
+
+// highlightPlaceholders paints every {{...}} token in yellow-on-dim
+// so the template pane visually distinguishes placeholders from
+// literal command text.
+func highlightPlaceholders(cmd, yellow, dim, reset string) string {
+	var b strings.Builder
+	b.Grow(len(cmd) + 64)
+	b.WriteString(dim)
+	rest := cmd
+	for {
+		i := strings.Index(rest, "{{")
+		if i < 0 {
+			b.WriteString(rest)
+			break
+		}
+		b.WriteString(rest[:i])
+		end := strings.Index(rest[i:], "}}")
+		if end < 0 {
+			b.WriteString(rest[i:])
+			break
+		}
+		tok := rest[i : i+end+2]
+		b.WriteString(reset + yellow + tok + reset + dim)
+		rest = rest[i+end+2:]
+	}
+	b.WriteString(reset)
+	return b.String()
+}
+
+// previewFill substitutes every {{NAME:type:default}} in cmd with
+// (in order):
+//   session-var value  →  green
+//   declared default    →  green
+//   <?NAME?>            →  red   (also counts toward missing)
+//
+// Returns (rendered, missingCount). Optional blocks are left
+// intact — the preview shows the pre-optional shape.
+func previewFill(cmd string, sess *session.Session) (string, int) {
+	const (
+		green = "\x1b[32m"
+		red   = "\x1b[31m"
+		bold  = "\x1b[1m"
+		reset = "\x1b[0m"
+	)
+	missing := 0
+	var b strings.Builder
+	b.Grow(len(cmd) + 32)
+	rest := cmd
+	for {
+		i := strings.Index(rest, "{{")
+		if i < 0 {
+			b.WriteString(rest)
+			break
+		}
+		b.WriteString(rest[:i])
+		end := strings.Index(rest[i:], "}}")
+		if end < 0 {
+			b.WriteString(rest[i:])
+			break
+		}
+		inner := rest[i+2 : i+end]
+		// Skip optional-block markers ({{?TAG}} / {{/TAG}}) — leave
+		// them raw in the preview so the user can see the shape.
+		if strings.HasPrefix(inner, "?") || strings.HasPrefix(inner, "/") {
+			b.WriteString("{{" + inner + "}}")
+			rest = rest[i+end+2:]
+			continue
+		}
+		// Parse NAME[:TYPE[:DEFAULT]] — first-colon splits name, and
+		// for choice types the default is the first comma-split option.
+		name, typ, def := parsePlaceholderInner(inner)
+		val := sess.GetVar(name)
+		if val == "" {
+			// For choice, the effective default is the first option
+			// (with any =hint stripped).
+			if typ == "choice" || typ == "enum" {
+				if comma := strings.IndexByte(def, ','); comma > 0 {
+					def = def[:comma]
+				}
+				if eq := strings.IndexByte(def, '='); eq > 0 {
+					def = def[:eq]
+				}
+			}
+			val = def
+		}
+		if val == "" {
+			b.WriteString(red + bold + "<?" + name + "?>" + reset)
+			missing++
+		} else {
+			b.WriteString(green + val + reset)
+		}
+		rest = rest[i+end+2:]
+	}
+	return b.String(), missing
+}
+
+// parsePlaceholderInner splits `NAME[:TYPE[:DEFAULT]]` — lightweight
+// copy of internal/fill's parseInner (kept private to cmd/q so the
+// preview doesn't reach into internal/fill for one function).
+func parsePlaceholderInner(inner string) (name, typ, def string) {
+	c1 := strings.IndexByte(inner, ':')
+	if c1 < 0 {
+		return inner, "str", ""
+	}
+	name = inner[:c1]
+	rest := inner[c1+1:]
+	c2 := strings.IndexByte(rest, ':')
+	if c2 < 0 {
+		typ = rest
+		if typ == "" {
+			typ = "str"
+		}
+		return
+	}
+	typ = rest[:c2]
+	if typ == "" {
+		typ = "str"
+	}
+	def = rest[c2+1:]
+	return
 }

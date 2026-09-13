@@ -65,9 +65,18 @@ type Options struct {
 	Rows         []Row
 	InitialQuery string
 	Multi        bool
-	Height       int    // list rows; 0 → autosize
+	Height       int  // list rows; 0 → autosize
 	Binds        []Bind
-	NoMarker     bool  // set to true to hide the ⚙/★ MRU column
+	NoMarker     bool // set to true to hide the ⚙/★ MRU column
+
+	// Preview, if non-nil, is called for the currently-highlighted row
+	// every time the cursor moves. The returned string is rendered in
+	// a bottom-split pane. Nil disables the preview and the list gets
+	// the full terminal height.
+	Preview func(row Row) string
+	// PreviewRatio: fraction of terminal height allocated to the
+	// preview (0.0-1.0). Default 0.4 when Preview is set.
+	PreviewRatio float64
 }
 
 // Result is what Show returns.
@@ -334,14 +343,34 @@ func (m *model) View() string {
 	}
 	b.WriteString("\n")
 
-	// List — sized to fit remaining terminal rows.
-	listH := m.opts.Height
-	if listH <= 0 {
-		listH = m.height - 3
-		if listH < 8 {
-			listH = 8
+	// Split total available rows between list and preview.
+	//   totalH = terminal height - 3 (prompt, header, one trailing gap)
+	//   previewH = totalH * PreviewRatio  (default 0.4 when Preview set)
+	//   listH    = totalH - previewH - 1  (1 line for divider)
+	totalH := m.height - 3
+	if totalH < 8 {
+		totalH = 8
+	}
+	listH := totalH
+	previewH := 0
+	if m.opts.Preview != nil {
+		r := m.opts.PreviewRatio
+		if r <= 0 || r >= 1 {
+			r = 0.4
+		}
+		previewH = int(float64(totalH) * r)
+		if previewH < 4 {
+			previewH = 4
+		}
+		listH = totalH - previewH - 1 // divider line
+		if listH < 4 {
+			listH = 4
 		}
 	}
+	if m.opts.Height > 0 && m.opts.Height < listH {
+		listH = m.opts.Height
+	}
+
 	// Scroll offset so cursor stays visible.
 	if m.cursor < m.offset {
 		m.offset = m.cursor
@@ -365,17 +394,48 @@ func (m *model) View() string {
 			if m.marked[row.OrigIdx] {
 				prefix = cursorStyle.Render("● ")
 			} else {
-				prefix = dimStyle.Render("○ ") + prefix[len(prefix)-2:]
-				prefix = prefix[:len(prefix)/2] // keep alignment
+				prefix = dimStyle.Render("○ ")
 			}
 		}
 		b.WriteString(prefix)
 		b.WriteString(row.Row.Display)
 		b.WriteString("\n")
 	}
-	// Blank lines to fill for stable frame.
+	// Blank lines so the divider stays in the same spot regardless
+	// of how many rows are visible.
 	for i := end - m.offset; i < listH; i++ {
 		b.WriteString("\n")
+	}
+
+	// Preview pane (when enabled).
+	if m.opts.Preview != nil {
+		// Divider
+		divWidth := m.width
+		if divWidth <= 0 {
+			divWidth = 80
+		}
+		b.WriteString(dimStyle.Render(strings.Repeat("─", divWidth)))
+		b.WriteString("\n")
+		// Preview body — call the callback for the highlighted row.
+		var preview string
+		if len(m.filtered) > 0 && m.cursor < len(m.filtered) {
+			preview = m.opts.Preview(m.filtered[m.cursor].Row)
+		} else {
+			preview = dimStyle.Render("(no selection)")
+		}
+		// Truncate preview to previewH lines so it doesn't push
+		// the frame around.
+		lines := strings.Split(preview, "\n")
+		if len(lines) > previewH {
+			lines = lines[:previewH]
+		}
+		for _, ln := range lines {
+			b.WriteString(ln)
+			b.WriteString("\n")
+		}
+		for i := len(lines); i < previewH; i++ {
+			b.WriteString("\n")
+		}
 	}
 	return b.String()
 }
