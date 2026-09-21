@@ -388,7 +388,6 @@ var (
 	promptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
 	headerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
-	markStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("5"))
 	dimStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 )
 

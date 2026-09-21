@@ -80,13 +80,6 @@ func Path() string {
 	return path
 }
 
-// Enabled reports whether the log is active.
-func Enabled() bool {
-	mu.Lock()
-	defer mu.Unlock()
-	return active
-}
-
 // Close flushes + closes the file. Safe to call more than once.
 func Close() {
 	mu.Lock()
