@@ -3,6 +3,8 @@ package fill
 import (
 	"fmt"
 	"strings"
+
+	"github.com/0xDTC/0xq/internal/helpscrape"
 )
 
 // Candidate is one row in the per-variable picker.
@@ -85,6 +87,22 @@ func BuildCandidates(p Placeholder, src Sources) []Candidate {
 	case "choice", "enum":
 		for _, o := range p.Options() {
 			add(Candidate{Value: o.Value, Tag: "choice", Hint: o.Hint})
+		}
+	case "helpflags":
+		// Default field carries the tool name. Scrape its --help and
+		// offer one candidate per parsed flag with its description.
+		// Value is the flag literal (e.g. "-sV") so it drops straight
+		// into the assembled command; a `--long ARG` form keeps just
+		// the flag — the user follows up with the value themselves.
+		tool := strings.TrimSpace(p.Default)
+		if tool != "" {
+			for _, f := range helpscrape.Scrape(tool) {
+				hint := f.Desc
+				if f.Arg != "" {
+					hint = f.Arg + " — " + hint
+				}
+				add(Candidate{Value: f.Flag, Tag: "flag", Hint: hint})
+			}
 		}
 	default:
 		if p.Default != "" {

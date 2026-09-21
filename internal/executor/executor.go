@@ -18,17 +18,24 @@ type Outcome int
 
 const (
 	OutcomeRun    Outcome = iota // execute the filled command
-	OutcomeEdit                  // open in $EDITOR (not yet wired)
-	OutcomeCopy                  // copy to clipboard (not yet wired)
-	OutcomeSave                  // save-as-cheatsheet (not yet wired)
+	OutcomeVars                  // re-prompt placeholders (caller reruns fill Interactive)
+	OutcomeEdit                  // open assembled command in $EDITOR
 	OutcomeCancel                // do nothing
 )
 
 // ConfirmAndRun shows the command in bold+green, runs a path sanity
 // check that warns about non-existent input files, then reads one
-// key from stdin: Enter = run, e = edit, c = copy, s = save, q = quit.
-// Non-run outcomes are returned so the caller can act; run happens
-// inline and logs the exit code + duration to session history.
+// key from stdin.
+//
+// Keys:
+//
+//	Enter / y / r  → run the command as shown
+//	v              → change placeholder values (return OutcomeVars)
+//	e              → open the assembled command in $EDITOR then re-confirm
+//	q / esc / any  → cancel
+//
+// Non-run outcomes are returned so the caller can loop back through
+// the fill flow; run happens inline and logs the exit code + duration.
 func ConfirmAndRun(sess *session.Session, command string, requireConfirm bool) (Outcome, error) {
 	// 1. Show the command.
 	fmt.Fprintln(os.Stderr)
@@ -40,7 +47,7 @@ func ConfirmAndRun(sess *session.Session, command string, requireConfirm bool) (
 	// 3. Confirm.
 	if requireConfirm {
 		fmt.Fprintln(os.Stderr)
-		fmt.Fprint(os.Stderr, "\x1b[1m[Enter]\x1b[0m Run  \x1b[1m[e]\x1b[0m Edit  \x1b[1m[c]\x1b[0m Copy  \x1b[1m[s]\x1b[0m Save  \x1b[1m[q]\x1b[0m Cancel  ")
+		fmt.Fprint(os.Stderr, "\x1b[1m[Enter]\x1b[0m Run  \x1b[1m[v]\x1b[0m Change values  \x1b[1m[e]\x1b[0m Edit text  \x1b[1m[q]\x1b[0m Cancel  ")
 		key, err := readOneKey()
 		fmt.Fprintln(os.Stderr)
 		if err != nil {
@@ -49,12 +56,10 @@ func ConfirmAndRun(sess *session.Session, command string, requireConfirm bool) (
 		switch key {
 		case '\r', '\n', 'y', 'Y', 'r', 'R':
 			// fallthrough to run
+		case 'v', 'V':
+			return OutcomeVars, nil
 		case 'e', 'E':
 			return OutcomeEdit, nil
-		case 'c', 'C':
-			return OutcomeCopy, nil
-		case 's', 'S':
-			return OutcomeSave, nil
 		default:
 			return OutcomeCancel, nil
 		}

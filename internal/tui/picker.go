@@ -21,6 +21,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/0xDTC/0xq/internal/qlog"
 )
 
 // Row is one entry in the picker.
@@ -131,9 +133,12 @@ func Show(opts Options) (*Result, error) {
 // ---------- bubbletea model ----------
 
 type model struct {
-	opts     Options
-	query    string
-	cursor   int
+	opts Options
+	// query is stored as []rune so cursor math is per-character (not
+	// per-byte) — a UTF-8 name shouldn't trap the cursor mid-codepoint.
+	query    []rune
+	qcur     int // cursor position within query (rune index)
+	cursor   int // highlighted row index in filtered
 	offset   int
 	filtered []scored
 	marked   map[int]bool // key: original Rows index
@@ -151,9 +156,10 @@ type scored struct {
 func initModel(o Options) *model {
 	m := &model{
 		opts:   o,
-		query:  o.InitialQuery,
+		query:  []rune(o.InitialQuery),
 		marked: map[int]bool{},
 	}
+	m.qcur = len(m.query)
 	m.recompute()
 	return m
 }
@@ -166,17 +172,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height = msg.Width, msg.Height
 		m.clampCursor()
 	case tea.KeyMsg:
+		key := msg.String()
+		qlog.Action("picker", "key", "key=%q query=%q qcur=%d filtered=%d", key, string(m.query), m.qcur, len(m.filtered))
 		// Custom binds first.
 		for _, b := range m.opts.Binds {
-			if msg.String() == b.Key {
+			if key == b.Key {
 				var row *Row
 				if len(m.filtered) > 0 && m.cursor < len(m.filtered) {
 					row = &m.filtered[m.cursor].Row
 				}
-				accept, _ := b.Action(row, m.query)
+				accept, _ := b.Action(row, string(m.query))
 				if accept {
 					m.result.Selected = row
-					m.result.Query = m.query
+					m.result.Query = string(m.query)
 					m.result.FiredBind = b.Label
 					return m, tea.Quit
 				}
@@ -184,23 +192,27 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-		switch msg.String() {
+		switch key {
 		case "esc", "ctrl+c":
 			m.result.Cancelled = true
-			m.result.Query = m.query
+			m.result.Query = string(m.query)
 			return m, tea.Quit
 		case "enter":
 			if len(m.filtered) == 0 {
+				// No matches — but the caller may want the typed
+				// query as a custom value. Return it verbatim.
 				m.result.Cancelled = true
-				m.result.Query = m.query
+				m.result.Query = string(m.query)
 				return m, tea.Quit
 			}
 			m.result.Selected = &m.filtered[m.cursor].Row
-			m.result.Query = m.query
+			m.result.Query = string(m.query)
 			if m.opts.Multi {
 				m.result.Multi = m.collectMarked()
 			}
 			return m, tea.Quit
+
+		// ── list navigation ───────────────────────────────────
 		case "up", "ctrl+k":
 			if m.cursor > 0 {
 				m.cursor--
@@ -219,10 +231,70 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor >= len(m.filtered) {
 				m.cursor = len(m.filtered) - 1
 			}
-		case "home":
-			m.cursor = 0
+
+		// ── query cursor movement ─────────────────────────────
+		// Home/End now move within the query (was: jump to first/
+		// last row). Use PgUp/PgDn for that instead.
+		case "left", "ctrl+b":
+			if m.qcur > 0 {
+				m.qcur--
+			}
+		case "right":
+			// Ctrl+F is reserved for a caller bind (change-vars in the
+			// main picker), so no ctrl+f alias here.
+			if m.qcur < len(m.query) {
+				m.qcur++
+			}
+		case "home", "ctrl+a":
+			if m.opts.Multi {
+				for _, s := range m.filtered {
+					m.marked[s.OrigIdx] = true
+				}
+			} else {
+				m.qcur = 0
+			}
 		case "end":
-			m.cursor = len(m.filtered) - 1
+			m.qcur = len(m.query)
+
+		// ── query editing ─────────────────────────────────────
+		case "backspace", "ctrl+h":
+			// Some terminals send Ctrl+H instead of the backspace
+			// escape (readline's `stty erase` binding). Handle both.
+			if m.qcur > 0 {
+				m.query = append(m.query[:m.qcur-1], m.query[m.qcur:]...)
+				m.qcur--
+				m.recompute()
+			}
+		case "delete":
+			// Forward-delete: nuke char UNDER the cursor.
+			if m.qcur < len(m.query) {
+				m.query = append(m.query[:m.qcur], m.query[m.qcur+1:]...)
+				m.recompute()
+			}
+		case "ctrl+u":
+			// kill-line-backward — matches readline / fzf convention.
+			m.query = m.query[m.qcur:]
+			m.qcur = 0
+			m.recompute()
+		case "alt+backspace", "alt+ctrl+h":
+			// kill-word-backward: chop back through spaces then a run
+			// of non-space characters. Two aliases because terminals
+			// disagree on what to send for Alt+Backspace:
+			//   - "alt+backspace" : gnome-terminal, kitty, wezterm, iTerm2
+			//   - "alt+ctrl+h"    : xterm-family / kali default (Alt is the
+			//                       meta-escape prefix, Backspace is Ctrl+H)
+			// Ctrl+W deliberately left unbound for future custom shortcuts.
+			end := m.qcur
+			for m.qcur > 0 && m.query[m.qcur-1] == ' ' {
+				m.qcur--
+			}
+			for m.qcur > 0 && m.query[m.qcur-1] != ' ' {
+				m.qcur--
+			}
+			m.query = append(m.query[:m.qcur], m.query[end:]...)
+			m.recompute()
+
+		// ── multi-select controls (only when Options.Multi) ───
 		case "tab":
 			if m.opts.Multi && len(m.filtered) > 0 {
 				idx := m.filtered[m.cursor].OrigIdx
@@ -235,28 +307,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor++
 				}
 			}
-		case "ctrl+a":
-			if m.opts.Multi {
-				for _, s := range m.filtered {
-					m.marked[s.OrigIdx] = true
-				}
-			}
 		case "ctrl+d":
 			if m.opts.Multi {
 				m.marked = map[int]bool{}
-			}
-		case "backspace":
-			if len(m.query) > 0 {
-				m.query = m.query[:len(m.query)-1]
+			} else if m.qcur < len(m.query) {
+				// Non-Multi picker: use Ctrl+D as an alternative to
+				// Delete (some terminals never send Delete cleanly).
+				m.query = append(m.query[:m.qcur], m.query[m.qcur+1:]...)
 				m.recompute()
 			}
-		case "ctrl+u":
-			m.query = ""
-			m.recompute()
+
 		default:
-			// Type-to-filter (printable characters).
+			// Any printable rune → insert at cursor (was: append to end).
 			if len(msg.Runes) > 0 {
-				m.query += string(msg.Runes)
+				prefix := append([]rune{}, m.query[:m.qcur]...)
+				suffix := append([]rune{}, m.query[m.qcur:]...)
+				m.query = append(append(prefix, msg.Runes...), suffix...)
+				m.qcur += len(msg.Runes)
 				m.recompute()
 			}
 		}
@@ -265,26 +332,25 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // recompute filters + sorts rows against the current query.
-// Rank + fuzzy score are combined: rank 0 rows (combos) still lose
-// to a strong fuzzy hit on a rank-999999 row when the user types
-// something that only matches the low-rank row.
+// Rank + fuzzy score combine: rank 0 rows still lose to a strong
+// fuzzy hit on a rank-999999 row when the user types something that
+// only matches the low-rank row.
 func (m *model) recompute() {
+	q := string(m.query)
 	m.filtered = m.filtered[:0]
 	for i, r := range m.opts.Rows {
-		sc := Score(r.Search, m.query)
+		sc := Score(r.Search, q)
 		if sc == 0 {
 			continue
 		}
 		m.filtered = append(m.filtered, scored{OrigIdx: i, Score: sc, Row: r})
 	}
 	sort.SliceStable(m.filtered, func(i, j int) bool {
-		// If a query is active, prefer higher score.
-		if m.query != "" {
+		if q != "" {
 			if m.filtered[i].Score != m.filtered[j].Score {
 				return m.filtered[i].Score > m.filtered[j].Score
 			}
 		}
-		// Otherwise (or ties): prefer lower rank.
 		return m.filtered[i].Row.Rank < m.filtered[j].Row.Rank
 	})
 	m.clampCursor()
@@ -329,10 +395,19 @@ var (
 func (m *model) View() string {
 	var b strings.Builder
 
-	// Prompt line
+	// Prompt line — render query with the cursor bar at the current
+	// qcur position so left/right/home/end/delete have a visible
+	// anchor, not just an invisible append point at the end.
 	b.WriteString(promptStyle.Render(m.prompt()))
-	b.WriteString(m.query)
+	if m.qcur < 0 {
+		m.qcur = 0
+	}
+	if m.qcur > len(m.query) {
+		m.qcur = len(m.query)
+	}
+	b.WriteString(string(m.query[:m.qcur]))
 	b.WriteString(cursorStyle.Render("▏"))
+	b.WriteString(string(m.query[m.qcur:]))
 	b.WriteString("\n")
 
 	// Count + header

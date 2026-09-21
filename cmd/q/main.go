@@ -1,30 +1,30 @@
 // q — Fast, keyboard-driven command launcher for pentesters.
-// Go port. Currently implements: rebuild, lint.
 //
-// Roadmap subcommands (not yet wired):
+// Subcommands:
 //
-//	q                    interactive picker (fzf subprocess)
-//	q history / session  MRU + session mgmt
-//	q build / combos     builder + combos captured on run
-//	q config             config knob get/set
-//
-// The bash tree at repo root is authoritative during the port. When
-// this binary reaches feature parity, migration doc goes here.
+//	q [query]        interactive picker over cheatsheets
+//	q edit [query]   open a cheatsheet in $EDITOR (fuzzy-matches title/tool)
+//	q config get     read config knobs
+//	q history        current session's command log
+//	q log [-f|clear] show / tail / clear the debug log
+//	q rebuild        rebuild the cheatsheet index cache
+//	q lint           report cross-file duplicate commands
 package main
 
 import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/0xDTC/0xq/internal/combos"
 	"github.com/0xDTC/0xq/internal/config"
 	"github.com/0xDTC/0xq/internal/executor"
 	"github.com/0xDTC/0xq/internal/fill"
 	"github.com/0xDTC/0xq/internal/index"
 	"github.com/0xDTC/0xq/internal/parser"
+	"github.com/0xDTC/0xq/internal/qlog"
 	"github.com/0xDTC/0xq/internal/session"
 	"github.com/0xDTC/0xq/internal/tui"
 )
@@ -42,13 +42,26 @@ func main() {
 		args = args[1:]
 	}
 
+	// Boot the action log early so every subcommand entry shows up
+	// even for one-shot invocations. Errors are swallowed inside
+	// qlog.Init — the tool must never break because logging can't.
+	if env, err := config.Load(); err == nil {
+		qlog.Init(env.DataDir)
+	}
+	defer qlog.Close()
+	qlog.Enter("main", "argv="+strings.Join(os.Args, " "), "inline=", inline)
+	defer qlog.Exit("main", "done")
+
 	if len(args) == 0 {
+		qlog.Infof("dispatch: interactive (no args)")
 		if err := interactive("", inline); err != nil {
+			qlog.Errorf("interactive: %v", err)
 			fmt.Fprintln(os.Stderr, "[-]", err)
 			os.Exit(1)
 		}
 		return
 	}
+	qlog.Infof("dispatch: %s (args=%v)", args[0], args[1:])
 	switch args[0] {
 	case "--version", "-v":
 		fmt.Println("q", version, "(go port)")
@@ -64,12 +77,17 @@ func main() {
 			fmt.Fprintln(os.Stderr, "[-] lint:", err)
 			os.Exit(1)
 		}
-	case "combos", "combo":
-		runCombos(args[1:])
 	case "config":
 		runConfig(args[1:])
 	case "history":
 		runHistory()
+	case "log":
+		runLog(args[1:])
+	case "edit":
+		if err := runEdit(strings.Join(args[1:], " ")); err != nil {
+			fmt.Fprintln(os.Stderr, "[-] edit:", err)
+			os.Exit(1)
+		}
 	default:
 		// Anything else is treated as an initial query. Matches the
 		// bash tree — `q nmap` = interactive picker pre-filtered to nmap.
@@ -84,24 +102,39 @@ func usage() {
 	fmt.Fprintf(os.Stderr, `q — Fast command launcher for pentesters (go port %s)
 
 USAGE
-    q [query]                Interactive picker (default; optional initial query)
+    q [query]                Picker over cheatsheets (default)
+    q edit [query]           Open a cheatsheet in $EDITOR (fuzzy match)
     q rebuild                Rebuild the cheatsheet index cache
     q lint                   Report cross-file duplicate commands
-    q combos [list|forget]   List / forget captured personal combos
     q config get NAME        Read config knob (from ~/.config/q/config.sh)
     q history                Show current session's command history
+    q log [-f|clear]         Show / tail / clear the debug log
     q --version | -v
     q --help | -h
 
-Fill / builder / [s] save / Ctrl+B/M/X/D keybinds land in follow-up
-commits as their supporting packages come online. Selecting a command
-today prints the raw template (with {{placeholders}} intact) so you
-can inspect it; execution+fill lands next session.
+PICKER KEYS
+    Enter                   run — fills placeholders (reuses last values silently)
+    Ctrl+F / F4 / Alt+↵     run BUT prompt for every placeholder (change IP/path/…)
+    Ctrl+E / F3             open the selected cheatsheet in $EDITOR (auto-rebuild)
+    ↑↓ / ^K ^J              move        Esc         quit
+    (type)                  fuzzy-filter across title, tool, tags, category
+
+CONFIRM KEYS  (after fill, before execution)
+    Enter                   run the command
+    v                       Change values — re-prompt every placeholder
+    e                       Edit text — open the assembled command in $EDITOR
+    q                       cancel
+
+PLACEHOLDERS  (in cheatsheet command templates)
+    {{NAME}}                       plain string
+    {{NAME:choice:a,b=hint,c}}     pick from a list, optional hints
+    {{NAME:helpflags:tool}}        pick a flag from ` + "`tool --help`" + ` output
+    {{?TAG}}...{{/TAG}}            optional block (asks yes/no)
 `, version)
 }
 
-// interactive runs the default picker flow: read index + combos,
-// show the NATIVE bubbletea picker. On selection:
+// interactive runs the default picker flow: read the cheatsheet
+// index, show the NATIVE bubbletea picker. On selection:
 //   - if inline is true (Ctrl+Q widget), the FILLED command goes
 //     to stdout so the shell can slot it into the buffer;
 //   - otherwise the executor confirm-and-runs it.
@@ -122,11 +155,10 @@ func interactive(query string, inline bool) error {
 		}
 	}
 
-	combRows := combos.EmitPickerRows(env.DataDir)
 	mru := session.MRU(env.DataDir)
 	osFilter := env.Get("Q_OS_FILTER", "")
 
-	// Build MRU rank lookup.
+	// Build MRU rank lookup so recent picks sort to the top.
 	mruRank := map[string]int{}
 	for i, t := range mru {
 		if _, ok := mruRank[t]; !ok {
@@ -134,15 +166,9 @@ func interactive(query string, inline bool) error {
 		}
 	}
 
-	// Assemble tui.Row set: combos rank 0 (top), MRU cheatsheets
-	// rank 101+, everything else 999999.
+	// Assemble tui.Row set: MRU cheatsheets rank 1..N (top),
+	// everything else rank 999999.
 	var rows []tui.Row
-	for _, e := range combRows {
-		if !platformOK(e.Platform, osFilter) {
-			continue
-		}
-		rows = append(rows, entryToRow(e, "⚙", 0))
-	}
 	for _, e := range entries {
 		if !platformOK(e.Platform, osFilter) {
 			continue
@@ -151,7 +177,7 @@ func interactive(query string, inline bool) error {
 		rk := 999999
 		if r, ok := mruRank[e.Title]; ok {
 			mark = "★ "
-			rk = r + 100
+			rk = r
 		}
 		rows = append(rows, entryToRow(e, mark, rk))
 	}
@@ -168,41 +194,90 @@ func interactive(query string, inline bool) error {
 		return renderPreview(e, previewSess)
 	}
 
+	// Ctrl+E opens the highlighted cheatsheet's source in $EDITOR.
+	// F3 is bound as a tmux-safe alias — Ctrl+E is often free but
+	// some terminals bind it to end-of-line.
+	editAction := func(_ *tui.Row, _ string) (bool, error) { return true, nil }
 	res, err := tui.Show(tui.Options{
 		Prompt:       "q> ",
-		Header:       "★ recent  ⚙ combo  Enter=run  Esc=quit  ↑↓ = move",
+		Header:       "★ recent  Enter=run  Ctrl+F/F4=change vars  Ctrl+E/F3=edit file  Esc=quit",
 		Rows:         rows,
 		InitialQuery: query,
 		Preview:      preview,
 		PreviewRatio: 0.4,
+		Binds: []tui.Bind{
+			{Key: "ctrl+e", Label: "edit", Action: editAction},
+			{Key: "f3", Label: "edit", Action: editAction},
+			// Ctrl+F / F4 / Alt+Enter → force the Interactive fill
+			// flow so the user gets a picker for every placeholder
+			// (last-used values pre-selected on top). Ctrl+F matches
+			// the bash tree's binding for muscle-memory continuity.
+			{Key: "ctrl+f", Label: "vars", Action: func(_ *tui.Row, _ string) (bool, error) { return true, nil }},
+			{Key: "f4", Label: "vars", Action: func(_ *tui.Row, _ string) (bool, error) { return true, nil }},
+			{Key: "alt+enter", Label: "vars", Action: func(_ *tui.Row, _ string) (bool, error) { return true, nil }},
+		},
 	})
 	if err != nil {
 		return err
+	}
+	if res != nil && res.FiredBind == "edit" {
+		if res.Selected == nil {
+			fmt.Fprintln(os.Stderr, "[*] Nothing to edit.")
+			return nil
+		}
+		e := res.Selected.Payload.(index.Entry)
+		qlog.Action("picker", "edit", "src=%s title=%q", e.Source, e.Title)
+		if err := openInEditor(env, e.Source); err != nil {
+			return err
+		}
+		if err := rebuildIndex(); err != nil {
+			qlog.Warnf("rebuild after edit: %v", err)
+		}
+		return interactive(query, inline)
 	}
 	if res == nil || res.Cancelled || res.Selected == nil {
 		fmt.Fprintln(os.Stderr, "[*] No command selected.")
 		return nil
 	}
 	sel := res.Selected.Payload.(index.Entry)
+	forceInteractiveFill := res.FiredBind == "vars"
+	if forceInteractiveFill {
+		qlog.Action("picker", "force-interactive", "title=%q", sel.Title)
+	}
 
-	// Capture the template as a combo, bump the MRU by title.
-	_ = combos.Bump(env.DataDir, sel.Command)
+	// Bump the MRU by title so this cheatsheet sorts to the top next
+	// time. The cheatsheet file IS the source of truth; user edits
+	// it directly with Ctrl+E when they want to change the template.
 	_ = session.BumpMRU(env.DataDir, sel.Title)
 
-	// Fill placeholders. Try auto (session vars + defaults) first;
-	// fall back to interactive if any placeholder is unresolved or
-	// the command has {{?...}} optional blocks.
 	sess, err := session.New(env.SessionDir())
 	if err != nil {
 		return err
 	}
+	return runFillAndConfirm(env, sess, sel.Command, forceInteractiveFill, inline)
+}
+
+// runFillAndConfirm handles the fill → confirm → outcome loop for one
+// command template. Broken out so the confirm dialog's [v] Change
+// values option can loop back through fill.Interactive without
+// duplicating the code.
+func runFillAndConfirm(env *config.Env, sess *session.Session, template string, forceInteractive, inline bool) error {
 	st := fill.NewState(sess, filepath.Join(env.DataDir, "var_history"))
-	filled, err := st.Auto(sel.Command)
-	if err != nil {
-		if !errors.Is(err, fill.ErrUnresolved) && !errors.Is(err, fill.ErrOptional) {
-			return err
+
+	for {
+		var filled string
+		var err error
+		if forceInteractive {
+			filled, err = st.Interactive(template)
+		} else {
+			filled, err = st.Auto(template)
+			if err != nil {
+				if !errors.Is(err, fill.ErrUnresolved) && !errors.Is(err, fill.ErrOptional) {
+					return err
+				}
+				filled, err = st.Interactive(template)
+			}
 		}
-		filled, err = st.Interactive(sel.Command)
 		if err != nil {
 			return err
 		}
@@ -210,17 +285,86 @@ func interactive(query string, inline bool) error {
 			fmt.Fprintln(os.Stderr, "[*] Fill cancelled.")
 			return nil
 		}
-	}
 
-	// Inline mode — return the filled command on stdout for the
-	// Ctrl+Q shell widget. No exec.
-	if inline {
-		fmt.Print(filled)
-		return nil
+		// Inline mode — hand the assembled command back to the shell
+		// widget on stdout. No confirm/exec loop; the shell drives.
+		if inline {
+			fmt.Print(filled)
+			return nil
+		}
+
+		outcome, err := executor.ConfirmAndRun(sess, filled, true)
+		if err != nil {
+			return err
+		}
+		switch outcome {
+		case executor.OutcomeVars:
+			// User wants to change placeholder values — re-run fill
+			// in Interactive mode, keeping the same template. The
+			// session vars from the previous fill are still on top
+			// of each picker, so Enter reuses / typing replaces.
+			qlog.Action("confirm", "vars", "")
+			forceInteractive = true
+			continue
+		case executor.OutcomeEdit:
+			qlog.Action("confirm", "edit-text", "")
+			edited, err := editTextInEditor(filled)
+			if err != nil {
+				return err
+			}
+			if edited == "" {
+				return nil
+			}
+			// Skip fill on the manually-edited text and go straight
+			// to confirm.
+			outcome2, err := executor.ConfirmAndRun(sess, edited, true)
+			if err != nil || outcome2 != executor.OutcomeVars {
+				return err
+			}
+			// If they hit [v] on the edited text, restart with the
+			// ORIGINAL template so placeholders come back.
+			forceInteractive = true
+			continue
+		default:
+			return nil
+		}
 	}
-	// Confirm + execute.
-	_, err = executor.ConfirmAndRun(sess, filled, true)
-	return err
+}
+
+// editTextInEditor drops the given command into a temp file, opens
+// $EDITOR against it, and returns the (possibly modified) contents.
+// Empty return means the user emptied the file or cancelled somehow;
+// caller should treat that as "don't run anything".
+func editTextInEditor(command string) (string, error) {
+	tmp, err := os.CreateTemp("", "q-edit-*.sh")
+	if err != nil {
+		return "", err
+	}
+	path := tmp.Name()
+	if _, err := tmp.WriteString(command); err != nil {
+		tmp.Close()
+		os.Remove(path)
+		return "", err
+	}
+	tmp.Close()
+	defer os.Remove(path)
+
+	ed := os.Getenv("EDITOR")
+	if ed == "" {
+		ed = "nano"
+	}
+	c := exec.Command(ed, path)
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if err := c.Run(); err != nil {
+		return "", err
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(b)), nil
 }
 
 // entryToRow flattens an index.Entry into a tui.Row. Display carries
@@ -272,46 +416,6 @@ func platformOK(rowPlatform, filter string) bool {
 	return strings.EqualFold(rowPlatform, filter)
 }
 
-func runCombos(args []string) {
-	env, err := config.Load()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "[-]", err)
-		os.Exit(1)
-	}
-	sub := "list"
-	if len(args) > 0 {
-		sub = args[0]
-	}
-	switch sub {
-	case "list":
-		filter := ""
-		if len(args) > 1 {
-			filter = args[1]
-		}
-		combos.List(env.DataDir, filter, os.Stderr)
-	case "forget":
-		if len(args) < 2 {
-			fmt.Fprintln(os.Stderr, "usage: q combos forget TOOL [TEMPLATE]")
-			os.Exit(1)
-		}
-		template := ""
-		if len(args) > 2 {
-			template = args[2]
-		}
-		if err := combos.Forget(env.DataDir, args[1], template); err != nil {
-			fmt.Fprintln(os.Stderr, "[-]", err)
-			os.Exit(1)
-		}
-		fmt.Fprintln(os.Stderr, "[+] forgotten.")
-	case "path":
-		fmt.Println(filepath.Join(env.DataDir, "combos"))
-	default:
-		fmt.Fprintf(os.Stderr, "unknown combos subcommand: %s\n", sub)
-		fmt.Fprintln(os.Stderr, "valid: list [TOOL], forget TOOL [TEMPLATE], path")
-		os.Exit(1)
-	}
-}
-
 func runConfig(args []string) {
 	env, err := config.Load()
 	if err != nil {
@@ -334,6 +438,178 @@ func runConfig(args []string) {
 		key = "Q_" + strings.ToUpper(key)
 	}
 	fmt.Println(env.Get(key, ""))
+}
+
+// runEdit opens a cheatsheet in $EDITOR. When query is empty, fires
+// the picker restricted to Ctrl+E; when query matches one entry
+// unambiguously, opens straight into the editor. On any match count
+// > 1, falls back to a picker pre-filtered to the query so the user
+// disambiguates. After the editor exits, the index rebuilds.
+func runEdit(query string) error {
+	env, err := config.Load()
+	if err != nil {
+		return err
+	}
+	entries, err := index.ReadFile(env.IndexPath())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[*] Index missing, building...")
+		if err := rebuildIndex(); err != nil {
+			return err
+		}
+		entries, err = index.ReadFile(env.IndexPath())
+		if err != nil {
+			return err
+		}
+	}
+
+	// Unambiguous exact-file shortcut: `q edit foo.md` or a path.
+	if query != "" {
+		if _, err := os.Stat(query); err == nil {
+			if err := openInEditor(env, query); err != nil {
+				return err
+			}
+			return rebuildIndex()
+		}
+	}
+
+	// Fuzzy-match query against title, tool, tags. On a single hit
+	// open that file; otherwise show a picker restricted to the hits
+	// so the user picks.
+	scored := make([]index.Entry, 0, len(entries))
+	q := strings.ToLower(query)
+	for _, e := range entries {
+		if q == "" || tui.Score(strings.ToLower(e.Title+" "+e.Tool+" "+e.Tags), q) > 0 {
+			scored = append(scored, e)
+		}
+	}
+	if len(scored) == 0 {
+		fmt.Fprintln(os.Stderr, "[*] no cheatsheet matched", query)
+		return nil
+	}
+	// Collapse to unique source files — same file often holds many
+	// entries and we only need one edit target per file.
+	uniq := map[string]index.Entry{}
+	for _, e := range scored {
+		if _, ok := uniq[e.Source]; !ok {
+			uniq[e.Source] = e
+		}
+	}
+	if len(uniq) == 1 {
+		var target string
+		for src := range uniq {
+			target = src
+		}
+		if err := openInEditor(env, target); err != nil {
+			return err
+		}
+		return rebuildIndex()
+	}
+	// Multiple candidate files → picker.
+	rows := make([]tui.Row, 0, len(uniq))
+	for src, e := range uniq {
+		rows = append(rows, tui.Row{
+			Display: fmt.Sprintf("\x1b[36m%s\x1b[0m  \x1b[2m%s\x1b[0m", e.Tool, src),
+			Search:  e.Tool + " " + e.Title + " " + src,
+			Payload: src,
+		})
+	}
+	res, err := tui.Show(tui.Options{
+		Prompt: "edit> ",
+		Header: "Enter=open in $EDITOR  Esc=quit",
+		Rows:   rows,
+	})
+	if err != nil {
+		return err
+	}
+	if res == nil || res.Cancelled || res.Selected == nil {
+		return nil
+	}
+	src := res.Selected.Payload.(string)
+	if err := openInEditor(env, src); err != nil {
+		return err
+	}
+	return rebuildIndex()
+}
+
+// openInEditor spawns the user's $EDITOR against path. Falls back
+// through EDITOR → VISUAL → nano → vim. Inherits stdio so the editor
+// gets a full-screen TTY.
+//
+// Cheatsheet sources are stored as PATHS RELATIVE TO env.SheetsDir
+// so they stay portable between machines with different repo roots.
+// When called from the Ctrl+Q widget the shell CWD is the user's,
+// not the repo — a naked "web/dirsearch.md" would be looked up in
+// the wrong place and the editor would open a blank buffer (or fail
+// entirely). Resolve to absolute against SheetsDir before spawning.
+func openInEditor(env *config.Env, path string) error {
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(env.SheetsDir, path)
+	}
+	ed := os.Getenv("EDITOR")
+	if ed == "" {
+		ed = os.Getenv("VISUAL")
+	}
+	if ed == "" {
+		for _, cand := range []string{"nano", "vim", "vi"} {
+			if _, err := exec.LookPath(cand); err == nil {
+				ed = cand
+				break
+			}
+		}
+	}
+	if ed == "" {
+		return fmt.Errorf("no editor found — set $EDITOR")
+	}
+	qlog.Infof("openInEditor: %s %s", ed, path)
+	c := exec.Command(ed, path)
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	return c.Run()
+}
+
+// runLog handles `q log`, `q log -f` (tail), and `q log clear`.
+// Path lookup goes through qlog so a Q_LOG_FILE override is honoured.
+func runLog(args []string) {
+	p := qlog.Path()
+	if p == "" {
+		// qlog.Init hasn't set a path (Q_LOG=off or init failed).
+		home, _ := os.UserHomeDir()
+		p = filepath.Join(home, ".local", "share", "q", "debug.log")
+	}
+	sub := ""
+	if len(args) > 0 {
+		sub = args[0]
+	}
+	switch sub {
+	case "-f", "follow", "tail":
+		fmt.Fprintln(os.Stderr, "[*] following", p, "(Ctrl+C to stop)")
+		if err := qlog.Tail(os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "[-]", err)
+			os.Exit(1)
+		}
+	case "clear", "reset":
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+			fmt.Fprintln(os.Stderr, "[-]", err)
+			os.Exit(1)
+		}
+		fmt.Fprintln(os.Stderr, "[+] cleared", p)
+	case "", "cat":
+		b, err := os.ReadFile(p)
+		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Fprintln(os.Stderr, "[*] no log yet at", p)
+				return
+			}
+			fmt.Fprintln(os.Stderr, "[-]", err)
+			os.Exit(1)
+		}
+		os.Stdout.Write(b)
+	default:
+		fmt.Fprintf(os.Stderr, "unknown log subcommand: %s\n", sub)
+		fmt.Fprintln(os.Stderr, "valid: (none|cat) dump; -f follow; clear")
+		os.Exit(1)
+	}
 }
 
 func runHistory() {

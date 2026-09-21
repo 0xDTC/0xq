@@ -11,6 +11,8 @@
 //	{{NAME:choice:v1,v2,v3}}    enum
 //	{{NAME:choice:v1=hint1,v2=hint2}}
 //	                            enum with per-option descriptions
+//	{{NAME:helpflags:tool}}     picker of every flag from `tool --help`
+//	                            (auto-scraped at fill time, 2s timeout)
 //	{{?TAG}}...{{/TAG}}         optional block (see optional.go)
 package fill
 
