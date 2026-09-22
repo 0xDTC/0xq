@@ -41,6 +41,18 @@ cp -f "$SCRIPT_DIR/q" "$BIN_DIR/q"
 chmod +x "$BIN_DIR/q"
 success "installed → $BIN_DIR/q"
 
+# ─── 2b. q-ua helper ────────────────────────────────────────────────────
+# Cheatsheets reference $(q-ua) so every web request sends a fresh,
+# WAF-friendly browser User-Agent (fetched daily from jnrbsn's list,
+# cached for 24h; falls back to a maintained baseline if offline).
+if [[ -f "$SCRIPT_DIR/bin/q-ua" ]]; then
+    cp -f "$SCRIPT_DIR/bin/q-ua" "$BIN_DIR/q-ua"
+    chmod +x "$BIN_DIR/q-ua"
+    success "installed → $BIN_DIR/q-ua"
+else
+    warn "$SCRIPT_DIR/bin/q-ua not found — cheatsheets that call \$(q-ua) will fail"
+fi
+
 # ─── 3. Ctrl+Q widget ───────────────────────────────────────────────────
 # The widget captures stdout, so the picker/executor must speak on
 # /dev/tty. This binary already does — no wrapper needed.

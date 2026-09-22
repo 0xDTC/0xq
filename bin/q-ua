@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# q-ua — prints a current, WAF-friendly browser User-Agent string.
+#
+# WHY THIS EXISTS
+#   A hard-coded UA like "Chrome/131" is fresh today and blocked in six
+#   months (WAFs flag old browser strings as bot fingerprints). This
+#   script fetches jnrbsn's maintained UA list (updated whenever browsers
+#   ship new versions), caches it locally for 24h, and returns whichever
+#   browser you asked for. Zero dependencies at runtime beyond curl+jq.
+#
+# USAGE
+#   q-ua              → latest Chrome UA (default)
+#   q-ua chrome       → same
+#   q-ua firefox      → latest Firefox UA
+#   q-ua safari       → latest Safari UA
+#   q-ua --refresh    → force-refresh the cache before returning
+#   q-ua --list       → print all UA strings the current cache holds
+#
+# ENV
+#   Q_UA_CACHE=<path>    override cache file location
+#   Q_UA_SOURCE=<url>    override the upstream list URL
+#
+# NEVER FAILS — if the network is down or jq is missing, falls back to
+# a monthly-maintained baseline (Chrome-on-Windows) so callers can rely
+# on a valid UA in every environment.
+
+set -eu
+
+CACHE="${Q_UA_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/q/latest-ua.json}"
+SOURCE="${Q_UA_SOURCE:-https://jnrbsn.github.io/user-agents/user-agents.json}"
+
+# Baselines used only when the fetch + cache path both fail. Kept in
+# sync (roughly monthly) so this remains WAF-friendly even offline.
+BASELINE_CHROME='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+BASELINE_FIREFOX='Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0'
+BASELINE_SAFARI='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15'
+
+refresh_cache() {
+    mkdir -p "$(dirname "$CACHE")"
+    # 3s hard timeout so a hung network can't stall a scan.
+    if curl -sfL --max-time 3 "$SOURCE" > "$CACHE.tmp" 2>/dev/null; then
+        mv "$CACHE.tmp" "$CACHE"
+    else
+        rm -f "$CACHE.tmp"
+        return 1
+    fi
+}
+
+cache_stale() {
+    [ ! -s "$CACHE" ] || [ -n "$(find "$CACHE" -mtime +1 2>/dev/null)" ]
+}
+
+want=chrome
+force_refresh=0
+list_only=0
+for arg in "$@"; do
+    case "$arg" in
+        --refresh) force_refresh=1 ;;
+        --list)    list_only=1 ;;
+        chrome|firefox|safari) want=$arg ;;
+        *) echo "q-ua: unknown arg: $arg" >&2; exit 2 ;;
+    esac
+done
+
+if [ "$force_refresh" = 1 ] || cache_stale; then
+    refresh_cache || true
+fi
+
+if [ "$list_only" = 1 ]; then
+    if [ -s "$CACHE" ] && command -v jq >/dev/null 2>&1; then
+        jq -r '.[]' "$CACHE"
+    else
+        printf '%s\n' "$BASELINE_CHROME" "$BASELINE_FIREFOX" "$BASELINE_SAFARI"
+    fi
+    exit 0
+fi
+
+# Cache present + jq available → try to pick from the list.
+if [ -s "$CACHE" ] && command -v jq >/dev/null 2>&1; then
+    # jnrbsn's list is a JSON array of UA strings. Match case-insensitive
+    # on the browser NAME token so "Chrome" doesn't collide with the
+    # "Safari" suffix every Chrome UA carries.
+    case "$want" in
+        chrome)  pattern='Chrome/[0-9]' ;;
+        firefox) pattern='Firefox/[0-9]' ;;
+        safari)  pattern='Version/[0-9].* Safari/' ;;
+    esac
+    ua=$(jq -r --arg p "$pattern" '.[] | select(test($p))' "$CACHE" 2>/dev/null | head -1)
+    if [ -n "$ua" ]; then
+        echo "$ua"
+        exit 0
+    fi
+fi
+
+# Fallback — network or jq unavailable, or pattern didn't match.
+case "$want" in
+    chrome)  echo "$BASELINE_CHROME" ;;
+    firefox) echo "$BASELINE_FIREFOX" ;;
+    safari)  echo "$BASELINE_SAFARI" ;;
+esac
