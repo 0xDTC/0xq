@@ -4,13 +4,15 @@
 
 <!-- tags: web, fuzzing, wfuzz, bruteforce, enumeration -->
 
+> **UA policy:** every command below sets `{{UA:str:...}}` to a modern Chrome-on-Windows string via `-H "User-Agent: ..."` so requests look like a real browser; override the placeholder at fill time when a target expects a different fingerprint. Alternates — Firefox 128 Linux: `Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0` · Safari 17 macOS: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15`.
+
 ---
 
 ## fuzz numeric range wfuzz
 Fuzz a URL with an incrementing numeric range in place of FUZZ.
 
 ```bash
-wfuzz -z range,1-1000 -u {{URL:url:http://target/FUZZ}}
+wfuzz -z range,1-1000 -H "User-Agent: {{UA:str:$(q-ua)}}" -u {{URL:url:http://target/FUZZ}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=range,numeric -->
@@ -21,7 +23,7 @@ wfuzz -z range,1-1000 -u {{URL:url:http://target/FUZZ}}
 Fuzz a URL path with a wordlist to discover directories and files.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -u {{URL:url:http://target/FUZZ}} | tee {{OUTFILE:file:wfuzz.txt}}
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -u {{URL:url:http://target/FUZZ}} | tee {{OUTFILE:file:wfuzz.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=wordlist,directory -->
@@ -32,7 +34,7 @@ wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/comm
 Fuzz a POST body parameter value with a wordlist.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt}} -X POST -u {{URL:url:http://target}} -d "{{PARAM:str:username}}=FUZZ" | tee {{OUTFILE:file:wfuzz.txt}}
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt}} -X POST -H "User-Agent: {{UA:str:$(q-ua)}}" -u {{URL:url:http://target}} -d "{{PARAM:str:username}}=FUZZ" | tee {{OUTFILE:file:wfuzz.txt}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=post,parameters -->
@@ -43,7 +45,7 @@ wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/burp
 Fuzz while hiding noisy responses by status code, word, or char count.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} --hc {{HIDE_CODES:str:404}} --hw {{HIDE_WORDS:int:0}} -u {{URL:url:http://target/FUZZ}}
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" --hc {{HIDE_CODES:str:404}} --hw {{HIDE_WORDS:int:0}} -u {{URL:url:http://target/FUZZ}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=filter,hide,noise -->
@@ -54,7 +56,7 @@ wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/comm
 Fuzz and display only responses that match given status codes.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} --sc {{SHOW_CODES:str:200,301,302}} -u {{URL:url:http://target/FUZZ}}
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" --sc {{SHOW_CODES:str:200,301,302}} -u {{URL:url:http://target/FUZZ}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=filter,show,codes -->
@@ -65,7 +67,7 @@ wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/comm
 Fuzz a GET query-string parameter value.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -u "{{URL:url:http://target/page.php}}?{{PARAM:str:id}}=FUZZ" --hc 404
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -u "{{URL:url:http://target/page.php}}?{{PARAM:str:id}}=FUZZ" --hc 404
 ```
 
 <!-- meta: risk=low | phase=enum | tags=get,parameters -->
@@ -76,7 +78,7 @@ wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/comm
 Brute-force virtual hosts by fuzzing the Host header.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt}} -H "Host: FUZZ.{{DOMAIN:domain:target.com}}" --hw {{HIDE_WORDS:int:0}} -u {{URL:url:http://target}}
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt}} -H "Host: FUZZ.{{DOMAIN:domain:target.com}}" -H "User-Agent: {{UA:str:$(q-ua)}}" --hw {{HIDE_WORDS:int:0}} -u {{URL:url:http://target}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=vhost,subdomain,header -->
@@ -87,7 +89,7 @@ wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/subdomains-t
 Brute-force a login form with two payloads for username and password.
 
 ```bash
-wfuzz -z file,{{USERLIST:wordlist:/usr/share/seclists/Usernames/top-usernames-shortlist.txt}} -z file,{{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -X POST -d "username=FUZZ&password=FUZ2Z" --hc 401,403 -u {{URL:url:http://target/login}}
+wfuzz -z file,{{USERLIST:wordlist:/usr/share/seclists/Usernames/top-usernames-shortlist.txt}} -z file,{{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -X POST -d "username=FUZZ&password=FUZ2Z" -H "User-Agent: {{UA:str:$(q-ua)}}" --hc 401,403 -u {{URL:url:http://target/login}}
 ```
 
 <!-- meta: risk=med | phase=exploit | tags=bruteforce,login,credentials -->
@@ -98,7 +100,7 @@ wfuzz -z file,{{USERLIST:wordlist:/usr/share/seclists/Usernames/top-usernames-sh
 Fuzz protected paths while re-using an authenticated session cookie.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -b "{{COOKIE:str:session=abc123}}" --hc 404 -u {{URL:url:http://target/FUZZ}}
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -b "{{COOKIE:str:session=abc123}}" -H "User-Agent: {{UA:str:$(q-ua)}}" --hc 404 -u {{URL:url:http://target/FUZZ}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=auth,cookie,session -->
@@ -109,7 +111,7 @@ wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/comm
 Slow the scan with limited concurrency and a delay to dodge rate limits.
 
 ```bash
-wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -t {{THREADS:int:5}} -s {{DELAY:int:1}} --hc 404 -u {{URL:url:http://target/FUZZ}}
+wfuzz -z file,{{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -t {{THREADS:int:5}} -s {{DELAY:int:1}} -H "User-Agent: {{UA:str:$(q-ua)}}" --hc 404 -u {{URL:url:http://target/FUZZ}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=stealth,throttle,ratelimit -->

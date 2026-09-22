@@ -4,13 +4,15 @@
 
 <!-- tags: http, request, download, api, web -->
 
+**UA policy:** every outbound request sets an explicit real-browser User-Agent via `{{UA}}` (session-shared across tools). Default = modern Chrome-on-Windows. Alternates: `Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0` (Firefox 128 Linux), `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15` (Safari 17 macOS).
+
 ---
 
 ## send GET request
 Perform a basic HTTP GET request.
 
 ```bash
-curl -s {{URL:url:http://target.com}}
+curl -s -A "{{UA:str:$(q-ua)}}" {{URL:url:http://target.com}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=get,http -->
@@ -21,7 +23,7 @@ curl -s {{URL:url:http://target.com}}
 Send a POST request with a JSON body.
 
 ```bash
-curl -s -X POST {{URL:url:http://target.com/api/login}} -H "Content-Type: application/json" -d '{"{{KEY1:str:username}}":"{{VAL1:str:admin}}","{{KEY2:str:password}}":"{{VAL2:str:password}}"}'
+curl -s -X POST -A "{{UA:str:$(q-ua)}}" {{URL:url:http://target.com/api/login}} -H "Content-Type: application/json" -d '{"{{KEY1:str:username}}":"{{VAL1:str:admin}}","{{KEY2:str:password}}":"{{VAL2:str:password}}"}'
 ```
 
 <!-- meta: risk=low | phase=enum | tags=post,json,api -->
@@ -32,7 +34,7 @@ curl -s -X POST {{URL:url:http://target.com/api/login}} -H "Content-Type: applic
 Send a request with custom HTTP headers.
 
 ```bash
-curl -s {{URL:url:http://target.com/api/data}} -H "Authorization: Bearer {{TOKEN:str:eyJhbGciOi...}}" -H "{{HEADER:str:X-Custom-Header: value}}"
+curl -s -A "{{UA:str:$(q-ua)}}" {{URL:url:http://target.com/api/data}} -H "Authorization: Bearer {{TOKEN:str:eyJhbGciOi...}}" -H "{{HEADER:str:X-Custom-Header: value}}"
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=headers,auth -->
@@ -43,7 +45,7 @@ curl -s {{URL:url:http://target.com/api/data}} -H "Authorization: Bearer {{TOKEN
 Send a request with specific cookies.
 
 ```bash
-curl -s {{URL:url:http://target.com/dashboard}} -b "{{COOKIE:str:session=abc123; role=admin}}"
+curl -s -A "{{UA:str:$(q-ua)}}" {{URL:url:http://target.com/dashboard}} -b "{{COOKIE:str:session=abc123; role=admin}}"
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=cookies,session -->
@@ -54,7 +56,7 @@ curl -s {{URL:url:http://target.com/dashboard}} -b "{{COOKIE:str:session=abc123;
 Route the request through an HTTP or SOCKS proxy.
 
 ```bash
-curl -s {{URL:url:http://target.com}} -x {{PROXY:str:http://127.0.0.1:8080}}
+curl -s -A "{{UA:str:$(q-ua)}}" {{URL:url:http://target.com}} -x {{PROXY:str:http://127.0.0.1:8080}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=proxy,burp -->
@@ -65,7 +67,7 @@ curl -s {{URL:url:http://target.com}} -x {{PROXY:str:http://127.0.0.1:8080}}
 Upload a file via multipart form POST.
 
 ```bash
-curl -s -X POST {{URL:url:http://target.com/upload}} -F "file=@{{FILE:file:shell.php}}" -F "{{FIELD:str:submit}}=Upload"
+curl -s -X POST -A "{{UA:str:$(q-ua)}}" {{URL:url:http://target.com/upload}} -F "file=@{{FILE:file:shell.php}}" -F "{{FIELD:str:submit}}=Upload"
 ```
 
 <!-- meta: risk=med | phase=exploit | tags=upload,file -->
@@ -76,7 +78,7 @@ curl -s -X POST {{URL:url:http://target.com/upload}} -F "file=@{{FILE:file:shell
 Automatically follow HTTP 3xx redirects.
 
 ```bash
-curl -s -L {{URL:url:http://target.com}}
+curl -s -L -A "{{UA:str:$(q-ua)}}" {{URL:url:http://target.com}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=redirect,follow -->
@@ -87,7 +89,7 @@ curl -s -L {{URL:url:http://target.com}}
 Connect to HTTPS targets with invalid or self-signed certificates.
 
 ```bash
-curl -s -k {{URL:url:https://target.com}}
+curl -s -k -A "{{UA:str:$(q-ua)}}" {{URL:url:https://target.com}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=ssl,insecure -->
@@ -109,7 +111,7 @@ curl -v {{URL:url:http://target.com}} 2>&1
 Download a file and save it locally.
 
 ```bash
-curl -s -L -o {{OUTFILE:file:downloaded_file}} {{URL:url:http://target.com/file.zip}}
+curl -s -L -A "{{UA:str:$(q-ua)}}" -o {{OUTFILE:file:downloaded_file}} {{URL:url:http://target.com/file.zip}}
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=download,save -->
@@ -120,7 +122,7 @@ curl -s -L -o {{OUTFILE:file:downloaded_file}} {{URL:url:http://target.com/file.
 Send an application/x-www-form-urlencoded POST body.
 
 ```bash
-curl -X POST -d '{{PARAM:str:user}}={{VALUE:str}}' {{URL:url}}
+curl -X POST -A "{{UA:str:$(q-ua)}}" -d '{{PARAM:str:user}}={{VALUE:str}}' {{URL:url}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=post,form,urlencoded -->
@@ -131,7 +133,7 @@ curl -X POST -d '{{PARAM:str:user}}={{VALUE:str}}' {{URL:url}}
 Persist cookies to disk and replay them on subsequent requests.
 
 ```bash
-curl -c {{COOKIEFILE:file:cookies.txt}} -b {{COOKIEFILE:file:cookies.txt}} {{URL:url}}
+curl -A "{{UA:str:$(q-ua)}}" -c {{COOKIEFILE:file:cookies.txt}} -b {{COOKIEFILE:file:cookies.txt}} {{URL:url}}
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=cookies,session,jar -->
@@ -142,7 +144,7 @@ curl -c {{COOKIEFILE:file:cookies.txt}} -b {{COOKIEFILE:file:cookies.txt}} {{URL
 Send HTTP Basic Authentication credentials.
 
 ```bash
-curl -u '{{USERNAME:str}}:{{PASSWORD:str}}' {{URL:url}}
+curl -A "{{UA:str:$(q-ua)}}" -u '{{USERNAME:str}}:{{PASSWORD:str}}' {{URL:url}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=auth,basic -->
@@ -153,7 +155,7 @@ curl -u '{{USERNAME:str}}:{{PASSWORD:str}}' {{URL:url}}
 Force the request to use HTTP/2 (swap `--http2` for `--http1.1` when needed).
 
 ```bash
-curl --http2 {{URL:url}}
+curl --http2 -A "{{UA:str:$(q-ua)}}" {{URL:url}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=http2,version -->
@@ -164,7 +166,7 @@ curl --http2 {{URL:url}}
 Send an HTTPS request to a specific IP while keeping the SNI/Host as a domain.
 
 ```bash
-curl --resolve {{DOMAIN:domain}}:{{PORT:port:443}}:{{TARGET:ip}} https://{{DOMAIN:domain}}/
+curl --resolve {{DOMAIN:domain}}:{{PORT:port:443}}:{{TARGET:ip}} -A "{{UA:str:$(q-ua)}}" https://{{DOMAIN:domain}}/
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=dns,resolve,vhost,sni -->
@@ -175,7 +177,7 @@ curl --resolve {{DOMAIN:domain}}:{{PORT:port:443}}:{{TARGET:ip}} https://{{DOMAI
 Upload a file using a simple multipart form body.
 
 ```bash
-curl -F 'file=@{{FILE:file}}' {{URL:url}}
+curl -A "{{UA:str:$(q-ua)}}" -F 'file=@{{FILE:file}}' {{URL:url}}
 ```
 
 <!-- meta: risk=med | phase=exploit | tags=upload,multipart -->
@@ -186,7 +188,7 @@ curl -F 'file=@{{FILE:file}}' {{URL:url}}
 Iterate a file of URLs and print each URL's final HTTP status.
 
 ```bash
-while read url; do echo -n "$url: "; curl -IsSL -w '%{http_code}\n' -o /dev/null "$url"; done < {{URLLIST:file:urls.txt}}
+while read url; do echo -n "$url: "; curl -IsSL -A "{{UA:str:$(q-ua)}}" -w '%{http_code}\n' -o /dev/null "$url"; done < {{URLLIST:file:urls.txt}}
 ```
 
 <!-- meta: risk=safe | phase=recon | tags=status,bulk,loop -->
@@ -197,7 +199,7 @@ while read url; do echo -n "$url: "; curl -IsSL -w '%{http_code}\n' -o /dev/null
 Probe a URL to see if it reflects an attacker-controlled Origin header.
 
 ```bash
-curl -sIH "Origin: {{EVIL_ORIGIN:url:https://evil.com}}" -X GET {{URL:url}} | grep -i 'access-control-allow-origin'
+curl -sIH "Origin: {{EVIL_ORIGIN:url:https://evil.com}}" -A "{{UA:str:$(q-ua)}}" -X GET {{URL:url}} | grep -i 'access-control-allow-origin'
 ```
 
 <!-- meta: risk=safe | phase=vuln | tags=cors,origin,reflection -->
@@ -208,7 +210,7 @@ curl -sIH "Origin: {{EVIL_ORIGIN:url:https://evil.com}}" -X GET {{URL:url}} | gr
 Inject a malicious file through a multipart form, simulating a real upload form.
 
 ```bash
-curl -X POST -F "{{SUBMIT_FIELD:str:submit}}={{SUBMIT_VALUE:str:Upload}}" -F "{{FILE_FIELD:str:file}}=@{{FILE:file:shell.php}}" {{URL:url}}
+curl -X POST -A "{{UA:str:$(q-ua)}}" -F "{{SUBMIT_FIELD:str:submit}}={{SUBMIT_VALUE:str:Upload}}" -F "{{FILE_FIELD:str:file}}=@{{FILE:file:shell.php}}" {{URL:url}}
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=upload,multipart,shell -->

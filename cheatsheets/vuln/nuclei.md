@@ -1,247 +1,45 @@
 # Nuclei
 
-> Fast vulnerability scanner powered by community-maintained YAML templates
+> Fast, template-based vulnerability scanner. Trimmed to three focused commands. Every entry pins a real-browser User-Agent — nuclei's default UA is instantly flagged by every WAF worth its salt.
 
-<!-- tags: nuclei, vuln-scan, templates, automation, web -->
+<!-- tags: nuclei, vuln, cve, misconfig, scan, exposure, dast -->
 
----
-
-## scan url all templates
-Scan a target URL using all default templates.
-
-```bash
-nuclei -u {{URL:url}} -o {{OUTFILE:file:nuclei-results.txt}}
-```
-
-<!-- meta: risk=med | phase=vuln | tags=basic,all-templates,scan -->
+> **UA policy** — every command below uses `-H "User-Agent: ..."` with a real Chrome-on-Windows string as the default. At fill time, override with a Firefox or Safari string if you prefer — pick ONE UA per invocation, never stack them.
+>
+> Ready-to-paste alternatives:
+>
+> - **Firefox 128 Linux:** `Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0`
+> - **Safari 17 macOS:** `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15`
 
 ---
 
-## scan filter by severity
-Scan using only templates of a specific severity level.
+## nuclei tech aware cve misconfig exposure
+Chain: whatweb visibility → nuclei -as (wappalyzer picks templates matching the detected tech) restricted to CVE + misconfig + exposure + disclosure + default-login tags. The default scan — checks the target based on what it actually runs, without wasting cycles on irrelevant templates.
 
 ```bash
-nuclei -u {{URL:url}} -s {{SEVERITY:str:critical,high}} -o {{OUTFILE:file:nuclei-severity.txt}}
+url={{URL:url}}; ua={{UA:str:$(q-ua)}}; echo '[+] whatweb tech fingerprint'; whatweb -a3 --user-agent="$ua" "$url" 2>/dev/null | tr ',' '\n' | head -15; echo; echo '[+] nuclei -as + tag filter (cve,misconfig,exposure,disclosure,default-login)'; nuclei -u "$url" -as -tags cve,misconfig,exposure,disclosure,default-login -H "User-Agent: $ua" -stats -si 15 -duc -jle {{OUT:file:nuclei-tech.jsonl}} 2>&1 | tail -20
 ```
 
-<!-- meta: risk=med | phase=vuln | tags=severity,filter,critical -->
+<!-- meta: risk=low | phase=enum | tags=nuclei,whatweb,as,cve,misconfig,exposure,disclosure,default-login,chain -->
 
 ---
 
-## scan specific template
-Run a targeted scan using a specific template or template directory.
+## nuclei via burp caido proxy
+Same tech-aware scan, routed through your local intercepting proxy (Burp/Caido on 127.0.0.1:8080). Every request lands in your history for review, replay, or manual follow-up.
 
 ```bash
-nuclei -u {{URL:url}} -t {{TEMPLATE:choice:cves/=known CVEs,vulnerabilities/=generic vulns,misconfiguration/=misconfigured services,exposures/=exposed files/data,panels/=login/admin panels,technologies/=tech fingerprints,http/=HTTP protocol,network/=network services,dns/=DNS checks,ssl/=TLS/SSL checks,file/=local file scanning,headless/=browser-based,code/=code-execution templates}} -o {{OUTFILE:file:nuclei-template.txt}}
+url={{URL:url}}; ua={{UA:str:$(q-ua)}}; proxy={{PROXY:url:http://127.0.0.1:8080}}; echo "[+] nuclei -as via $proxy (Burp/Caido)"; nuclei -u "$url" -as -tags cve,misconfig,exposure,disclosure,default-login -H "User-Agent: $ua" -proxy "$proxy" -stats -si 15 -duc -jle {{OUT:file:nuclei-via-proxy.jsonl}} 2>&1 | tail -20
 ```
 
-<!-- meta: risk=med | phase=vuln | tags=template,targeted,specific -->
+<!-- meta: risk=low | phase=enum | tags=nuclei,proxy,burp,caido,chain -->
 
 ---
 
-## scan url list
-Scan multiple targets from a file of URLs.
+## nuclei simple full scan
+Just a URL in, complete scan out. No tag filters, no tech restriction — the loudest, most thorough pass across every enabled template. Use when you have permission and time.
 
 ```bash
-nuclei -l {{URLLIST:file:urls.txt}} -s critical,high,medium -o {{OUTFILE:file:nuclei-batch.txt}}
+url={{URL:url}}; ua={{UA:str:$(q-ua)}}; echo '[+] nuclei full-scan (all severities, all templates)'; nuclei -u "$url" -H "User-Agent: $ua" -stats -si 15 -duc -jle {{OUT:file:nuclei-full.jsonl}} 2>&1 | tail -20
 ```
 
-<!-- meta: risk=med | phase=vuln | tags=batch,list,multi-target -->
-
----
-
-## detect technologies fingerprint
-Detect technologies and services without running vulnerability checks.
-
-```bash
-nuclei -u {{URL:url}} -t technologies/ -o {{OUTFILE:file:nuclei-tech.txt}}
-```
-
-<!-- meta: risk=safe | phase=enum | tags=tech-detect,fingerprint,safe -->
-
----
-
-## scan rate-limited stealth
-Scan with controlled request rate to avoid detection or target overload.
-
-```bash
-nuclei -u {{URL:url}} -rl {{RATE:int:50}} -c {{THREADS:int:5}} -s critical,high -o {{OUTFILE:file:nuclei-rated.txt}}
-```
-
-<!-- meta: risk=low | phase=vuln | tags=rate-limit,stealth,controlled -->
-
----
-
-## scan headless browser
-Run templates that require a headless browser for JavaScript-heavy targets.
-
-```bash
-nuclei -u {{URL:url}} -headless -t headless/ -o {{OUTFILE:file:nuclei-headless.txt}}
-```
-
-<!-- meta: risk=med | phase=vuln | tags=headless,browser,javascript -->
-
----
-
-## update templates
-Download or update to the latest community templates.
-
-```bash
-nuclei -update-templates
-```
-
-<!-- meta: risk=safe | phase=misc | tags=update,templates,maintenance -->
-
----
-
-## output json with evidence
-Run a scan with detailed JSON output including matched evidence.
-
-```bash
-nuclei -u {{URL:url}} -s critical,high,medium -json -irr -o {{OUTFILE:file:nuclei-full.json}}
-```
-
-<!-- meta: risk=med | phase=vuln | tags=json,detailed,evidence -->
-
----
-
-## scan sqli injection
-Targeted scan for SQL injection vulnerabilities by tag.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags sqli -itags injection,sqli
-```
-
-<!-- meta: risk=med | phase=vuln | tags=sqli,injection,tag -->
-
----
-
-## scan xss
-Targeted scan for cross-site scripting issues.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags xss -itags xss
-```
-
-<!-- meta: risk=med | phase=vuln | tags=xss,tag -->
-
----
-
-## scan ssrf
-Scan for server-side request forgery.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags ssrf -itags ssrf
-```
-
-<!-- meta: risk=med | phase=vuln | tags=ssrf,tag -->
-
----
-
-## scan subdomain takeover
-Check subdomains for takeover vulnerabilities.
-
-```bash
-nuclei -l {{SUBDOMAINS:file:subdomains.txt}} -tags takeover -itags subdomain,takeover
-```
-
-<!-- meta: risk=med | phase=vuln | tags=takeover,subdomain -->
-
----
-
-## scan path traversal lfi
-Scan for directory traversal vulnerabilities.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags traversal -itags traversal,directory
-```
-
-<!-- meta: risk=med | phase=vuln | tags=traversal,lfi -->
-
----
-
-## scan rce
-Scan for known remote code execution vulnerabilities.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags rce -itags rce,code-execution
-```
-
-<!-- meta: risk=high | phase=vuln | tags=rce,exploitable -->
-
----
-
-## scan default credentials
-Probe for default credential exposures.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags creds -itags default,credentials
-```
-
-<!-- meta: risk=med | phase=vuln | tags=creds,default -->
-
----
-
-## scan exposed git repos
-Find publicly exposed .git directories.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags git -itags git,exposed
-```
-
-<!-- meta: risk=high | phase=vuln | tags=git,exposure -->
-
----
-
-## scan cloud misconfig
-Scan for AWS/GCP/Azure misconfigurations.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags cloud -itags cloud,aws,gcp,azure,misconfig
-```
-
-<!-- meta: risk=med | phase=vuln | tags=cloud,misconfig -->
-
----
-
-## find login admin panels
-Discover exposed admin/login panels.
-
-```bash
-nuclei -l {{URLLIST:file:targets.txt}} -tags login -itags login,admin-panel
-```
-
-<!-- meta: risk=low | phase=enum | tags=login,panels -->
-
----
-
-## scan wordpress vulns
-WordPress-specific vulnerability scan.
-
-```bash
-nuclei -l {{URLLIST:file:wp-sites.txt}} -tags wordpress -itags wordpress,plugin
-```
-
-<!-- meta: risk=med | phase=vuln | tags=wordpress,cms -->
-
----
-
-## classify phishing sites
-Quickly classify URLs as phishing.
-
-```bash
-nuclei -l {{URLLIST:file:phishing-candidates.txt}} -tags phishing -itags phishing
-```
-
-<!-- meta: risk=safe | phase=recon | tags=phishing,classify -->
-
----
-
-## scan by template tags
-Run templates matching specific tags like cve, sqli, xss, etc.
-
-```bash
-nuclei -u {{URL:url}} -tags {{TAGS:str:cve,sqli,xss,lfi}} -o {{OUTFILE:file:nuclei-tags.txt}}
-```
-
-<!-- meta: risk=med | phase=vuln | tags=template-tags,targeted,category -->
+<!-- meta: risk=medium | phase=enum | tags=nuclei,full,complete -->

