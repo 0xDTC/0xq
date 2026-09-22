@@ -4,12 +4,15 @@
 package executor
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/0xDTC/0xq/internal/promote"
 	"github.com/0xDTC/0xq/internal/session"
 )
 
@@ -20,6 +23,8 @@ const (
 	OutcomeRun    Outcome = iota // execute the filled command
 	OutcomeVars                  // re-prompt placeholders (caller reruns fill Interactive)
 	OutcomeEdit                  // open assembled command in $EDITOR
+	OutcomeCopy                  // copy assembled command to system clipboard
+	OutcomeSave                  // save assembled command as a new cheatsheet entry
 	OutcomeCancel                // do nothing
 )
 
@@ -32,6 +37,8 @@ const (
 //	Enter / y / r  → run the command as shown
 //	v              → change placeholder values (return OutcomeVars)
 //	e              → open the assembled command in $EDITOR then re-confirm
+//	c              → copy assembled command to system clipboard, don't run
+//	s              → save as a new cheatsheet entry (caller prompts for name)
 //	q / esc / any  → cancel
 //
 // Non-run outcomes are returned so the caller can loop back through
@@ -47,7 +54,7 @@ func ConfirmAndRun(sess *session.Session, command string, requireConfirm bool) (
 	// 3. Confirm.
 	if requireConfirm {
 		fmt.Fprintln(os.Stderr)
-		fmt.Fprint(os.Stderr, "\x1b[1m[Enter]\x1b[0m Run  \x1b[1m[v]\x1b[0m Change values  \x1b[1m[e]\x1b[0m Edit text  \x1b[1m[q]\x1b[0m Cancel  ")
+		fmt.Fprint(os.Stderr, "\x1b[1m[Enter]\x1b[0m Run  \x1b[1m[v]\x1b[0m Vars  \x1b[1m[e]\x1b[0m Edit  \x1b[1m[c]\x1b[0m Copy  \x1b[1m[s]\x1b[0m Save-as  \x1b[1m[q]\x1b[0m Cancel  ")
 		key, err := readOneKey()
 		fmt.Fprintln(os.Stderr)
 		if err != nil {
@@ -60,17 +67,26 @@ func ConfirmAndRun(sess *session.Session, command string, requireConfirm bool) (
 			return OutcomeVars, nil
 		case 'e', 'E':
 			return OutcomeEdit, nil
+		case 'c', 'C':
+			return OutcomeCopy, nil
+		case 's', 'S':
+			return OutcomeSave, nil
 		default:
 			return OutcomeCancel, nil
 		}
 	}
 
-	// 4. Run.
+	// 4. Run — tee stdout into a size-capped buffer so we can parse it
+	// for artefacts after exit (auto-promote). stderr isn't captured
+	// because tool output that matters is almost always on stdout, and
+	// many tools print progress noise to stderr that would pollute
+	// findings.
 	fmt.Fprintln(os.Stderr, "\x1b[2m--- Executing ---\x1b[0m")
 	start := time.Now()
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
+	capture := &capBuffer{max: 10 << 20} // 10 MiB cap
+	cmd.Stdout = io.MultiWriter(os.Stdout, capture)
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	dur := int(time.Since(start).Seconds())
@@ -86,8 +102,138 @@ func ConfirmAndRun(sess *session.Session, command string, requireConfirm bool) (
 	if sess != nil {
 		_ = sess.HistoryLog(command, rc, dur)
 	}
+	// Auto-promote — parse captured stdout, offer artefacts to the
+	// user. Disabled with Q_PROMOTE=off. Skipped entirely if session
+	// or capture is empty.
+	if sess != nil && capture.Len() > 0 && !strings.EqualFold(os.Getenv("Q_PROMOTE"), "off") {
+		promotePrompt(sess, capture.Bytes())
+	}
 	return OutcomeRun, nil
 }
+
+// promotePrompt runs the promote parser over captured stdout, groups
+// findings by kind, prints a summary, and asks the user whether to
+// add the URL / IP / domain rows as session targets. Hashes get
+// written to a per-session hashes file (never overwritten). UPNs go
+// to a separate users file. All acceptance is opt-in per-run.
+func promotePrompt(sess *session.Session, out []byte) {
+	findings := promote.Parse(string(out))
+	if len(findings) == 0 {
+		return
+	}
+	// Deduplicate: strip anything already in session.Targets().
+	existing := map[string]bool{}
+	for _, t := range sess.Targets() {
+		existing[t.Value] = true
+	}
+	var novel []promote.Finding
+	for _, f := range findings {
+		if existing[f.Value] {
+			continue
+		}
+		novel = append(novel, f)
+	}
+	if len(novel) == 0 {
+		return
+	}
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "\x1b[1;36m[promote] discovered in output:\x1b[0m")
+	byKind := map[promote.Kind][]promote.Finding{}
+	for _, f := range novel {
+		byKind[f.Kind] = append(byKind[f.Kind], f)
+	}
+	for _, k := range []promote.Kind{promote.KindURL, promote.KindPort, promote.KindIP, promote.KindDomain, promote.KindNTLM, promote.KindUPN} {
+		rows := byKind[k]
+		if len(rows) == 0 {
+			continue
+		}
+		fmt.Fprintf(os.Stderr, "  \x1b[35m[%s]\x1b[0m %d\n", k, len(rows))
+		for i, f := range rows {
+			if i >= 5 {
+				fmt.Fprintf(os.Stderr, "    … and %d more\n", len(rows)-5)
+				break
+			}
+			fmt.Fprintf(os.Stderr, "    %s\n", f.Value)
+		}
+	}
+	fmt.Fprint(os.Stderr, "\n\x1b[1mAdd URL/IP/domain rows to session targets? [y/N]\x1b[0m ")
+	key, _ := readOneKey()
+	fmt.Fprintln(os.Stderr)
+	if key != 'y' && key != 'Y' {
+		fmt.Fprintln(os.Stderr, "\x1b[2m[promote] skipped\x1b[0m")
+		return
+	}
+	added := 0
+	for _, f := range novel {
+		switch f.Kind {
+		case promote.KindURL, promote.KindIP, promote.KindDomain:
+			if err := sess.AddTarget(f.Value, "promote"); err == nil {
+				added++
+			}
+		}
+	}
+	// Hashes + UPNs go to per-session files for later reference.
+	if hashes := byKind[promote.KindNTLM]; len(hashes) > 0 {
+		writeSessFile(sess, "hashes.txt", hashes)
+	}
+	if upns := byKind[promote.KindUPN]; len(upns) > 0 {
+		writeSessFile(sess, "users.txt", upns)
+	}
+	fmt.Fprintf(os.Stderr, "\x1b[32m[promote] +%d targets added to session\x1b[0m\n", added)
+}
+
+// writeSessFile appends unique values to <sessDir>/<name>. Used for
+// hashes.txt + users.txt so promoted secrets aren't quietly lost when
+// the user says "no" to target promotion.
+func writeSessFile(sess *session.Session, name string, rows []promote.Finding) {
+	if sess == nil {
+		return
+	}
+	path := sess.Dir + "/" + name
+	existing, _ := os.ReadFile(path)
+	seen := map[string]bool{}
+	for _, line := range strings.Split(string(existing), "\n") {
+		if line != "" {
+			seen[line] = true
+		}
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	for _, r := range rows {
+		if seen[r.Value] {
+			continue
+		}
+		fmt.Fprintln(f, r.Value)
+		seen[r.Value] = true
+	}
+}
+
+// capBuffer is a byte buffer that stops accepting writes past a cap.
+// Prevents a runaway scan from consuming all our memory when we tee
+// its stdout for post-exec parsing.
+type capBuffer struct {
+	buf bytes.Buffer
+	max int
+}
+
+func (c *capBuffer) Write(p []byte) (int, error) {
+	remain := c.max - c.buf.Len()
+	if remain <= 0 {
+		return len(p), nil // pretend we wrote it; drop on floor
+	}
+	if len(p) > remain {
+		c.buf.Write(p[:remain])
+		return len(p), nil
+	}
+	return c.buf.Write(p)
+}
+
+func (c *capBuffer) Len() int      { return c.buf.Len() }
+func (c *capBuffer) Bytes() []byte { return c.buf.Bytes() }
 
 // warnMissingInputPaths mirrors lib/executor.sh — flags path-shaped
 // tokens (start with / ./ ~/ ../) that don't exist AND aren't

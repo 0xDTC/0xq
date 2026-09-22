@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/0xDTC/0xq/internal/session"
+	"github.com/0xDTC/0xq/internal/snippets"
 	"github.com/0xDTC/0xq/internal/tui"
 )
 
@@ -44,23 +45,38 @@ func (st *State) Interactive(cmd string) (string, error) {
 	})
 
 	// 2) Walk placeholders. Dedupe by name — first occurrence wins,
-	//    later duplicates get the same value.
-	phs := UniqueNames(Extract(cmd))
-	for _, p := range phs {
-		val, ok, err := st.resolveOne(p)
-		if err != nil {
-			return "", err
+	//    later duplicates get the same value. Loop the extract-resolve
+	//    pass because a snippet payload injects fresh placeholders
+	//    (e.g. {{PAYLOAD:snippet:rshell-bash-linux}} substitutes to
+	//    text containing {{LHOST}} and {{LPORT}}). Bounded so a
+	//    malformed snippet that keeps expanding can't spin forever.
+	const maxPasses = 8
+	for pass := 0; pass < maxPasses; pass++ {
+		phs := UniqueNames(Extract(cmd))
+		progressed := false
+		for _, p := range phs {
+			if _, done := st.transient[p.Name]; done {
+				continue
+			}
+			val, ok, err := st.resolveOne(p)
+			if err != nil {
+				return "", err
+			}
+			if !ok {
+				// User cancelled a prompt — abort the whole fill.
+				return "", nil
+			}
+			cmd = Substitute(cmd, p.Name, val)
+			st.transient[p.Name] = val
+			// Persist: session (so next time it's the top candidate) +
+			// per-name history (deduped, cap 20).
+			_ = st.Sess.SetVar(p.Name, val)
+			st.appendHistory(p.Name, val)
+			progressed = true
 		}
-		if !ok {
-			// User cancelled a prompt — abort the whole fill.
-			return "", nil
+		if !progressed {
+			break
 		}
-		cmd = Substitute(cmd, p.Name, val)
-		st.transient[p.Name] = val
-		// Persist: session (so next time it's the top candidate) +
-		// per-name history (deduped, cap 20).
-		_ = st.Sess.SetVar(p.Name, val)
-		st.appendHistory(p.Name, val)
 	}
 	return cmd, nil
 }
@@ -142,16 +158,35 @@ func (st *State) Auto(cmd string) (string, error) {
 	if HasOptionalBlocks(cmd) {
 		return "", ErrOptional
 	}
-	phs := UniqueNames(Extract(cmd))
-	for _, p := range phs {
-		v := st.Sess.GetVar(p.Name)
-		if v == "" {
-			v = p.EffectiveDefault()
+	// Loop the extract-substitute pass so a snippet-typed placeholder
+	// can inject fresh placeholders that later passes then resolve.
+	// Bounded to keep a self-referential snippet from spinning forever.
+	const maxPasses = 8
+	for pass := 0; pass < maxPasses; pass++ {
+		phs := UniqueNames(Extract(cmd))
+		if len(phs) == 0 {
+			break
 		}
-		if v == "" {
-			return "", fmt.Errorf("%w: %s", ErrUnresolved, p.Name)
+		before := cmd
+		for _, p := range phs {
+			v := st.Sess.GetVar(p.Name)
+			if v == "" {
+				if p.Type == "snippet" {
+					if payload, ok := snippets.Get(strings.TrimSpace(p.Default)); ok {
+						v = payload
+					}
+				} else {
+					v = p.EffectiveDefault()
+				}
+			}
+			if v == "" {
+				return "", fmt.Errorf("%w: %s", ErrUnresolved, p.Name)
+			}
+			cmd = Substitute(cmd, p.Name, v)
 		}
-		cmd = Substitute(cmd, p.Name, v)
+		if cmd == before {
+			break
+		}
 	}
 	return cmd, nil
 }

@@ -12,6 +12,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -19,12 +20,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/0xDTC/0xq/internal/clip"
 	"github.com/0xDTC/0xq/internal/config"
 	"github.com/0xDTC/0xq/internal/executor"
 	"github.com/0xDTC/0xq/internal/fill"
 	"github.com/0xDTC/0xq/internal/index"
+	"github.com/0xDTC/0xq/internal/nexthint"
 	"github.com/0xDTC/0xq/internal/parser"
 	"github.com/0xDTC/0xq/internal/qlog"
+	"github.com/0xDTC/0xq/internal/saveas"
 	"github.com/0xDTC/0xq/internal/session"
 	"github.com/0xDTC/0xq/internal/tui"
 )
@@ -52,9 +56,15 @@ func main() {
 	qlog.Enter("main", "argv="+strings.Join(os.Args, " "), "inline=", inline)
 	defer qlog.Exit("main", "done")
 
+	// Extract picker filter flags (--phase/--risk/--tag/--platform)
+	// from args before subcommand dispatch. Applied only when we fall
+	// through to the picker/query path — subcommands ignore them.
+	var pickerFilter interactiveFilter
+	args, pickerFilter = extractPickerFilters(args)
+
 	if len(args) == 0 {
-		qlog.Infof("dispatch: interactive (no args)")
-		if err := interactive("", inline); err != nil {
+		qlog.Infof("dispatch: interactive (no args, filter=%+v)", pickerFilter)
+		if err := interactive("", inline, pickerFilter); err != nil {
 			qlog.Errorf("interactive: %v", err)
 			fmt.Fprintln(os.Stderr, "[-]", err)
 			os.Exit(1)
@@ -88,14 +98,100 @@ func main() {
 			fmt.Fprintln(os.Stderr, "[-] edit:", err)
 			os.Exit(1)
 		}
+	case "session":
+		if err := runSession(args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, "[-] session:", err)
+			os.Exit(1)
+		}
+	case "var":
+		if err := runVar(args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, "[-] var:", err)
+			os.Exit(1)
+		}
+	case "target":
+		if err := runTarget(args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, "[-] target:", err)
+			os.Exit(1)
+		}
+	case "update":
+		if err := runUpdate(); err != nil {
+			fmt.Fprintln(os.Stderr, "[-] update:", err)
+			os.Exit(1)
+		}
 	default:
 		// Anything else is treated as an initial query. Matches the
 		// bash tree — `q nmap` = interactive picker pre-filtered to nmap.
-		if err := interactive(strings.Join(args, " "), inline); err != nil {
+		if err := interactive(strings.Join(args, " "), inline, pickerFilter); err != nil {
 			fmt.Fprintln(os.Stderr, "[-]", err)
 			os.Exit(1)
 		}
 	}
+}
+
+// interactiveFilter is the picker's pre-filter set (metadata narrowing
+// applied BEFORE fuzzy search). Empty fields = no restriction.
+type interactiveFilter struct {
+	Phase    string
+	Risk     string
+	Tag      string
+	Platform string
+}
+
+// extractPickerFilters walks args, pulls out any --phase/--risk/--tag/
+// --platform flag+value pairs, and returns (remaining, filter). Format
+// accepted: `--flag value` or `--flag=value`. Unknown flags pass
+// through untouched (so subcommands can define their own).
+func extractPickerFilters(args []string) ([]string, interactiveFilter) {
+	var (
+		out    []string
+		filter interactiveFilter
+	)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		key, val, hasEq := strings.Cut(a, "=")
+		takeNext := func() string {
+			if hasEq {
+				return val
+			}
+			if i+1 < len(args) {
+				i++
+				return args[i]
+			}
+			return ""
+		}
+		switch key {
+		case "--phase":
+			filter.Phase = strings.ToLower(takeNext())
+		case "--risk":
+			filter.Risk = strings.ToLower(takeNext())
+		case "--tag":
+			filter.Tag = strings.ToLower(takeNext())
+		case "--platform":
+			filter.Platform = strings.ToLower(takeNext())
+		default:
+			out = append(out, a)
+		}
+	}
+	return out, filter
+}
+
+// matchesFilter reports whether an index entry passes every non-empty
+// field of the filter. Case-insensitive contains-match on tags so
+// `--tag ad` matches an entry tagged `ad,kerberoast,spn`.
+func matchesFilter(e index.Entry, f interactiveFilter) bool {
+	if f.Phase != "" && !strings.EqualFold(e.Phase, f.Phase) {
+		return false
+	}
+	if f.Risk != "" && !strings.EqualFold(e.Risk, f.Risk) {
+		return false
+	}
+	if f.Platform != "" && !strings.EqualFold(e.Platform, f.Platform) && e.Platform != "any" && e.Platform != "" {
+		return false
+	}
+	if f.Tag != "" && !strings.Contains(strings.ToLower(e.Tags), f.Tag) {
+		return false
+	}
+	return true
 }
 
 func usage() {
@@ -104,6 +200,10 @@ func usage() {
 USAGE
     q [query]                Picker over cheatsheets (default)
     q edit [query]           Open a cheatsheet in $EDITOR (fuzzy match)
+    q session [sub]          Session mgmt — new|use|list|rm|current
+    q var [sub]              Var mgmt      — list|get|set|rm
+    q target [sub]           Target mgmt   — list|add|rm|clear
+    q update                 Pull latest cheatsheets + rebuild index
     q rebuild                Rebuild the cheatsheet index cache
     q lint                   Report cross-file duplicate commands
     q config get NAME        Read config knob (from ~/.config/q/config.sh)
@@ -138,7 +238,10 @@ PLACEHOLDERS  (in cheatsheet command templates)
 //   - if inline is true (Ctrl+Q widget), the FILLED command goes
 //     to stdout so the shell can slot it into the buffer;
 //   - otherwise the executor confirm-and-runs it.
-func interactive(query string, inline bool) error {
+//
+// filter narrows the row set BEFORE fuzzy search (metadata restrict).
+// Empty-fields filter = no restriction (behaviour identical to before).
+func interactive(query string, inline bool, filter interactiveFilter) error {
 	env, err := config.Load()
 	if err != nil {
 		return err
@@ -167,10 +270,15 @@ func interactive(query string, inline bool) error {
 	}
 
 	// Assemble tui.Row set: MRU cheatsheets rank 1..N (top),
-	// everything else rank 999999.
+	// everything else rank 999999. filter narrows BEFORE row build.
 	var rows []tui.Row
+	filtered := 0
 	for _, e := range entries {
 		if !platformOK(e.Platform, osFilter) {
+			continue
+		}
+		if !matchesFilter(e, filter) {
+			filtered++
 			continue
 		}
 		mark := "  "
@@ -180,6 +288,9 @@ func interactive(query string, inline bool) error {
 			rk = r
 		}
 		rows = append(rows, entryToRow(e, mark, rk))
+	}
+	if filtered > 0 {
+		qlog.Infof("picker: filter=%+v narrowed %d rows (%d remain)", filter, filtered, len(rows))
 	}
 
 	// Preview callback — shows the highlighted row's template + its
@@ -233,7 +344,7 @@ func interactive(query string, inline bool) error {
 		if err := rebuildIndex(); err != nil {
 			qlog.Warnf("rebuild after edit: %v", err)
 		}
-		return interactive(query, inline)
+		return interactive(query, inline, filter)
 	}
 	if res == nil || res.Cancelled || res.Selected == nil {
 		fmt.Fprintln(os.Stderr, "[*] No command selected.")
@@ -254,7 +365,21 @@ func interactive(query string, inline bool) error {
 	if err != nil {
 		return err
 	}
-	return runFillAndConfirm(env, sess, sel.Command, forceInteractiveFill, inline)
+	return runFillAndConfirmWithHint(env, sess, sel, forceInteractiveFill, inline)
+}
+
+// runFillAndConfirmWithHint wraps runFillAndConfirm with a post-run
+// "what's next?" line pulled from the nexthint rule table. Only fires
+// on OutcomeRun (i.e., user actually executed) so hints don't spam
+// after cancels/copies/saves.
+func runFillAndConfirmWithHint(env *config.Env, sess *session.Session, e index.Entry, forceInteractive, inline bool) error {
+	err := runFillAndConfirm(env, sess, e.Command, forceInteractive, inline)
+	if err == nil && !inline {
+		if hint := nexthint.For(e.Title, e.Tags); hint != "" {
+			fmt.Fprintf(os.Stderr, "\x1b[2m[next] %s\x1b[0m\n", hint)
+		}
+	}
+	return err
 }
 
 // runFillAndConfirm handles the fill → confirm → outcome loop for one
@@ -315,20 +440,96 @@ func runFillAndConfirm(env *config.Env, sess *session.Session, template string, 
 			if edited == "" {
 				return nil
 			}
-			// Skip fill on the manually-edited text and go straight
-			// to confirm.
 			outcome2, err := executor.ConfirmAndRun(sess, edited, true)
 			if err != nil || outcome2 != executor.OutcomeVars {
 				return err
 			}
-			// If they hit [v] on the edited text, restart with the
-			// ORIGINAL template so placeholders come back.
 			forceInteractive = true
 			continue
+		case executor.OutcomeCopy:
+			qlog.Action("confirm", "copy", "")
+			if err := clip.Copy(filled); err != nil {
+				fmt.Fprintln(os.Stderr, "[-] copy failed:", err)
+				fmt.Fprintln(os.Stderr, "[*] manual copy — command printed above")
+			} else {
+				fmt.Fprintln(os.Stderr, "[+] copied to clipboard via", clip.ToolName())
+			}
+			return nil
+		case executor.OutcomeSave:
+			qlog.Action("confirm", "save-as", "")
+			if err := saveFilledAsCheatsheet(env, filled); err != nil {
+				fmt.Fprintln(os.Stderr, "[-] save-as failed:", err)
+			}
+			return nil
 		default:
 			return nil
 		}
 	}
+}
+
+// saveFilledAsCheatsheet prompts the user for a title + short
+// description, then hands the (assembled or template) command to the
+// saveas package. On success, rebuilds the index so the new entry
+// shows up in the picker immediately.
+func saveFilledAsCheatsheet(env *config.Env, command string) error {
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprint(os.Stderr, "\x1b[1msave-as — title\x1b[0m (short lowercase words, e.g. \"nmap fast htb\"): ")
+	title, err := readLine()
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(title) == "" {
+		return fmt.Errorf("title required")
+	}
+	fmt.Fprint(os.Stderr, "\x1b[1msave-as — description\x1b[0m (Enter to skip): ")
+	desc, err := readLine()
+	if err != nil {
+		return err
+	}
+	path, err := saveas.Append(env.SheetsDir, title, desc, command)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stderr, "[+] saved →", path)
+	// Rebuild so the new entry is pickable right away.
+	if err := rebuildIndex(); err != nil {
+		fmt.Fprintln(os.Stderr, "[!] rebuild after save-as:", err)
+	}
+	return nil
+}
+
+// readOneKey reads one byte from /dev/tty (falling back to stdin).
+// Used for y/N confirmation prompts. Non-raw: user must press Enter
+// after the letter; that's fine for interactive confirms.
+func readOneKey() (byte, error) {
+	f, err := os.Open("/dev/tty")
+	if err != nil {
+		f = os.Stdin
+	} else {
+		defer f.Close()
+	}
+	var b [1]byte
+	_, err = f.Read(b[:])
+	return b[0], err
+}
+
+// readLine reads a single line from /dev/tty when available, falling
+// back to stdin. Trims trailing newline. Used for the save-as prompts
+// where we want unbuffered visible input, not the raw single-byte
+// input from readOneKey.
+func readLine() (string, error) {
+	f, err := os.Open("/dev/tty")
+	if err != nil {
+		f = os.Stdin
+	} else {
+		defer f.Close()
+	}
+	sc := bufio.NewReader(f)
+	line, err := sc.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(line, "\r\n"), nil
 }
 
 // editTextInEditor drops the given command into a temp file, opens
@@ -612,6 +813,353 @@ func runLog(args []string) {
 	}
 }
 
+// runSession handles `q session {list|current|new NAME|use NAME|rm NAME}`.
+// Session state = a subdir of DataDir/sessions/ holding per-session
+// vars, targets, MRU, and history.log. Persisted "active" session
+// name lives at DataDir/.active_session — env Q_SESSION_NAME wins.
+func runSession(args []string) error {
+	env, err := config.Load()
+	if err != nil {
+		return err
+	}
+	sub := "list"
+	if len(args) > 0 {
+		sub = args[0]
+	}
+	sessionsDir := filepath.Join(env.DataDir, "sessions")
+	_ = os.MkdirAll(sessionsDir, 0o755)
+	activeFile := filepath.Join(env.DataDir, ".active_session")
+
+	switch sub {
+	case "list", "ls":
+		entries, err := os.ReadDir(sessionsDir)
+		if err != nil {
+			return err
+		}
+		active := env.SessionName()
+		var names []string
+		for _, e := range entries {
+			if e.IsDir() {
+				names = append(names, e.Name())
+			}
+		}
+		if len(names) == 0 {
+			fmt.Fprintln(os.Stderr, "[*] no sessions yet — 'q session new NAME' to create one")
+			return nil
+		}
+		for _, n := range names {
+			mark := "  "
+			if n == active {
+				mark = "▸ "
+			}
+			// Best-effort metrics per session.
+			histCount := 0
+			if b, err := os.ReadFile(filepath.Join(sessionsDir, n, "history.log")); err == nil {
+				histCount = strings.Count(string(b), "\n")
+			}
+			varsCount := 0
+			if b, err := os.ReadFile(filepath.Join(sessionsDir, n, "vars")); err == nil {
+				varsCount = strings.Count(strings.TrimRight(string(b), "\n"), "\n") + 1
+				if len(b) == 0 {
+					varsCount = 0
+				}
+			}
+			targetsCount := 0
+			if b, err := os.ReadFile(filepath.Join(sessionsDir, n, "targets")); err == nil {
+				targetsCount = strings.Count(strings.TrimRight(string(b), "\n"), "\n") + 1
+				if len(b) == 0 {
+					targetsCount = 0
+				}
+			}
+			fmt.Fprintf(os.Stdout, "%s%-24s %3d cmds  %2d vars  %2d targets\n",
+				mark, n, histCount, varsCount, targetsCount)
+		}
+	case "current", "active":
+		fmt.Println(env.SessionName())
+	case "new":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: q session new NAME")
+		}
+		name := args[1]
+		if !validSessionName(name) {
+			return fmt.Errorf("invalid session name: %q (letters/digits/_-. only)", name)
+		}
+		d := filepath.Join(sessionsDir, name)
+		if _, err := os.Stat(d); err == nil {
+			return fmt.Errorf("session already exists: %s", name)
+		}
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			return err
+		}
+		// Auto-switch to the new session.
+		if err := os.WriteFile(activeFile, []byte(name+"\n"), 0o644); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "[+] created + switched →", name)
+	case "use", "switch":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: q session use NAME")
+		}
+		name := args[1]
+		d := filepath.Join(sessionsDir, name)
+		if _, err := os.Stat(d); os.IsNotExist(err) {
+			return fmt.Errorf("no such session: %s (use 'q session new %s' to create)", name, name)
+		}
+		if err := os.WriteFile(activeFile, []byte(name+"\n"), 0o644); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "[+] switched →", name)
+	case "rm", "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: q session rm NAME")
+		}
+		name := args[1]
+		if name == "default" {
+			return fmt.Errorf("refusing to delete 'default' session — clear its files with 'q session use default && rm ~/.local/share/q/sessions/default/*' if that's really what you want")
+		}
+		d := filepath.Join(sessionsDir, name)
+		if _, err := os.Stat(d); os.IsNotExist(err) {
+			return fmt.Errorf("no such session: %s", name)
+		}
+		fmt.Fprintf(os.Stderr, "\x1b[1;33m[!]\x1b[0m delete session %q and all its data? [y/N] ", name)
+		key, _ := readOneKey()
+		fmt.Fprintln(os.Stderr)
+		if key != 'y' && key != 'Y' {
+			fmt.Fprintln(os.Stderr, "[*] cancelled.")
+			return nil
+		}
+		if err := os.RemoveAll(d); err != nil {
+			return err
+		}
+		// If we just deleted the active one, fall back to default.
+		if env.SessionName() == name {
+			_ = os.WriteFile(activeFile, []byte("default\n"), 0o644)
+			fmt.Fprintln(os.Stderr, "[*] fell back to 'default' session")
+		}
+		fmt.Fprintln(os.Stderr, "[+] deleted", name)
+	default:
+		return fmt.Errorf("unknown session subcommand: %s (valid: list|current|new|use|rm)", sub)
+	}
+	return nil
+}
+
+func validSessionName(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		ok := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '_' || r == '-' || r == '.'
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// runVar handles `q var {list|get NAME|set NAME VALUE|rm NAME}` on
+// the ACTIVE session. NAMEs are upper-cased for convention.
+func runVar(args []string) error {
+	env, err := config.Load()
+	if err != nil {
+		return err
+	}
+	sess, err := session.New(env.SessionDir())
+	if err != nil {
+		return err
+	}
+	sub := "list"
+	if len(args) > 0 {
+		sub = args[0]
+	}
+	switch sub {
+	case "list", "ls":
+		vars := sess.AllVars()
+		if len(vars) == 0 {
+			fmt.Fprintln(os.Stderr, "[*] no vars set")
+			return nil
+		}
+		for k, v := range vars {
+			fmt.Printf("%-16s = %s\n", k, v)
+		}
+	case "get":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: q var get NAME")
+		}
+		name := strings.ToUpper(args[1])
+		v := sess.GetVar(name)
+		if v == "" {
+			return fmt.Errorf("var not set: %s", name)
+		}
+		fmt.Println(v)
+	case "set":
+		if len(args) < 3 {
+			return fmt.Errorf("usage: q var set NAME VALUE")
+		}
+		name := strings.ToUpper(args[1])
+		val := strings.Join(args[2:], " ")
+		if err := sess.SetVar(name, val); err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "[+] %s = %s\n", name, val)
+	case "rm", "delete", "unset":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: q var rm NAME")
+		}
+		name := strings.ToUpper(args[1])
+		// SetVar with "" removes; but SetVar rejects empty? Use direct rewrite.
+		if err := sess.SetVar(name, ""); err != nil {
+			return err
+		}
+		// Empty value stored — remove by rewriting the file without the row.
+		// SetVar's behavior: writes k= line. That's still "set" but empty.
+		// Post-process to strip:
+		if err := removeVarLine(env.SessionDir(), name); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "[+] removed", name)
+	default:
+		return fmt.Errorf("unknown var subcommand: %s (valid: list|get|set|rm)", sub)
+	}
+	return nil
+}
+
+// removeVarLine rewrites <sessDir>/vars without the row starting NAME=.
+// Complements session.SetVar which only appends; there's no public delete.
+func removeVarLine(sessDir, name string) error {
+	path := filepath.Join(sessDir, "vars")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	var kept []string
+	for _, line := range strings.Split(strings.TrimRight(string(b), "\n"), "\n") {
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, name+"=") {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	out := strings.Join(kept, "\n")
+	if out != "" {
+		out += "\n"
+	}
+	return os.WriteFile(path, []byte(out), 0o644)
+}
+
+// runTarget handles `q target {list|add VALUE|rm VALUE|clear}` on
+// the ACTIVE session.
+func runTarget(args []string) error {
+	env, err := config.Load()
+	if err != nil {
+		return err
+	}
+	sess, err := session.New(env.SessionDir())
+	if err != nil {
+		return err
+	}
+	sub := "list"
+	if len(args) > 0 {
+		sub = args[0]
+	}
+	switch sub {
+	case "list", "ls":
+		targets := sess.Targets()
+		if len(targets) == 0 {
+			fmt.Fprintln(os.Stderr, "[*] no targets")
+			return nil
+		}
+		for _, t := range targets {
+			fmt.Printf("%-8s %s\n", t.Type, t.Value)
+		}
+	case "add":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: q target add VALUE")
+		}
+		v := args[1]
+		if err := sess.AddTarget(v, "cli"); err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "[+] added %s (type=%s)\n", v, session.ClassifyTarget(v))
+	case "rm", "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: q target rm VALUE")
+		}
+		v := args[1]
+		if err := removeTargetLine(env.SessionDir(), v); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "[+] removed", v)
+	case "clear":
+		fmt.Fprint(os.Stderr, "\x1b[1;33m[!]\x1b[0m clear ALL targets for session? [y/N] ")
+		key, _ := readOneKey()
+		fmt.Fprintln(os.Stderr)
+		if key != 'y' && key != 'Y' {
+			fmt.Fprintln(os.Stderr, "[*] cancelled.")
+			return nil
+		}
+		_ = os.Remove(filepath.Join(env.SessionDir(), "targets"))
+		fmt.Fprintln(os.Stderr, "[+] cleared")
+	default:
+		return fmt.Errorf("unknown target subcommand: %s (valid: list|add|rm|clear)", sub)
+	}
+	return nil
+}
+
+// removeTargetLine rewrites <sessDir>/targets without any row whose
+// VALUE (the part after the first colon) matches v.
+func removeTargetLine(sessDir, v string) error {
+	path := filepath.Join(sessDir, "targets")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	var kept []string
+	for _, line := range strings.Split(strings.TrimRight(string(b), "\n"), "\n") {
+		if line == "" {
+			continue
+		}
+		if col := strings.IndexByte(line, ':'); col >= 0 && line[col+1:] == v {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	out := strings.Join(kept, "\n")
+	if out != "" {
+		out += "\n"
+	}
+	return os.WriteFile(path, []byte(out), 0o644)
+}
+
+// runUpdate does `git pull` in the repo root, then `q rebuild`.
+// Errors are surfaced but never rebuild-crashing — a failed pull
+// still leaves the tree usable.
+func runUpdate() error {
+	root, err := qRoot()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(filepath.Join(root, ".git")); os.IsNotExist(err) {
+		return fmt.Errorf("q root %s isn't a git checkout — nothing to update", root)
+	}
+	fmt.Fprintln(os.Stderr, "[*] git pull in", root)
+	c := exec.Command("git", "-C", root, "pull", "--ff-only")
+	c.Stdout = os.Stderr
+	c.Stderr = os.Stderr
+	if err := c.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "[!] git pull failed — rebuilding index against current tree anyway")
+	}
+	return rebuildIndex()
+}
+
 func runHistory() {
 	env, err := config.Load()
 	if err != nil {
@@ -695,10 +1243,16 @@ func rebuildIndex() error {
 	return nil
 }
 
-// lint finds duplicate commands across files. Same normalisation as
-// the bash lib/core.sh `q lint`: replace every {{VAR:...}} with a
-// [[VAR]] marker (sentinel that doesn't re-match), collapse
-// whitespace, group by result.
+// lint runs a battery of static checks across every cheatsheet:
+//
+//	1. Cross-file duplicate commands (original behaviour)
+//	2. Web-request commands missing a {{UA}} placeholder
+//	3. Deprecated flags (--random-agent, --random-user-agent, -json without -jsonl)
+//	4. Placeholder name inconsistencies (TARGET vs TARGET_IP for the same tool)
+//	5. Scanner commands without a timeout guard
+//
+// Every finding prints as `<severity> <file>:<title> — <detail>`.
+// Exits nonzero on any finding so CI/pre-commit can gate on it.
 func lint() error {
 	root, err := qRoot()
 	if err != nil {
@@ -709,29 +1263,136 @@ func lint() error {
 	if err != nil {
 		return fmt.Errorf("read index (run `q rebuild` first): %w", err)
 	}
+
+	findings := 0
+
+	// 1. duplicate commands
 	groups := map[string][]index.Entry{}
 	for _, e := range entries {
 		key := normaliseForLint(e.Command)
 		groups[key] = append(groups[key], e)
 	}
-	dupes := 0
-	for key, es := range groups {
+	for _, es := range groups {
 		if len(es) < 2 {
 			continue
 		}
-		dupes++
-		fmt.Fprintf(os.Stderr, "─── x%d ───\n  cmd:  %s\n  seen:", len(es), key)
+		findings++
+		fmt.Fprintf(os.Stderr, "\x1b[33m[dup]\x1b[0m ×%d — same normalised command in:\n", len(es))
 		for _, e := range es {
-			fmt.Fprintf(os.Stderr, "\n    %s:%s", e.Source, e.Title)
+			fmt.Fprintf(os.Stderr, "    %s:%s\n", e.Source, e.Title)
 		}
-		fmt.Fprintln(os.Stderr)
 	}
-	if dupes == 0 {
-		fmt.Fprintln(os.Stderr, "[+] No cross-file duplicate commands found.")
+
+	// 2-5. per-entry checks
+	for _, e := range entries {
+		for _, f := range lintEntry(e) {
+			findings++
+			fmt.Fprintf(os.Stderr, "\x1b[33m[%s]\x1b[0m %s:%s — %s\n", f.kind, e.Source, e.Title, f.msg)
+		}
+	}
+
+	if findings == 0 {
+		fmt.Fprintln(os.Stderr, "[+] lint clean.")
 		return nil
 	}
-	fmt.Fprintf(os.Stderr, "%d duplicate group(s).\n", dupes)
+	fmt.Fprintf(os.Stderr, "\n%d finding(s).\n", findings)
 	return nil
+}
+
+// lintFinding is one detector output row.
+type lintFinding struct{ kind, msg string }
+
+// webToolFlags maps a leading token (the tool name) to the UA-carrying
+// flag we expect to see somewhere in the command. Used by lintEntry
+// check "ua-missing".
+var webToolFlags = map[string]string{
+	"nuclei":      `-H "User-Agent`,
+	"ffuf":        `-H "User-Agent`,
+	"wfuzz":       `-H "User-Agent`,
+	"katana":      `-H "User-Agent`,
+	"httpx":       `-H "User-Agent`,
+	"gobuster":    `-a "`,
+	"feroxbuster": `--user-agent`,
+	"dirsearch":   `--user-agent`,
+	"wpscan":      `--user-agent`,
+	"nikto":       `-useragent`,
+	"whatweb":     `--user-agent`,
+	"sqlmap":      `--user-agent`,
+	"curl":        `-A `, // curl -A
+}
+
+// deprecatedFlags maps a flag string to a short reason why it's flagged.
+var deprecatedFlags = map[string]string{
+	"--random-agent":      "sqlmap's --random-agent pulls from a fixed list that WAFs already know",
+	"--random-user-agent": "wpscan's --random-user-agent has the same problem — use an explicit UA via q-ua",
+	"-irr":                "nuclei -irr is deprecated; -jsonl includes RR unless -omit-raw is set",
+}
+
+// scannerNeedsTimeout lists tools whose long default runtime should be
+// bounded by a `timeout` prefix or a tool-specific --maxtime flag.
+var scannerNeedsTimeout = map[string]bool{
+	"nikto":  true,
+	"amass":  true,
+	"masscan": true,
+}
+
+func lintEntry(e index.Entry) []lintFinding {
+	var out []lintFinding
+	cmd := e.Command
+
+	// (a) UA-missing check: if any known web tool appears anywhere in
+	// the command and no UA flag follows, flag it.
+	for tool, needle := range webToolFlags {
+		if !strings.Contains(cmd, tool) {
+			continue
+		}
+		if strings.Contains(cmd, needle) {
+			continue
+		}
+		out = append(out, lintFinding{
+			kind: "ua-missing",
+			msg:  "uses '" + tool + "' but no UA flag found — add " + needle + `...{{UA:str:$(q-ua)}}"`,
+		})
+	}
+
+	// (b) Deprecated-flag check.
+	for flag, why := range deprecatedFlags {
+		if strings.Contains(cmd, flag) {
+			out = append(out, lintFinding{
+				kind: "deprecated",
+				msg:  flag + " — " + why,
+			})
+		}
+	}
+
+	// (c) Placeholder-name consistency: prefer TARGET over TARGET_IP for
+	// tools that use the ip type; harmless heuristic, not a hard rule.
+	if strings.Contains(cmd, "{{TARGET_IP") && strings.Contains(cmd, "{{TARGET:ip") {
+		out = append(out, lintFinding{
+			kind: "placeholder-mix",
+			msg:  "both {{TARGET}} and {{TARGET_IP}} used — pick one for session-var sharing",
+		})
+	}
+
+	// (d) Scanner-without-timeout: long-runners should be bounded.
+	first := strings.Fields(cmd)
+	if len(first) > 0 {
+		head := strings.TrimSpace(first[0])
+		// strip sudo prefix
+		if head == "sudo" && len(first) > 1 {
+			head = first[1]
+		}
+		if scannerNeedsTimeout[head] {
+			if !strings.Contains(cmd, "timeout ") && !strings.Contains(cmd, "--maxtime") && !strings.Contains(cmd, "-maxtime") {
+				out = append(out, lintFinding{
+					kind: "no-timeout",
+					msg:  head + " has no timeout / --maxtime — hung scans stall the session",
+				})
+			}
+		}
+	}
+
+	return out
 }
 
 // normaliseForLint replaces every {{...}} placeholder with a

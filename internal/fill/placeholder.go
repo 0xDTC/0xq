@@ -13,6 +13,12 @@
 //	                            enum with per-option descriptions
 //	{{NAME:helpflags:tool}}     picker of every flag from `tool --help`
 //	                            (auto-scraped at fill time, 2s timeout)
+//	{{NAME:wordlist:default}}   picker of curated SecLists/wordlists files
+//	                            (only files that exist on disk are offered)
+//	{{NAME:snippet:key}}        expand a named payload snippet from the
+//	                            snippets library (reverse shells, PTY
+//	                            upgrades, etc.); user can override at
+//	                            fill time by typing a custom value
 //	{{?TAG}}...{{/TAG}}         optional block (see optional.go)
 package fill
 

@@ -2,9 +2,11 @@ package fill
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/0xDTC/0xq/internal/helpscrape"
+	"github.com/0xDTC/0xq/internal/snippets"
 )
 
 // Candidate is one row in the per-variable picker.
@@ -104,6 +106,34 @@ func BuildCandidates(p Placeholder, src Sources) []Candidate {
 				add(Candidate{Value: f.Flag, Tag: "flag", Hint: hint})
 			}
 		}
+	case "wordlist":
+		// Offer curated wordlist files from the standard seclists /
+		// wordlists trees, plus whatever the placeholder default names.
+		// A file the user pinned via Default gets top billing.
+		if p.Default != "" {
+			add(Candidate{Value: p.Default, Tag: "default"})
+		}
+		for _, w := range findWordlists() {
+			add(Candidate{Value: w.path, Tag: "wordlist", Hint: w.size})
+		}
+	case "snippet":
+		// Default field carries the snippet key. Substitute the payload
+		// text — placeholders inside it (e.g. {{LHOST}}) surface on the
+		// next fill pass. The user can override at prompt time by typing
+		// a custom value, exactly like other candidate rows.
+		key := strings.TrimSpace(p.Default)
+		if payload, ok := snippets.Get(key); ok {
+			hint := key
+			for _, s := range snippets.List() {
+				if s.Key == key {
+					if s.Description != "" {
+						hint = s.Description
+					}
+					break
+				}
+			}
+			add(Candidate{Value: payload, Tag: "snippet", Hint: hint})
+		}
 	default:
 		if p.Default != "" {
 			add(Candidate{Value: p.Default, Tag: "default"})
@@ -170,6 +200,86 @@ var lportPresets = []portEntry{
 	{"443", "blends with HTTPS egress"}, {"80", "blends with HTTP egress"},
 	{"8080", "HTTP-alt"}, {"1234", "CTF classic"},
 	{"4443", "HTTPS-alt"}, {"1080", "SOCKS-proxy port"},
+}
+
+// wordlistEntry pairs a path with a display-size hint for the picker.
+type wordlistEntry struct{ path, size string }
+
+// findWordlists sweeps a curated list of standard SecLists + wordlists
+// paths and returns those that actually exist. Not a wide FS crawl —
+// keeps the picker focused on the top-N files a pentester reaches for.
+// Cached for the process lifetime; box layout doesn't change mid-run.
+var (
+	wordlistCache  []wordlistEntry
+	wordlistLoaded bool
+)
+
+func findWordlists() []wordlistEntry {
+	if wordlistLoaded {
+		return wordlistCache
+	}
+	wordlistLoaded = true
+
+	candidates := []string{
+		// Web content
+		"/usr/share/seclists/Discovery/Web-Content/common.txt",
+		"/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-small.txt",
+		"/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt",
+		"/usr/share/seclists/Discovery/Web-Content/big.txt",
+		"/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt",
+		"/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt",
+		// DNS / subdomain
+		"/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt",
+		"/usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt",
+		"/usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt",
+		"/usr/share/seclists/Discovery/DNS/bitquark-subdomains-top100000.txt",
+		// Usernames
+		"/usr/share/seclists/Usernames/Names/names.txt",
+		"/usr/share/seclists/Usernames/xato-net-10-million-usernames.txt",
+		"/usr/share/seclists/Usernames/xato-net-10-million-usernames-dup.txt",
+		// Passwords
+		"/usr/share/wordlists/rockyou.txt",
+		"/usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt",
+		"/usr/share/seclists/Passwords/Common-Credentials/best110.txt",
+		"/usr/share/seclists/Passwords/Leaked-Databases/rockyou-75.txt",
+		// Payloads
+		"/usr/share/seclists/Fuzzing/LFI/LFI-Jhaddix.txt",
+		"/usr/share/seclists/Fuzzing/SQLi/Generic-SQLi.txt",
+		// Parameters
+		"/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt",
+	}
+
+	for _, p := range candidates {
+		info, err := os.Stat(p)
+		if err != nil {
+			continue
+		}
+		wordlistCache = append(wordlistCache, wordlistEntry{
+			path: p,
+			size: humanSize(info.Size()),
+		})
+	}
+	return wordlistCache
+}
+
+// humanSize formats a byte count as "12K" / "34M" / "1.2G".
+func humanSize(n int64) string {
+	switch {
+	case n >= 1<<30:
+		return fmtBytes(float64(n)/(1<<30), "G")
+	case n >= 1<<20:
+		return fmtBytes(float64(n)/(1<<20), "M")
+	case n >= 1<<10:
+		return fmtBytes(float64(n)/(1<<10), "K")
+	}
+	return fmt.Sprintf("%dB", n)
+}
+
+func fmtBytes(v float64, unit string) string {
+	if v >= 10 {
+		return fmt.Sprintf("%.0f%s", v, unit)
+	}
+	return fmt.Sprintf("%.1f%s", v, unit)
 }
 
 func isPortType(typ, name string) bool {
