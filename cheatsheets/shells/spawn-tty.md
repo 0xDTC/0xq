@@ -113,3 +113,14 @@ stty rows {{ROWS:int:40}} cols {{COLS:int:160}}
 ```
 
 <!-- meta: risk=safe | phase=post | tags=stty,rows,cols -->
+
+---
+
+## print reverse shell one-liner (snippet library)
+Emit a one-liner picked from the reusable snippet library. The default (`rshell-bash-linux`) prints the bash TCP reverse shell; type a different key at the fill prompt to swap in `rshell-python3`, `rshell-nc-mkfifo`, or any other entry from `builders/snippets/reverse-shells.yaml`. LHOST/LPORT inside the snippet are resolved on the next fill pass.
+
+```bash
+echo "{{PAYLOAD:snippet:rshell-bash-linux}}"
+```
+
+<!-- meta: risk=safe | phase=post | tags=snippet,reverse-shell,library -->

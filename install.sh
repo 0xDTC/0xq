@@ -132,6 +132,50 @@ case "$CURRENT_SHELL" in
         ;;
 esac
 
+# ─── 3b. shell completions ──────────────────────────────────────────────
+# Tab-complete cheatsheet titles + tool names + subcommand names.
+# Files live in $DATA_DIR/completions/ so the loader lines in .bashrc /
+# .zshrc reference a stable install path (not the source tree).
+COMP_DIR="$HOME/.local/share/q/completions"
+mkdir -p "$COMP_DIR"
+
+install_completion() {
+    local src="$1" dst="$2" rc="$3" shell="$4" loader="$5" marker="$6"
+    if [[ ! -f "$src" ]]; then
+        warn "$src not found — skipping $shell completion"
+        return
+    fi
+    cp -f "$src" "$dst"
+    success "installed → $dst"
+    touch "$rc"
+    if grep -Fq "$marker" "$rc" 2>/dev/null; then
+        info "$shell completion loader already present in $rc — skipping"
+        return
+    fi
+    printf '\n# q — tab completion (cheatsheet titles + tools + subcommands)\n%s\n' \
+        "$loader" >> "$rc"
+    success "$shell completion loader added to $rc"
+}
+
+BASH_LOADER='[ -f ~/.local/share/q/completions/q-completion.bash ] && source ~/.local/share/q/completions/q-completion.bash'
+ZSH_LOADER='fpath=(~/.local/share/q/completions $fpath); autoload -U compinit && compinit -u'
+
+case "$CURRENT_SHELL" in
+    zsh)
+        install_completion "$SCRIPT_DIR/bin/q-completion.zsh"  "$COMP_DIR/q-completion.zsh"  "$HOME/.zshrc"  zsh  "$ZSH_LOADER"  "q/completions/q-completion.zsh"
+        # Also drop the bash file in place in case the user hops shells.
+        install_completion "$SCRIPT_DIR/bin/q-completion.bash" "$COMP_DIR/q-completion.bash" "$HOME/.bashrc" bash "$BASH_LOADER" "q/completions/q-completion.bash"
+        ;;
+    bash)
+        install_completion "$SCRIPT_DIR/bin/q-completion.bash" "$COMP_DIR/q-completion.bash" "$HOME/.bashrc" bash "$BASH_LOADER" "q/completions/q-completion.bash"
+        install_completion "$SCRIPT_DIR/bin/q-completion.zsh"  "$COMP_DIR/q-completion.zsh"  "$HOME/.zshrc"  zsh  "$ZSH_LOADER"  "q/completions/q-completion.zsh"
+        ;;
+    *)
+        [[ -f "$HOME/.bashrc" ]] && install_completion "$SCRIPT_DIR/bin/q-completion.bash" "$COMP_DIR/q-completion.bash" "$HOME/.bashrc" bash "$BASH_LOADER" "q/completions/q-completion.bash"
+        [[ -f "$HOME/.zshrc"  ]] && install_completion "$SCRIPT_DIR/bin/q-completion.zsh"  "$COMP_DIR/q-completion.zsh"  "$HOME/.zshrc"  zsh  "$ZSH_LOADER"  "q/completions/q-completion.zsh"
+        ;;
+esac
+
 # ─── 4. PATH sanity ─────────────────────────────────────────────────────
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     warn "$BIN_DIR is not on your PATH."

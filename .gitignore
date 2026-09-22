@@ -7,3 +7,7 @@
 
 # Runtime cache (produced by q on first run)
 /cache/
+
+# Shipped snippet library — override the user's global *.yaml exclude
+# so these payload catalogs stay tracked in the repo.
+!builders/**/*.yaml
