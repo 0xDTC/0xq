@@ -200,7 +200,7 @@ Run common tools through SOCKS.
 
 ```bash
 proxychains4 -q nxc smb {{INTERNAL_HOST:ip:10.10.20.5}} -u {{USERNAME:str:user}} -p {{PASSWORD:str:pass}}
-proxychains4 -q curl -s {{URL:url:http://10.10.20.5}}
+proxychains4 -q curl -s -A "{{UA:str:$(q-ua)}}" {{URL:url:http://10.10.20.5}}
 ```
 
 <!-- meta: risk=safe | phase=post | tags=pivot,proxychains,tools -->

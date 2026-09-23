@@ -98,7 +98,7 @@ subfinder -d {{DOMAIN:domain}} -es github,rapiddns -o {{OUTFILE:file:filtered-su
 Probe each discovered subdomain to find live HTTP services.
 
 ```bash
-subfinder -d {{DOMAIN:domain}} -silent | httpx -silent -mc 200,301,302 > {{OUTFILE:file:live-subs.txt}}
+subfinder -d {{DOMAIN:domain}} -silent | httpx -H "User-Agent: {{UA:str:$(q-ua)}}" -silent -mc 200,301,302 > {{OUTFILE:file:live-subs.txt}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=subfinder,httpx,live -->
