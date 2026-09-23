@@ -1,0 +1,33 @@
+tool: nmap
+description: network scanner + service enumerator
+flags:
+  - {flag: "-sS",  desc: "TCP SYN stealth scan"}
+  - {flag: "-sT",  desc: "TCP connect scan"}
+  - {flag: "-sU",  desc: "UDP scan"}
+  - {flag: "-sA",  desc: "TCP ACK scan (firewall map)"}
+  - {flag: "-sV",  desc: "service version detection"}
+  - {flag: "-sC",  desc: "default script scan"}
+  - {flag: "-O",   desc: "OS fingerprint"}
+  - {flag: "-A",   desc: "aggressive (implies -sV -sC -O --traceroute)"}
+  - {flag: "-Pn",  desc: "skip host discovery"}
+  - {flag: "-n",   desc: "no DNS resolution"}
+  - {flag: "-sn",  desc: "ping sweep only"}
+  - {flag: "-p-",  desc: "all 65535 TCP ports"}
+  - {flag: "-p",   desc: "port list",              value: {name: "PORTS",   type: "port",   default: "22,80,443"}}
+  - {flag: "-oN",  desc: "normal output file",     value: {name: "OUT",     type: "file",   default: "scan.txt"}}
+  - {flag: "-oX",  desc: "XML output file",        value: {name: "OUT",     type: "file",   default: "scan.xml"}}
+  - {flag: "-oG",  desc: "greppable output",       value: {name: "OUT",     type: "file",   default: "scan.gnmap"}}
+  - {flag: "-oA",  desc: "all output formats",     value: {name: "OUT",     type: "file",   default: "scan"}}
+  - {flag: "-T",   desc: "timing template (0-5)",  value: {name: "TIMING",  type: "choice", default: "4=aggressive,3=normal,0=paranoid,1=sneaky,5=insane"}}
+  - {flag: "--script", desc: "NSE script/category", value: {name: "SCRIPT", type: "choice", default: "vuln=all vuln scripts,default=safe defaults,http-enum=web app enum,smb-enum-shares=SMB shares,smb-vuln-ms17-010=EternalBlue check,ssl-heartbleed=Heartbleed CVE-2014-0160,dns-brute=subdomain brute"}}
+  - {flag: "--min-rate",  desc: "min packet rate", value: {name: "MIN_RATE", type: "int",   default: "1000"}}
+  - {flag: "--max-rate",  desc: "max packet rate", value: {name: "MAX_RATE", type: "int",   default: "1000"}}
+  - {flag: "--top-ports", desc: "scan top N ports", value: {name: "TOPN",    type: "int",   default: "100"}}
+  - {flag: "-f",   desc: "fragment packets"}
+  - {flag: "-D",   desc: "decoy addresses",        value: {name: "DECOYS",  type: "str",   default: "RND:5"}}
+  - {flag: "-v",   desc: "verbose"}
+  - {flag: "-vv",  desc: "very verbose"}
+  - {flag: "-e",   desc: "network interface",      value: {name: "IFACE",   type: "iface"}}
+  - {flag: "-S",   desc: "spoof source IP",        value: {name: "SPOOF",   type: "ip"}}
+positional:
+  - {name: "TARGET", type: "ip"}
