@@ -205,16 +205,23 @@ USAGE
     q target [sub]           Target mgmt   — list|add|rm|clear
     q update                 Pull latest cheatsheets + rebuild index
     q rebuild                Rebuild the cheatsheet index cache
-    q lint                   Report cross-file duplicate commands
+    q lint                   Static checks — dupes / missing UA / no-timeout / deprecated flags
     q config get NAME        Read config knob (from ~/.config/q/config.sh)
     q history                Show current session's command history
     q log [-f|clear]         Show / tail / clear the debug log
     q --version | -v
     q --help | -h
 
+FILTERS  (prepend to any picker/query invocation)
+    --phase X                narrow to phase (recon|enum|attack|post|dfir|...)
+    --risk X                 narrow to risk  (low|medium|high|safe)
+    --tag X                  narrow to entries whose tags contain X (substring)
+    --platform X             narrow to platform (linux|windows|any)
+    e.g.  q --phase attack --tag ad   nmap
+
 PICKER KEYS
     Enter                   run — fills placeholders (reuses last values silently)
-    Ctrl+F / F4 / Alt+↵     run BUT prompt for every placeholder (change IP/path/…)
+    Ctrl+F / F4 / Alt+↵     run BUT prompt for every placeholder (change IP/path/...)
     Ctrl+E / F3             open the selected cheatsheet in $EDITOR (auto-rebuild)
     ↑↓ / ^K ^J              move        Esc         quit
     (type)                  fuzzy-filter across title, tool, tags, category
@@ -223,13 +230,32 @@ CONFIRM KEYS  (after fill, before execution)
     Enter                   run the command
     v                       Change values — re-prompt every placeholder
     e                       Edit text — open the assembled command in $EDITOR
+    c                       Copy assembled command to system clipboard (or OSC52 fallback)
+    s                       Save-as new cheatsheet (prompts title + description)
     q                       cancel
 
 PLACEHOLDERS  (in cheatsheet command templates)
     {{NAME}}                       plain string
+    {{NAME:type:default}}          typed (str|ip|url|port|file|dir|domain|...)
     {{NAME:choice:a,b=hint,c}}     pick from a list, optional hints
     {{NAME:helpflags:tool}}        pick a flag from ` + "`tool --help`" + ` output
+    {{NAME:wordlist:default}}      picker of curated SecLists / wordlists files
+    {{NAME:snippet:key}}           expand a named snippet (reverse shells, PTY upgrades)
     {{?TAG}}...{{/TAG}}            optional block (asks yes/no)
+
+FILES
+    ~/.local/bin/q                     the binary
+    ~/.local/bin/q-ua                  live-UA helper (used by cheatsheets)
+    ~/.local/share/q/                  session state, MRU, debug.log, var_history
+    ~/.local/share/q/sessions/<name>/  per-session vars, targets, history, hashes.txt
+    ~/.config/q/                       config.sh, snippets/*.yaml, enabled tool state
+
+ENV
+    Q_SESSION_NAME  active session (default "default"; see q session)
+    Q_LOG=off       disable debug log entirely
+    Q_PROMOTE=off   disable output auto-promote (parse stdout for IPs/hashes/...)
+    Q_CLIP=osc52    force OSC52 escape for clipboard (tmux + SSH-friendly)
+    EDITOR          $EDITOR / $VISUAL / nano / vim / vi (in that order)
 `, version)
 }
 
@@ -1302,6 +1328,45 @@ func lint() error {
 // lintFinding is one detector output row.
 type lintFinding struct{ kind, msg string }
 
+// containsURL reports whether cmd carries a literal http(s):// URL —
+// used by the UA-missing check to skip curl/wget invocations that
+// don't actually make an outbound HTTP request (local file ops,
+// unix-socket calls, etc.).
+func containsURL(cmd string) bool {
+	return strings.Contains(cmd, "http://") || strings.Contains(cmd, "https://")
+}
+
+// containsURLPlaceholder reports whether cmd uses a {{...:url}} or
+// {{URL...}} placeholder. Chained commands where curl reads $url from
+// an earlier step still need UA spoofing even though the URL isn't
+// literal in the template.
+func containsURLPlaceholder(cmd string) bool {
+	return strings.Contains(cmd, ":url}}") || strings.Contains(cmd, "{{URL") ||
+		strings.Contains(cmd, `"$url"`) || strings.Contains(cmd, "$url ")
+}
+
+// isBotFriendlyURL reports whether the URL in cmd points to a host
+// that returns raw content regardless of User-Agent (GitHub raw,
+// GitHub API, release-download endpoints, PyPA install script). Sending
+// a spoofed UA to these hosts is pointless — they're built for
+// automation.
+func isBotFriendlyURL(cmd string) bool {
+	for _, h := range []string{
+		"raw.githubusercontent.com",
+		"api.github.com",
+		"gist.githubusercontent.com",
+		"github.com/", // covers /releases/latest/download/ + /raw/ redirects
+		"bootstrap.pypa.io",
+		"sh.rustup.rs",
+		"get.docker.com",
+	} {
+		if strings.Contains(cmd, h) {
+			return true
+		}
+	}
+	return false
+}
+
 // webToolFlags maps a leading token (the tool name) to the UA-carrying
 // flag we expect to see somewhere in the command. Used by lintEntry
 // check "ua-missing".
@@ -1342,11 +1407,40 @@ func lintEntry(e index.Entry) []lintFinding {
 
 	// (a) UA-missing check: if any known web tool appears anywhere in
 	// the command and no UA flag follows, flag it.
+	//
+	// Skips (false-positive killers):
+	//   - commands that don't reference an HTTP URL at all (curl
+	//     used for downloading from raw.githubusercontent.com, or
+	//     for local operations, doesn't need spoofing)
+	//   - commands hitting well-known bot-friendly infra (raw.
+	//     githubusercontent.com, api.github.com) — no WAF, UA
+	//     doesn't matter
+	//   - the `web/curl.md` "show verbose request headers" demo entry
+	//     which is teaching curl syntax, not making a real request
 	for tool, needle := range webToolFlags {
 		if !strings.Contains(cmd, tool) {
 			continue
 		}
 		if strings.Contains(cmd, needle) {
+			continue
+		}
+		// Skip if command doesn't hit an HTTP target at all — but
+		// exempt the fuzzers/scanners whose --url or -u flag might
+		// carry the target elsewhere.
+		if tool == "curl" || tool == "wget" {
+			if !containsURL(cmd) && !containsURLPlaceholder(cmd) {
+				continue
+			}
+			if isBotFriendlyURL(cmd) {
+				continue
+			}
+			// The one intentional demo — teaching curl's -v output.
+			if strings.Contains(cmd, "-v ") && strings.Contains(cmd, "2>&1") {
+				continue
+			}
+		}
+		// gobuster dns mode uses DNS, not HTTP — never carries UA.
+		if tool == "gobuster" && strings.Contains(cmd, "gobuster dns") {
 			continue
 		}
 		out = append(out, lintFinding{
@@ -1396,9 +1490,18 @@ func lintEntry(e index.Entry) []lintFinding {
 }
 
 // normaliseForLint replaces every {{...}} placeholder with a
-// [[NAME]] sentinel (extracted from the leading NAME up to the first
-// ':' or '}') so commands that differ only in placeholder metadata
-// collide. The sentinel form doesn't re-match {{...}}, avoiding the
+// [[NAME=default]] sentinel — INCLUDING the default value so two
+// commands with the same skeleton but semantically-different defaults
+// don't collide. Example: `reg query "HKCU:...\Run"` and
+// `reg query "HKLM:...\Putty"` both look like `reg query "[[KEYPATH]]"`
+// under the old name-only rule; now they normalise to distinct
+// `reg query "[[KEYPATH=HKCU:...\Run]]"` vs `[[KEYPATH=HKLM:...\Putty]]`
+// and stay separate.
+//
+// Placeholders without a default still normalise to `[[NAME]]` so
+// `nmap {{TARGET:ip}}` variants collide as before.
+//
+// The sentinel form still doesn't re-match {{...}}, avoiding the
 // infinite-loop bug the bash awk parser once had.
 func normaliseForLint(cmd string) string {
 	var out []byte
@@ -1415,12 +1518,13 @@ func normaliseForLint(cmd string) string {
 				break
 			}
 			inner := cmd[i+2 : end]
-			name := inner
-			if c := indexByteAny(inner, ":}"); c >= 0 {
-				name = inner[:c]
-			}
+			name, def := lintSplitPlaceholder(inner)
 			out = append(out, '[', '[')
 			out = append(out, name...)
+			if def != "" {
+				out = append(out, '=')
+				out = append(out, def...)
+			}
 			out = append(out, ']', ']')
 			i = end + 2
 			continue
@@ -1441,6 +1545,27 @@ func normaliseForLint(cmd string) string {
 		s = s[:len(s)-1]
 	}
 	return s
+}
+
+// lintSplitPlaceholder parses `NAME[:TYPE[:DEFAULT]]` (the inner of
+// a {{...}} token) into (name, default). Returns default="" when the
+// placeholder omits it. Type is discarded — for lint purposes only
+// name + default matter (two commands with different types but same
+// default resolve to the same filled string).
+func lintSplitPlaceholder(inner string) (name, def string) {
+	c1 := indexByteAny(inner, ":}")
+	if c1 < 0 || inner[c1] == '}' {
+		return inner, ""
+	}
+	name = inner[:c1]
+	rest := inner[c1+1:]
+	// Second colon splits type from default.
+	c2 := indexByteAny(rest, ":")
+	if c2 < 0 {
+		return name, "" // only type given, no default
+	}
+	def = rest[c2+1:]
+	return name, def
 }
 
 // Small helpers that avoid importing strings twice; kept local to
