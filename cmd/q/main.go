@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -122,6 +123,11 @@ func main() {
 		}
 	case "doctor":
 		runDoctor()
+	case "new":
+		if err := runNew(args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, "[-] new:", err)
+			os.Exit(1)
+		}
 	default:
 		// Anything else is treated as an initial query. Matches the
 		// bash tree — `q nmap` = interactive picker pre-filtered to nmap.
@@ -209,6 +215,7 @@ USAGE
     q target [sub]           Target mgmt   — list|add|rm|clear
     q update                 Pull latest cheatsheets + rebuild index
     q doctor                 Environment health check — missing tools / outdated versions
+    q new [tool]             Stub a new cheatsheet file (prompts category+desc+tags → $EDITOR)
     q rebuild                Rebuild the cheatsheet index cache
     q lint                   Static checks — dupes / missing UA / no-timeout / deprecated flags
     q config get NAME        Read config knob (from ~/.config/q/config.sh)
@@ -1168,6 +1175,133 @@ func removeTargetLine(sessDir, v string) error {
 		out += "\n"
 	}
 	return os.WriteFile(path, []byte(out), 0o644)
+}
+
+// runNew stubs a new cheatsheet file for a tool the user is about to
+// start capturing. Guides through category + desc + tags via prompts,
+// writes the standard header + one example entry the user can rename,
+// then opens it in $EDITOR and rebuilds the index on exit.
+//
+// tool name comes from args[0] when present; otherwise we prompt.
+func runNew(args []string) error {
+	env, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	// 1) tool name — arg or prompt.
+	var tool string
+	if len(args) > 0 {
+		tool = strings.TrimSpace(args[0])
+	} else {
+		fmt.Fprint(os.Stderr, "\x1b[1mtool name\x1b[0m (lowercase, no spaces): ")
+		if tool, err = readLine(); err != nil {
+			return err
+		}
+		tool = strings.TrimSpace(tool)
+	}
+	if !isValidToolFilename(tool) {
+		return fmt.Errorf("invalid tool name %q — use lowercase letters, digits, _, -, .", tool)
+	}
+
+	// 2) category via picker over existing dirs (accepts a custom name
+	//    typed into the query box for a fresh category).
+	entries, _ := os.ReadDir(env.SheetsDir)
+	var categories []string
+	for _, e := range entries {
+		if e.IsDir() {
+			categories = append(categories, e.Name())
+		}
+	}
+	sort.Strings(categories)
+	rows := make([]tui.Row, 0, len(categories))
+	for _, c := range categories {
+		rows = append(rows, tui.Row{Display: c, Search: c, Payload: c})
+	}
+	res, err := tui.Show(tui.Options{
+		Prompt: "category> ",
+		Header: "pick an existing category — or type a new name + Enter to create it",
+		Rows:   rows,
+	})
+	if err != nil {
+		return err
+	}
+	var category string
+	switch {
+	case res != nil && res.Selected != nil:
+		category = res.Selected.Payload.(string)
+	case res != nil && strings.TrimSpace(res.Query) != "":
+		category = strings.TrimSpace(res.Query)
+		if !isValidToolFilename(category) {
+			return fmt.Errorf("invalid category name %q", category)
+		}
+	default:
+		return fmt.Errorf("cancelled — no category selected")
+	}
+
+	// 3) optional description + tags.
+	fmt.Fprint(os.Stderr, "\x1b[1mone-line description\x1b[0m (Enter to skip): ")
+	desc, _ := readLine()
+	desc = strings.TrimSpace(desc)
+
+	fmt.Fprint(os.Stderr, "\x1b[1mtags\x1b[0m comma-separated, Enter for default: ")
+	tags, _ := readLine()
+	tags = strings.TrimSpace(tags)
+	if tags == "" {
+		tags = tool + "," + category
+	}
+
+	// 4) compose + write. Refuse to clobber an existing file.
+	path := filepath.Join(env.SheetsDir, category, tool+".md")
+	if _, statErr := os.Stat(path); statErr == nil {
+		return fmt.Errorf("already exists: %s (use `q edit %s` to modify)", path, tool)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "# %s\n", tool)
+	if desc != "" {
+		fmt.Fprintf(&buf, "> %s\n", desc)
+	}
+	fmt.Fprintf(&buf, "\n<!-- tags: %s -->\n\n---\n\n", tags)
+	fmt.Fprintf(&buf, "## example first entry\nDescribe what this command does in one line.\n\n"+
+		"```bash\n%s {{TARGET:ip}}\n```\n\n"+
+		"<!-- meta: risk=low | phase=recon | tags=example -->\n", tool)
+
+	if err := os.WriteFile(path, []byte(buf.String()), 0o644); err != nil {
+		return err
+	}
+	rel, _ := filepath.Rel(env.Root, path)
+	if rel == "" {
+		rel = path
+	}
+	fmt.Fprintln(os.Stderr, "[+] created:", rel)
+
+	// 5) open in editor, then rebuild so the new entries show up in
+	//    the picker immediately.
+	if err := openInEditor(env, path); err != nil {
+		fmt.Fprintln(os.Stderr, "[!]", err)
+		fmt.Fprintln(os.Stderr, "[*] file is on disk; run `q edit`", tool, "to open manually")
+	}
+	return rebuildIndex()
+}
+
+// isValidToolFilename mirrors what q accepts as a tool/category name —
+// lowercase letters, digits, '_' '-' '.'. Refuses spaces, slashes,
+// leading dots, etc.
+func isValidToolFilename(s string) bool {
+	if s == "" || s == "." || s == ".." || strings.HasPrefix(s, ".") {
+		return false
+	}
+	for _, r := range s {
+		ok := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') ||
+			r == '_' || r == '-' || r == '.'
+		if !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // runDoctor scans $PATH for every tool the cheatsheets reference and
