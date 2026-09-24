@@ -71,3 +71,69 @@ dirsearch -u {{URL:url:http://target.com/}} --cookie="{{COOKIE:str:session=abc12
 ```
 
 <!-- meta: risk=low | phase=enum | tags=auth,cookie,session -->
+
+---
+
+## scan recursive depth limit
+Recursive dir brute — walk INTO discovered directories, capped at depth 3 so it doesn't run forever.
+
+```bash
+dirsearch -u {{URL:url:http://target.com/}} -r -R {{DEPTH:int:3}} --user-agent="{{UA:str:$(q-ua)}}" -e {{EXTENSIONS:str:php,html,txt,bak}} -o {{OUTFILE:file:dirsearch-recursive.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=recursive,depth,deep -->
+
+---
+
+## scan force extensions from list
+Append each extension to EVERY wordlist entry (not just entries that already have one). Widens the hit surface a lot.
+
+```bash
+dirsearch -u {{URL:url:http://target.com/}} -e {{EXTENSIONS:str:php,asp,aspx,jsp,bak,zip,tar.gz,swp,old,inc}} --force-extensions --user-agent="{{UA:str:$(q-ua)}}" -o {{OUTFILE:file:dirsearch-ext.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=extensions,force,widen -->
+
+---
+
+## scan exclude noisy codes
+Hide 400/403/500 responses from output so 200/301/401 pop visually — useful on apps that WAF-403 everything by default.
+
+```bash
+dirsearch -u {{URL:url:http://target.com/}} --exclude-status={{EXCLUDE:str:400,403,500,502,503}} --user-agent="{{UA:str:$(q-ua)}}" -e {{EXTENSIONS:str:php,html}} -o {{OUTFILE:file:dirsearch-quiet.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=exclude,filter,quiet -->
+
+---
+
+## scan exclude uniform response sizes
+Skip responses of specific byte-lengths — perfect against WAFs / templated 404 pages that all return the same size.
+
+```bash
+dirsearch -u {{URL:url:http://target.com/}} --exclude-sizes={{SIZES:str:1024,2048B}} --user-agent="{{UA:str:$(q-ua)}}" -e {{EXTENSIONS:str:php,html}} -o {{OUTFILE:file:dirsearch-sized.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=exclude,size,filter,waf -->
+
+---
+
+## scan chain from live subdomains list
+Feed the alive-subdomains file from httpx / subfinder → dirsearch iterates over every URL, one scan per target.
+
+```bash
+dirsearch -l {{URL_LIST:file:live-subs.txt}} --http-method GET --user-agent="{{UA:str:$(q-ua)}}" -e {{EXTENSIONS:str:php,html}} -o {{OUTFILE:file:dirsearch-batch.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=batch,list,chain,multi-target -->
+
+---
+
+## scan rate limited stealth
+Throttled scan to slip past rate-limits / IDS — 20 req/sec, 4 threads, only 200/301/401 in output.
+
+```bash
+dirsearch -u {{URL:url:http://target.com/}} -t {{THREADS:int:4}} --max-rate={{RATE:int:20}} -i {{INCLUDE:str:200,301,401}} --user-agent="{{UA:str:$(q-ua)}}" -e {{EXTENSIONS:str:php,html}} -o {{OUTFILE:file:dirsearch-stealth.txt}}
+```
+
+<!-- meta: risk=low | phase=enum | tags=stealth,rate-limit,slow -->
