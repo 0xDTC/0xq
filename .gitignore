@@ -11,3 +11,8 @@
 # Shipped snippet library — override the user's global *.yaml exclude
 # so these payload catalogs stay tracked in the repo.
 !builders/**/*.yaml
+
+# CI workflows — also excluded by the user's global *.yml rule, so
+# re-include the whole .github tree explicitly.
+!.github/
+!.github/**

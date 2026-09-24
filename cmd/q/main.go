@@ -18,6 +18,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/0xDTC/0xq/internal/clip"
@@ -118,6 +120,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, "[-] update:", err)
 			os.Exit(1)
 		}
+	case "doctor":
+		runDoctor()
 	default:
 		// Anything else is treated as an initial query. Matches the
 		// bash tree — `q nmap` = interactive picker pre-filtered to nmap.
@@ -204,6 +208,7 @@ USAGE
     q var [sub]              Var mgmt      — list|get|set|rm
     q target [sub]           Target mgmt   — list|add|rm|clear
     q update                 Pull latest cheatsheets + rebuild index
+    q doctor                 Environment health check — missing tools / outdated versions
     q rebuild                Rebuild the cheatsheet index cache
     q lint                   Static checks — dupes / missing UA / no-timeout / deprecated flags
     q config get NAME        Read config knob (from ~/.config/q/config.sh)
@@ -1163,6 +1168,230 @@ func removeTargetLine(sessDir, v string) error {
 		out += "\n"
 	}
 	return os.WriteFile(path, []byte(out), 0o644)
+}
+
+// runDoctor scans $PATH for every tool the cheatsheets reference and
+// reports availability + version drift + install hints. First thing
+// to run on a fresh machine or after a distro upgrade — surfaces the
+// gaps before they show up as broken commands mid-engagement.
+//
+// Never returns an error — this is a diagnostic, not a gate.
+func runDoctor() {
+	fmt.Fprintln(os.Stderr, "\x1b[1mq doctor\x1b[0m — environment health check\n")
+
+	ok, missing, outdated := 0, 0, 0
+	prevCategory := ""
+
+	for _, t := range doctorTools {
+		if t.Category != prevCategory {
+			if prevCategory != "" {
+				fmt.Fprintln(os.Stderr)
+			}
+			fmt.Fprintf(os.Stderr, "\x1b[1;36m%s\x1b[0m\n", t.Category)
+			prevCategory = t.Category
+		}
+		path, err := exec.LookPath(t.Name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "  \x1b[31m✗\x1b[0m %-24s \x1b[2mmissing\x1b[0m — %s\n", t.Name, t.InstallHint)
+			missing++
+			continue
+		}
+		ver := detectVersion(t)
+		if t.MinVer != "" && ver != "" && versionLess(ver, t.MinVer) {
+			fmt.Fprintf(os.Stderr, "  \x1b[33m⚠\x1b[0m %-24s \x1b[2m%s\x1b[0m — need >= %s for %s\n", t.Name, ver, t.MinVer, t.OutdatedNote)
+			outdated++
+			continue
+		}
+		fmt.Fprintf(os.Stderr, "  \x1b[32m✓\x1b[0m %-24s \x1b[2m%-12s %s\x1b[0m\n", t.Name, truncate(ver, 12), path)
+		ok++
+	}
+
+	// Wordlist paths — not binaries but critical infrastructure.
+	fmt.Fprintln(os.Stderr, "\n\x1b[1;36mWORDLISTS\x1b[0m")
+	for _, p := range doctorPaths {
+		if info, err := os.Stat(p.Path); err == nil {
+			size := ""
+			if !info.IsDir() {
+				size = humanBytes(info.Size())
+			} else {
+				size = "dir"
+			}
+			fmt.Fprintf(os.Stderr, "  \x1b[32m✓\x1b[0m %-24s \x1b[2m%-12s %s\x1b[0m\n", p.Name, size, p.Path)
+			ok++
+		} else {
+			fmt.Fprintf(os.Stderr, "  \x1b[31m✗\x1b[0m %-24s \x1b[2mmissing\x1b[0m — %s\n", p.Name, p.InstallHint)
+			missing++
+		}
+	}
+
+	// Clipboard availability — Copy at the confirm dialog needs one.
+	fmt.Fprintln(os.Stderr, "\n\x1b[1;36mCLIPBOARD\x1b[0m")
+	clipFound := false
+	for _, b := range []string{"wl-copy", "xclip", "xsel", "pbcopy", "clip.exe"} {
+		if p, err := exec.LookPath(b); err == nil {
+			fmt.Fprintf(os.Stderr, "  \x1b[32m✓\x1b[0m %-24s \x1b[2m%s\x1b[0m\n", b, p)
+			clipFound = true
+			break
+		}
+	}
+	if !clipFound {
+		fmt.Fprintf(os.Stderr, "  \x1b[33m→\x1b[0m %-24s \x1b[2mno local tool — OSC52 fallback via /dev/tty will be used\x1b[0m\n", "OSC52")
+	}
+
+	// Summary.
+	fmt.Fprintf(os.Stderr, "\n\x1b[1mSUMMARY\x1b[0m  \x1b[32m%d OK\x1b[0m  \x1b[33m%d outdated\x1b[0m  \x1b[31m%d missing\x1b[0m\n",
+		ok, outdated, missing)
+	if missing > 0 || outdated > 0 {
+		fmt.Fprintln(os.Stderr, "\n\x1b[2mTip: install missing tools with the apt/pipx hints above; upgrade outdated ones for full feature coverage.\x1b[0m")
+	}
+}
+
+// doctorTool describes one tool q doctor checks.
+type doctorTool struct {
+	Name         string   // binary name (LookPath target)
+	Category     string   // grouping header
+	MinVer       string   // "1.5.0" — if set, parse actual version and compare
+	OutdatedNote string   // one-line reason a newer version matters
+	InstallHint  string   // shell-worthy hint if missing
+	VersionCmd   []string // args to invoke for --version (default ["--version"])
+}
+
+// doctorPath is a filesystem-only check (wordlists, not binaries).
+type doctorPath struct {
+	Name        string
+	Path        string
+	InstallHint string
+}
+
+// doctorTools is the curated set of pentester-relevant binaries our
+// cheatsheets reference. Order matters — printed in this order,
+// grouped by Category.
+var doctorTools = []doctorTool{
+	// Core recon / scanning
+	{Name: "nmap", Category: "RECON / SCAN", InstallHint: "apt install nmap"},
+	{Name: "masscan", Category: "RECON / SCAN", InstallHint: "apt install masscan"},
+	{Name: "amass", Category: "RECON / SCAN", InstallHint: "apt install amass"},
+	{Name: "subfinder", Category: "RECON / SCAN", InstallHint: "apt install subfinder  # or: go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"},
+	{Name: "httpx", Category: "RECON / SCAN", InstallHint: "apt install httpx-toolkit  # or: go install github.com/projectdiscovery/httpx/cmd/httpx@latest"},
+	{Name: "whatweb", Category: "RECON / SCAN", InstallHint: "apt install whatweb"},
+
+	// Web brute / fuzz
+	{Name: "ffuf", Category: "WEB / FUZZ", MinVer: "2.0.0", OutdatedNote: "modern -sf/-ach/-input-cmd flags", InstallHint: "apt install ffuf"},
+	{Name: "gobuster", Category: "WEB / FUZZ", InstallHint: "apt install gobuster"},
+	{Name: "feroxbuster", Category: "WEB / FUZZ", InstallHint: "apt install feroxbuster"},
+	{Name: "dirsearch", Category: "WEB / FUZZ", InstallHint: "apt install dirsearch"},
+	{Name: "wfuzz", Category: "WEB / FUZZ", InstallHint: "apt install wfuzz"},
+	{Name: "katana", Category: "WEB / FUZZ", InstallHint: "apt install katana  # or: go install github.com/projectdiscovery/katana/cmd/katana@latest"},
+
+	// Vuln
+	{Name: "nuclei", Category: "VULN", MinVer: "3.0.0", OutdatedNote: "-as / -dast / -jsonl", InstallHint: "apt install nuclei  # or: go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest"},
+	{Name: "nikto", Category: "VULN", InstallHint: "apt install nikto"},
+	{Name: "sqlmap", Category: "VULN", InstallHint: "apt install sqlmap"},
+	{Name: "wpscan", Category: "VULN", InstallHint: "apt install wpscan"},
+
+	// SMB / AD enumeration
+	{Name: "nxc", Category: "AD / SMB", MinVer: "1.5.0", OutdatedNote: "--generate-tgt, --delegate, --computers", InstallHint: "pipx install git+https://github.com/Pennyw0rth/NetExec"},
+	{Name: "smbmap", Category: "AD / SMB", InstallHint: "apt install smbmap"},
+	{Name: "smbclient", Category: "AD / SMB", InstallHint: "apt install smbclient"},
+	{Name: "rpcclient", Category: "AD / SMB", InstallHint: "apt install samba-common-bin"},
+	{Name: "enum4linux-ng", Category: "AD / SMB", InstallHint: "apt install enum4linux-ng"},
+	{Name: "kerbrute", Category: "AD / SMB", InstallHint: "go install github.com/ropnop/kerbrute@latest"},
+	{Name: "impacket-GetUserSPNs", Category: "AD / SMB", InstallHint: "apt install impacket-scripts  # or: pipx install impacket"},
+	{Name: "bloodhound-python", Category: "AD / SMB", InstallHint: "pipx install bloodhound"},
+	{Name: "bloodyAD", Category: "AD / SMB", InstallHint: "pipx install bloodyAD"},
+	{Name: "certipy-ad", Category: "AD / SMB", InstallHint: "pipx install certipy-ad"},
+	{Name: "evil-winrm", Category: "AD / SMB", InstallHint: "apt install evil-winrm"},
+
+	// Cracking
+	{Name: "hashcat", Category: "CRACKING", InstallHint: "apt install hashcat"},
+	{Name: "john", Category: "CRACKING", InstallHint: "apt install john"},
+	{Name: "hydra", Category: "CRACKING", InstallHint: "apt install hydra"},
+
+	// Cloud
+	{Name: "aws", Category: "CLOUD", InstallHint: "apt install awscli  # or: pipx install awscli"},
+	{Name: "kubectl", Category: "CLOUD", InstallHint: "apt install kubectl  # or: snap install kubectl --classic"},
+	{Name: "cloudfox", Category: "CLOUD", InstallHint: "go install github.com/BishopFox/cloudfox@latest"},
+	{Name: "pacu", Category: "CLOUD", InstallHint: "pipx install pacu"},
+	{Name: "scoutsuite", Category: "CLOUD", InstallHint: "pipx install scoutsuite"},
+
+	// Forensics / DFIR
+	{Name: "chainsaw", Category: "FORENSICS", InstallHint: "cargo install chainsaw  # or grab release from github.com/WithSecureLabs/chainsaw"},
+	{Name: "volatility3", Category: "FORENSICS", InstallHint: "pipx install volatility3"},
+
+	// Web-adjacent / auth tools
+	{Name: "jwt_tool", Category: "AUTH / TOKENS", InstallHint: "apt install jwt_tool  # or: pipx install jwt-tool"},
+
+	// General utilities the cheatsheets assume are present
+	{Name: "curl", Category: "UTILS", InstallHint: "apt install curl (usually preinstalled)"},
+	{Name: "jq", Category: "UTILS", InstallHint: "apt install jq"},
+	{Name: "sponge", Category: "UTILS", InstallHint: "apt install moreutils  # for the jq in-place-edit recipe"},
+	{Name: "git", Category: "UTILS", InstallHint: "apt install git"},
+	{Name: "docker", Category: "UTILS", InstallHint: "apt install docker.io  # or docker-ce from docker.com"},
+	{Name: "q-ua", Category: "UTILS", InstallHint: "run ./install.sh again — bin/q-ua should copy to ~/.local/bin/"},
+}
+
+var doctorPaths = []doctorPath{
+	{Name: "SecLists", Path: "/usr/share/seclists", InstallHint: "apt install seclists"},
+	{Name: "rockyou.txt", Path: "/usr/share/wordlists/rockyou.txt", InstallHint: "apt install wordlists && gunzip /usr/share/wordlists/rockyou.txt.gz"},
+	{Name: "burp-params", Path: "/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt", InstallHint: "(part of seclists)"},
+}
+
+// detectVersion invokes the tool with its version arg and returns the
+// first "N.N[.N]" match it finds. Empty string if invocation fails or
+// no version string surfaces (common for tools without --version).
+func detectVersion(t doctorTool) string {
+	args := t.VersionCmd
+	if len(args) == 0 {
+		args = []string{"--version"}
+	}
+	c := exec.Command(t.Name, args...)
+	out, _ := c.CombinedOutput() // ignore non-zero exit; version often prints then exits 1
+	re := regexp.MustCompile(`\b(\d+\.\d+(?:\.\d+)?)\b`)
+	if m := re.FindString(string(out)); m != "" {
+		return m
+	}
+	return ""
+}
+
+// versionLess reports a < b for dotted numeric versions ("1.9" < "1.10").
+func versionLess(a, b string) bool {
+	pa := strings.Split(a, ".")
+	pb := strings.Split(b, ".")
+	for i := 0; i < len(pa) || i < len(pb); i++ {
+		ai, bi := 0, 0
+		if i < len(pa) {
+			ai, _ = strconv.Atoi(pa[i])
+		}
+		if i < len(pb) {
+			bi, _ = strconv.Atoi(pb[i])
+		}
+		if ai != bi {
+			return ai < bi
+		}
+	}
+	return false
+}
+
+// humanBytes formats byte counts as K/M/G.
+func humanBytes(n int64) string {
+	switch {
+	case n >= 1<<30:
+		return fmt.Sprintf("%.1fG", float64(n)/(1<<30))
+	case n >= 1<<20:
+		return fmt.Sprintf("%.0fM", float64(n)/(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%.0fK", float64(n)/(1<<10))
+	}
+	return fmt.Sprintf("%dB", n)
+}
+
+// truncate returns s truncated to at most n characters (added because
+// version strings occasionally spill over the aligned column).
+func truncate(s string, n int) string {
+	if len(s) > n {
+		return s[:n]
+	}
+	return s
 }
 
 // runUpdate does `git pull` in the repo root, then `q rebuild`.

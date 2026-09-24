@@ -1,0 +1,73 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel duplicate runs when a PR gets a fresh push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-lint:
+    name: build + test + lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # `q` needs to find cheatsheets/ from the binary location; when
+      # running the freshly-built ./q from the repo root that path is
+      # implicit. Explicit Q_ROOT keeps the CI environment predictable
+      # even if the working dir changes in later steps.
+      - name: env
+        run: |
+          echo "Q_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go build
+        run: go build -trimpath -ldflags '-s -w' -o q ./cmd/q
+
+      - name: go test
+        run: go test -race -timeout 60s ./...
+
+      - name: q rebuild — cheatsheet index must parse
+        run: |
+          ./q rebuild
+          echo "index size:"
+          wc -l cache/index.tsv
+
+      # q lint prints findings to stderr and exits 0 (findings are
+      # advisory, not errors). CI passes if the finding count doesn't
+      # regress past the baseline. Adjust MAX_FINDINGS when the design
+      # accepts a new intentional cross-list.
+      - name: q lint — no regression past baseline
+        run: |
+          set -o pipefail
+          findings=$(./q lint 2>&1 | tail -1 | grep -oE '^[0-9]+' || echo 0)
+          MAX_FINDINGS=12
+          echo "findings: $findings  baseline: $MAX_FINDINGS"
+          if [ "$findings" -gt "$MAX_FINDINGS" ]; then
+            echo "::error::q lint regressed — $findings findings (baseline is $MAX_FINDINGS). Run 'q lint' locally to see them."
+            ./q lint || true
+            exit 1
+          fi
+
+      - name: staticcheck — no unused symbols
+        # SA1000-level checks are noisy; only flag the U1000 (dead code)
+        # class because we hand-rolled everything and want to catch
+        # exports that lost their last caller.
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          $(go env GOPATH)/bin/staticcheck -checks 'U1000' ./...
