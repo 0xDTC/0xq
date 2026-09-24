@@ -1177,7 +1177,8 @@ func removeTargetLine(sessDir, v string) error {
 //
 // Never returns an error — this is a diagnostic, not a gate.
 func runDoctor() {
-	fmt.Fprintln(os.Stderr, "\x1b[1mq doctor\x1b[0m — environment health check\n")
+	fmt.Fprintln(os.Stderr, "\x1b[1mq doctor\x1b[0m — environment health check")
+	fmt.Fprintln(os.Stderr)
 
 	ok, missing, outdated := 0, 0, 0
 	prevCategory := ""
