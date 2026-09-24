@@ -234,3 +234,45 @@ docker run -it --rm --entrypoint {{SHELL:choice:bash=Bourne-Again shell,sh=POSIX
 ```
 
 <!-- meta: risk=low | phase=post | tags=run,shell,entrypoint,interactive,inside,bash -->
+
+## list all containers running plus stopped
+One table: names, images, status, published ports. First thing you run on a docker host.
+
+```bash
+docker ps -a --format 'table {{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Ports{{"}}"}}'
+```
+
+<!-- meta: risk=low | phase=recon | tags=docker,ps,list,containers -->
+
+---
+
+## delete containers all or one
+Single command with a mode selector — pick `all` to nuke every container on the host, or `single` to remove one by name. When mode=all the CONTAINER prompt is decorative (just Enter through it).
+
+```bash
+mode={{MODE:choice:all=nuke EVERY container,single=remove ONE named container}}; c={{CONTAINER:str:only-used-when-single}}; case "$mode" in all) docker ps -aq | xargs -r docker rm -f && echo '[+] all containers removed' ;; single) docker rm -f "$c" && echo "[+] removed $c" ;; esac
+```
+
+<!-- meta: risk=high | phase=post | tags=docker,rm,delete,cleanup -->
+
+---
+
+## shell into running container
+Drop into an interactive `/bin/sh` inside a running container. Change to `/bin/bash` at fill time if the target has bash.
+
+```bash
+docker exec -it {{CONTAINER:str}} /bin/sh
+```
+
+<!-- meta: risk=low | phase=post | tags=docker,exec,shell,interactive -->
+
+---
+
+## escape check container privileges
+One-shot check for the six configs that matter for container escape: Privileged flag, added capabilities, host bind-mounts, shared host PID/IPC/Network. If any of these light up you have a way out.
+
+```bash
+docker inspect {{CONTAINER:str}} | jq '.[] | {Privileged:.HostConfig.Privileged, CapAdd:.HostConfig.CapAdd, Binds:.HostConfig.Binds, PidMode:.HostConfig.PidMode, IpcMode:.HostConfig.IpcMode, NetworkMode:.HostConfig.NetworkMode}'
+```
+
+<!-- meta: risk=medium | phase=post | tags=docker,escape,privileged,capabilities,inspect -->

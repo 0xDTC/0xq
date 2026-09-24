@@ -113,3 +113,34 @@ git diff {{BRANCH1:choice:main=default branch,master=legacy default,develop=inte
 ```
 
 <!-- meta: risk=safe | phase=misc | tags=diff,compare,branches -->
+
+## set git identity local or global
+Configure user.name + user.email either for the current repo (`--local`) or machine-wide (`--global`). Ends with a readback so you can confirm what was set.
+
+```bash
+git config {{SCOPE:choice:--local=this repo only,--global=whole machine}} user.name "{{NAME:str}}" && git config {{SCOPE:choice:--local=this repo only,--global=whole machine}} user.email "{{EMAIL:str}}" && git config {{SCOPE:choice:--local=this repo only,--global=whole machine}} --get-regexp '^user\.'
+```
+
+<!-- meta: risk=low | phase=setup | tags=git,config,identity,local,global -->
+
+---
+
+## dump every deleted file ever
+Every commit that deleted a file, listing which files vanished. Great for "wait, wasn't there a `secrets.yaml` here?".
+
+```bash
+git log --diff-filter=D --name-only --format='=== %h %s ===' | less
+```
+
+<!-- meta: risk=low | phase=recon | tags=git,history,deleted,secrets -->
+
+---
+
+## checkout file from past commit
+Print the exact contents of one file at a specific commit — recover a file that was later deleted or rewritten.
+
+```bash
+git show {{COMMIT:str:HEAD}}:{{PATH:str:config/secrets.yaml}}
+```
+
+<!-- meta: risk=low | phase=recon | tags=git,show,past,recover -->
