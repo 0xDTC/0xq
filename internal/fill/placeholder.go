@@ -8,9 +8,15 @@
 //	{{NAME}}                    bare — type str, no default
 //	{{NAME:type}}               type only
 //	{{NAME:type:default}}       type + default (default may contain :)
-//	{{NAME:choice:v1,v2,v3}}    enum
+//	{{NAME:choice:v1,v2,v3}}    enum (single-select)
 //	{{NAME:choice:v1=hint1,v2=hint2}}
 //	                            enum with per-option descriptions
+//	{{NAME:multichoice:v1,v2,v3}}
+//	                            multi-select checklist — space to toggle,
+//	                            Enter to commit. Returns the picked
+//	                            values joined by ','. All items start
+//	                            PRE-CHECKED (common case: "I want most
+//	                            of these, let me uncheck a few").
 //	{{NAME:helpflags:tool}}     picker of every flag from `tool --help`
 //	                            (auto-scraped at fill time, 2s timeout)
 //	{{NAME:wordlist:default}}   picker of curated SecLists/wordlists files

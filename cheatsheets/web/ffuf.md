@@ -20,10 +20,10 @@ ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-
 ---
 
 ## fuzz with file name extensions
-Same wordlist, but append each extension in the big list to every entry — surfaces files that dir brute alone misses.
+Same wordlist, but append each extension to every entry — surfaces files that dir brute alone misses. EXTENSIONS is a multichoice: all pre-checked, uncheck what you don't want with space, Enter to confirm.
 
 ```bash
-ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt}} -u {{URL:url:https://{{TARGET:ip}}}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -c -e {{EXTENSIONS:str:.php,.asp,.aspx,.jsp,.cgi,.pl,.py,.rb,.sh,.dll,.exe,.com,.vbs,.bat,.ps1,.md,.psm1,.hta,.jar,.class,.swf,.js,.css,.html,.htm,.txt,.json,.zip,.config,.conf,.bak}} -t {{THREADS:int:1000}} -mc {{MATCH:str:200}} -fs {{FILTER_SIZE:int:0}} -recursion
+ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt}} -u {{URL:url:https://{{TARGET:ip}}}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -c -e {{EXTENSIONS:multichoice:.php=PHP,.asp=Classic ASP,.aspx=ASPNET,.jsp=Java Server Pages,.cgi=CGI script,.pl=Perl,.py=Python,.rb=Ruby,.sh=Shell,.dll=Windows DLL,.exe=Windows EXE,.com=DOS COM,.vbs=VBScript,.bat=Batch,.ps1=PowerShell,.md=Markdown,.psm1=PS module,.hta=HTA,.jar=Java JAR,.class=Java class,.swf=Flash,.js=JavaScript,.css=stylesheet,.html=HTML,.htm=HTM,.txt=text,.json=JSON,.zip=zip,.config=config,.conf=conf,.bak=backup}} -t {{THREADS:int:1000}} -mc {{MATCH:str:200}} -fs {{FILTER_SIZE:int:0}} -recursion
 ```
 
 <!-- meta: risk=low | phase=recon | tags=extensions,recursion,aggressive -->
@@ -53,10 +53,10 @@ ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/shubs-subdomains.t
 ---
 
 ## recursion scan with extensions
-Deeper variant — smaller/faster wordlist, `-ic` (ignore-comments so '#' lines count as valid entries), big extension list, recursion on.
+Deeper variant — smaller/faster wordlist, `-ic` (ignore-comments so '#' lines count as valid entries), multichoice extension picker, recursion on.
 
 ```bash
-ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-small.txt}} -ic -u {{URL:url:http://{{TARGET:ip}}}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -e {{EXTENSIONS:str:.php,.asp,.aspx,.jsp,.cgi,.pl,.py,.rb,.sh,.dll,.exe,.com,.vbs,.bat,.ps1,.md,.psm1,.hta,.jar,.class,.swf,.js,.css,.html,.htm,.txt,.json,.zip,.config,.conf,.bak}} -recursion -t {{THREADS:int:1000}}
+ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-small.txt}} -ic -u {{URL:url:http://{{TARGET:ip}}}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -e {{EXTENSIONS:multichoice:.php=PHP,.asp=Classic ASP,.aspx=ASPNET,.jsp=Java Server Pages,.cgi=CGI script,.pl=Perl,.py=Python,.rb=Ruby,.sh=Shell,.dll=Windows DLL,.exe=Windows EXE,.com=DOS COM,.vbs=VBScript,.bat=Batch,.ps1=PowerShell,.md=Markdown,.psm1=PS module,.hta=HTA,.jar=Java JAR,.class=Java class,.swf=Flash,.js=JavaScript,.css=stylesheet,.html=HTML,.htm=HTM,.txt=text,.json=JSON,.zip=zip,.config=config,.conf=conf,.bak=backup}} -recursion -t {{THREADS:int:1000}}
 ```
 
 <!-- meta: risk=low | phase=recon | tags=recursion,extensions,small-list -->

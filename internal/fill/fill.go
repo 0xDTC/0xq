@@ -91,6 +91,11 @@ func (st *State) resolveOne(p Placeholder) (string, bool, error) {
 	if v, ok := st.transient[p.Name]; ok {
 		return v, true, nil
 	}
+	// multichoice uses a dedicated checklist UI — space to toggle,
+	// Enter to commit, returns comma-joined picked values.
+	if p.Type == "multichoice" {
+		return st.resolveMultichoice(p)
+	}
 	src := Sources{
 		SessionValue: st.Sess.GetVar(p.Name),
 		RecentValues: st.readHistory(p.Name),
@@ -197,6 +202,46 @@ func (st *State) Auto(cmd string) (string, error) {
 		}
 	}
 	return cmd, nil
+}
+
+// resolveMultichoice drives the {{NAME:multichoice:opt1,opt2=hint,opt3}}
+// placeholder. Each option becomes a checklist row — all pre-checked
+// by default, since the real-world case is "I want most of these, let
+// me uncheck a few". Returns the comma-joined set of checked VALUES
+// (not labels, not hints). Esc returns ("", true) = skip; Ctrl+C
+// returns ("", false) = abort whole fill.
+func (st *State) resolveMultichoice(p Placeholder) (string, bool, error) {
+	opts := p.Options()
+	items := make([]tui.ChecklistItem, len(opts))
+	for i, o := range opts {
+		items[i] = tui.ChecklistItem{
+			Label:   o.Value,
+			Value:   o.Value,
+			Hint:    o.Hint,
+			Checked: true, // pre-check all; user unchecks the ones they don't want
+		}
+	}
+	res, err := tui.ShowChecklist(tui.ChecklistOptions{
+		Prompt: "  {{" + p.Name + "}}> ",
+		Header: PromptLabel(p),
+		Items:  items,
+	})
+	if err != nil {
+		return "", false, err
+	}
+	if res == nil || res.Cancelled {
+		if res != nil && res.CancelKey == "ctrl+c" {
+			return "", false, nil
+		}
+		return "", true, nil // Esc = skip (empty)
+	}
+	var picked []string
+	for _, it := range res.Items {
+		if it.Checked {
+			picked = append(picked, it.Value)
+		}
+	}
+	return strings.Join(picked, ","), true, nil
 }
 
 // Sentinels the caller can check with errors.Is.

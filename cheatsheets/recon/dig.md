@@ -15,14 +15,14 @@
 
 ---
 
-## query one record type
-Baseline lookup — pick the record type from the choice list, hit any resolver.
+## query record types multi
+Pick one or many record types from the checklist (space toggles, Enter confirms). dig queries them all in ONE invocation — `dig DOMAIN A MX NS +short` style. `tr , ' '` converts the comma-joined picks into dig's space-separated arg list.
 
 ```bash
-dig @{{SERVER:str:1.1.1.1}} {{DOMAIN:domain}} {{TYPE:choice:A=IPv4 host,AAAA=IPv6 host,CNAME=alias,MX=mail servers,TXT=SPF+DKIM+verification,NS=nameservers,SOA=zone origin,SRV=service record,PTR=reverse lookup,ANY=all records}} +short
+dig @{{SERVER:str:1.1.1.1}} {{DOMAIN:domain}} $(echo "{{TYPES:multichoice:A=IPv4 host,AAAA=IPv6 host,CNAME=alias,MX=mail servers,TXT=SPF+DKIM+verification,NS=nameservers,SOA=zone origin,SRV=service record,PTR=reverse lookup,ANY=all records}}" | tr , ' ') +short
 ```
 
-<!-- meta: risk=low | phase=recon | tags=dig,dns,record,query -->
+<!-- meta: risk=low | phase=recon | tags=dig,dns,record,query,multichoice -->
 
 ---
 
@@ -92,14 +92,14 @@ dig {{DOMAIN:domain}} {{TYPE:choice:A,NS,MX,ANY}} +trace
 
 ---
 
-## query srv record ad services
-AD-adjacent — SRV records expose Kerberos, LDAP, GC, SIP endpoints. Pick the service to lookup; the DC's hostname + port comes back.
+## query srv records ad services multi
+AD-adjacent — SRV records expose Kerberos / LDAP / GC / SIP / password-change endpoints. Multi-select which services to query; a bash for-loop iterates each one against the DC and prints hostname+port. Checklist is pre-populated with the common AD service names.
 
 ```bash
-dig @{{DC_IP:ip}} {{SERVICE:choice:_kerberos._tcp=KDC,_ldap._tcp=LDAP,_gc._tcp=global catalog,_kpasswd._tcp=Kerberos password change,_sip._tcp=SIP,_ldap._tcp.dc._msdcs=DC LDAP,_kerberos._tcp.dc._msdcs=DC KDC}}.{{DOMAIN:domain}} SRV +short
+dc={{DC_IP:ip}}; domain={{DOMAIN:domain}}; for svc in $(echo "{{SERVICES:multichoice:_kerberos._tcp=KDC,_ldap._tcp=LDAP,_gc._tcp=global catalog,_kpasswd._tcp=Kerberos password change,_sip._tcp=SIP,_ldap._tcp.dc._msdcs=DC LDAP,_kerberos._tcp.dc._msdcs=DC KDC}}" | tr , ' '); do echo "[+] $svc.$domain"; dig @"$dc" "$svc.$domain" SRV +short; echo; done
 ```
 
-<!-- meta: risk=low | phase=enum | tags=dig,srv,ad,kerberos,ldap -->
+<!-- meta: risk=low | phase=enum | tags=dig,srv,ad,kerberos,ldap,multichoice -->
 
 ---
 
