@@ -117,24 +117,35 @@ func (st *State) resolveOne(p Placeholder) (string, bool, error) {
 
 	res, err := tui.Show(tui.Options{
 		Prompt: "  {{" + p.Name + "}}> ",
-		Header: PromptLabel(p) + "  |  Enter=pick  Type=custom  Esc=cancel",
+		Header: PromptLabel(p) + "  |  Enter=pick  Type=custom  Esc=skip var  Ctrl+C=abort fill",
 		Rows:   rows,
 	})
 	if err != nil {
 		return "", false, err
 	}
 	if res == nil || res.Cancelled {
-		// Ctrl+C / Esc — but if the user TYPED something, use it as
-		// a custom value; otherwise treat it as skip.
+		// If the user typed something before cancelling, honour it as
+		// a custom value regardless of which exit key fired.
 		if res != nil && res.Query != "" {
 			return res.Query, true, nil
 		}
-		// If a default exists, offer it as the fallback so plain
-		// Esc still lets the pipeline proceed.
+		// Ctrl+C aborts the whole fill flow — caller interprets ok=false
+		// as "cancelled" and bails on the entire command.
+		if res != nil && res.CancelKey == "ctrl+c" {
+			return "", false, nil
+		}
+		// Esc skips just THIS placeholder: fall back to default when
+		// one exists, otherwise substitute empty and continue. Lets
+		// the user opt out of optional flags like `-fs {{SIZE}}`
+		// without aborting the whole command. Note: a lone Esc on a
+		// placeholder with no default yields an empty substitution,
+		// which may leave the surrounding flag dangling — author
+		// cheatsheets with optional blocks ({{?TAG}}...{{/TAG}}) for
+		// flags you commonly want to drop entirely.
 		if def := p.EffectiveDefault(); def != "" {
 			return def, true, nil
 		}
-		return "", false, nil
+		return "", true, nil
 	}
 	// Selected a row from the list.
 	if res.Selected != nil {

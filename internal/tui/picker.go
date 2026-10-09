@@ -96,8 +96,13 @@ type Result struct {
 	// FiredBind is the label of the custom bind that accepted (empty
 	// if plain Enter closed the picker).
 	FiredBind string
-	// Cancelled reports whether Esc/Ctrl-C exited the picker.
+	// Cancelled reports whether Esc OR Ctrl+C exited the picker.
 	Cancelled bool
+	// CancelKey distinguishes which exit key fired: "esc" or "ctrl+c".
+	// Callers that treat them differently (fill flow: Esc=skip-one,
+	// Ctrl+C=abort-all) read this; the generic case can ignore it and
+	// just check Cancelled.
+	CancelKey string
 }
 
 // Show runs the picker as a bubbletea program bound to /dev/tty for
@@ -195,6 +200,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch key {
 		case "esc", "ctrl+c":
 			m.result.Cancelled = true
+			m.result.CancelKey = key
 			m.result.Query = string(m.query)
 			return m, tea.Quit
 		case "enter":

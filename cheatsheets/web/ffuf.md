@@ -31,10 +31,10 @@ ffuf -u {{URL:url:http://target.com}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -
 ---
 
 ## fuzz vhosts
-Enumerate virtual hosts on a target web server.
+Enumerate virtual hosts on a target web server. The `-fs` block is optional — fill says yes to filter by response size (set a value once you've eyeballed the garbage pages), no to skip it entirely on the first blind run.
 
 ```bash
-ffuf -u {{URL:url:http://target.com}} -H "Host: FUZZ.{{DOMAIN:domain:target.com}}" -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt}} -fs {{FILTER_SIZE:int:0}}
+ffuf -u {{URL:url:http://target.com}} -H "Host: FUZZ.{{DOMAIN:domain:target.com}}" -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt}} {{?FILTER_SIZE}}-fs {{SIZE:int:0}}{{/FILTER_SIZE}}
 ```
 
 <!-- meta: risk=low | phase=enum | tags=vhost,subdomain -->
