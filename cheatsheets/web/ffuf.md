@@ -1,238 +1,73 @@
 # ffuf
 
-> Fast web fuzzer for directory discovery, vhost enumeration, and parameter brute-forcing
+> Only the patterns you actually use. Six entries, nothing extra.
 
-<!-- tags: fuzzing, web, directory, vhost, bruteforce -->
+<!-- tags: ffuf, fuzz, web, dir, vhost, recursion, request-file -->
 
-> **UA policy:** every command below sets `{{UA:str:...}}` to a modern Chrome-on-Windows string so requests look like a real browser; override the placeholder at fill time when a target expects a different fingerprint. Alternates — Firefox 128 Linux: `Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0` · Safari 17 macOS: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15`.
-
----
-
-## fuzz directories
-Discover hidden directories and files on a web server.
-
-```bash
-ffuf -u {{URL:url:http://target.com}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt}} -t {{THREADS:int:40}} -o {{OUTFILE:file:ffuf-dirs.json}}
-```
-
-<!-- meta: risk=low | phase=enum | tags=directory,discovery -->
+> **UA policy:** every entry sets `-H "User-Agent: {{UA:str:$(q-ua)}}"` so ffuf doesn't send its default UA (instantly flagged by WAFs). Alternates — Firefox: `Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0` · Safari: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15`.
 
 ---
 
-## fuzz file extensions
-Brute-force file extensions on a known or fuzzed path.
+## fuzz endpoints of directories
+Standard dir brute with recursion + aggressive thread count + 2 req/s rate cap. First thing on any new web target.
 
 ```bash
-ffuf -u {{URL:url:http://target.com}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-small.txt}} -e {{EXTENSIONS:str:.php,.html,.txt,.bak,.asp,.aspx,.jsp}} -t {{THREADS:int:40}}
+ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt}} -r -recursion -u {{URL:url:https://{{TARGET:ip}}}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -mc {{MATCH:str:200,302,301}} -t {{THREADS:int:1000}} -c -rate {{RATE:int:2}}
 ```
 
-<!-- meta: risk=low | phase=enum | tags=extensions,discovery -->
+<!-- meta: risk=low | phase=recon | tags=dir,recursion,aggressive -->
+
+---
+
+## fuzz with file name extensions
+Same wordlist, but append each extension in the big list to every entry — surfaces files that dir brute alone misses.
+
+```bash
+ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt}} -u {{URL:url:https://{{TARGET:ip}}}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -c -e {{EXTENSIONS:str:.php,.asp,.aspx,.jsp,.cgi,.pl,.py,.rb,.sh,.dll,.exe,.com,.vbs,.bat,.ps1,.md,.psm1,.hta,.jar,.class,.swf,.js,.css,.html,.htm,.txt,.json,.zip,.config,.conf,.bak}} -t {{THREADS:int:1000}} -mc {{MATCH:str:200}} -fs {{FILTER_SIZE:int:0}} -recursion
+```
+
+<!-- meta: risk=low | phase=recon | tags=extensions,recursion,aggressive -->
+
+---
+
+## using request file
+Load a captured request (e.g. Burp "copy to file") and fuzz its FUZZ marker. Request file carries URL + headers + body; wordlist is the fuzz source.
+
+```bash
+ffuf -c -request {{REQUEST_FILE:file:request.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -mc {{MATCH:str:200}}
+```
+
+<!-- meta: risk=low | phase=recon | tags=request-file,burp -->
 
 ---
 
 ## fuzz vhosts
-Enumerate virtual hosts on a target web server. The `-fs` block is optional — fill says yes to filter by response size (set a value once you've eyeballed the garbage pages), no to skip it entirely on the first blind run.
+Virtual-host discovery via the Host header. Filter noise lines count (`-fl`) with a value matching the garbage pages after you've eyeballed the first run.
 
 ```bash
-ffuf -u {{URL:url:http://target.com}} -H "Host: FUZZ.{{DOMAIN:domain:target.com}}" -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt}} {{?FILTER_SIZE}}-fs {{SIZE:int:0}}{{/FILTER_SIZE}}
+ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/DNS/shubs-subdomains.txt}} -u {{URL:url:http://{{TARGET:ip}}}} -H "Host: FUZZ.{{DOMAIN:domain}}" -H "User-Agent: {{UA:str:$(q-ua)}}" -t {{THREADS:int:1000}} -c -fl {{FILTER_LINES:int:0}}
 ```
 
-<!-- meta: risk=low | phase=enum | tags=vhost,subdomain -->
+<!-- meta: risk=low | phase=recon | tags=vhost,dns -->
 
 ---
 
-## fuzz GET parameters
-Discover hidden GET parameters on a URL.
+## recursion scan with extensions
+Deeper variant — smaller/faster wordlist, `-ic` (ignore-comments so '#' lines count as valid entries), big extension list, recursion on.
 
 ```bash
-ffuf -u {{URL:url:http://target.com/page.php}}?FUZZ=test -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -fs {{FILTER_SIZE:int:0}}
+ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-small.txt}} -ic -u {{URL:url:http://{{TARGET:ip}}}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -e {{EXTENSIONS:str:.php,.asp,.aspx,.jsp,.cgi,.pl,.py,.rb,.sh,.dll,.exe,.com,.vbs,.bat,.ps1,.md,.psm1,.hta,.jar,.class,.swf,.js,.css,.html,.htm,.txt,.json,.zip,.config,.conf,.bak}} -recursion -t {{THREADS:int:1000}}
 ```
 
-<!-- meta: risk=low | phase=enum | tags=parameters,get -->
+<!-- meta: risk=low | phase=recon | tags=recursion,extensions,small-list -->
 
 ---
 
-## fuzz POST data brute creds
-Fuzz POST request body parameters.
+## run ffuf on file POST method
+Request-file mode with explicit `-X POST` for multipart/form-data uploads where FUZZ sits inside the body (file-upload RCE paths, URL-ingest params, etc).
 
 ```bash
-ffuf -u {{URL:url:http://target.com/login.php}} -X POST -d "{{PARAM:str:username}}=admin&{{PARAM2:str:password}}=FUZZ" -H "Content-Type: application/x-www-form-urlencoded" -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt}} -fc 401,403
+ffuf -u {{URL:url:http://localhost}} -request {{REQUEST_FILE:file:uploadreq}} -X POST -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/local-ports.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -t {{THREADS:int:1000}}
 ```
 
-<!-- meta: risk=med | phase=passwords | tags=post,bruteforce -->
-
----
-
-## fuzz directories recursive depth
-Recursively fuzz directories up to a specified depth.
-
-```bash
-ffuf -u {{URL:url:http://target.com}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-small.txt}} -recursion -recursion-depth {{DEPTH:int:2}} -t {{THREADS:int:30}} -o {{OUTFILE:file:ffuf-recursive.json}}
-```
-
-<!-- meta: risk=low | phase=enum | tags=recursive,directory -->
-
----
-
-## fuzz multi wordlist keywords
-Use multiple FUZZ keywords with separate wordlists.
-
-```bash
-ffuf -u {{URL:url:http://target.com}}/FUZZ1/FUZZ2 -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-small.txt}}:FUZZ1 -w {{WORDLIST2:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}}:FUZZ2
-```
-
-<!-- meta: risk=low | phase=enum | tags=multi-wordlist,fuzzing -->
-
----
-
-## fuzz with filters matchers
-Filter responses by status code, size, words, or lines to reduce noise.
-
-```bash
-ffuf -u {{URL:url:http://target.com}}/FUZZ -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mc {{MATCH_CODES:str:200,301,302}} -fc {{FILTER_CODES:str:404,403}} -fs {{FILTER_SIZE:int:0}} -fw {{FILTER_WORDS:int:0}}
-```
-
-<!-- meta: risk=low | phase=enum | tags=filters,matchers -->
-
----
-
-## fuzz rate limited stealth
-Throttle requests to avoid WAF detection or rate limiting.
-
-```bash
-ffuf -u {{URL:url:http://target.com}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -rate {{RATE:int:50}} -t {{THREADS:int:5}} -p {{DELAY:str:0.1-0.5}}
-```
-
-<!-- meta: risk=low | phase=enum | tags=ratelimit,stealth -->
-
----
-
-## fuzz from saved request file
-Use a saved raw HTTP request (e.g. exported from Burp) and FUZZ marker.
-
-```bash
-ffuf -request {{REQUEST:file:request.txt}} -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mc {{MATCH_CODES:str:200}}
-```
-
-<!-- meta: risk=low | phase=enum | tags=request,burp -->
-
----
-
-## fuzz recursive multiple extensions
-Recurse and try a wide range of extensions per directory.
-
-```bash
-ffuf -w {{WORDLIST:wordlist:/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt}} -ic -u {{URL:url}}/FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -e .php,.asp,.aspx,.jsp,.html,.txt,.json,.zip,.bak,.config -recursion -t 50 -sf -maxtime 600
-```
-
-<!-- meta: risk=low | phase=enum | tags=recursion,extensions -->
-
----
-
-## fuzz directories auto calibrate
-Auto-calibrate the "not found" baseline instead of eyeballing -fs per target. Best default for dir brute.
-
-```bash
-ffuf -u {{URL:url}}/FUZZ -w {{WORDLIST:file:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mc 200,301,401,403,405 -ac -noninteractive -t 40
-```
-
-<!-- meta: risk=low | phase=recon | tags=ffuf,dirs,auto-calibrate,ac -->
-
----
-
-## fuzz vhosts per host auto calibrate
-VHOST discovery — auto-calibrate per Host header (each vhost has its own baseline).
-
-```bash
-ffuf -u {{URL:url}} -H "Host: FUZZ.{{DOMAIN:domain}}" -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{WORDLIST:file:/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt}} -ach -noninteractive -t 40
-```
-
-<!-- meta: risk=low | phase=recon | tags=ffuf,vhost,ach,auto-calibrate -->
-
----
-
-## fuzz pitchfork user pass lockstep
-Lockstep two wordlists (user[i] with pass[i]) — 10k tries instead of 10k×10k clusterbomb.
-
-```bash
-ffuf -u {{URL:url}} -X POST -d "user=USER&pass=PASS" -H "Content-Type: application/x-www-form-urlencoded" -H "User-Agent: {{UA:str:$(q-ua)}}" -w {{USERLIST:file:users.txt}}:USER -w {{PASSLIST:file:pass.txt}}:PASS -mode pitchfork -mc 200 -fs 0 -noninteractive
-```
-
-<!-- meta: risk=medium | phase=attack | tags=ffuf,pitchfork,creds,brute -->
-
----
-
-## fuzz rate limited stealth stop on flood
-Stealth mode with rate cap + stop-on-403-flood + 10min max. Prevents runaway on WAF/hung target.
-
-```bash
-ffuf -u {{URL:url}}/FUZZ -w {{WORDLIST:file:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mc 200,301,401,403 -rate 20 -t 4 -sf -maxtime 600 -noninteractive
-```
-
-<!-- meta: risk=low | phase=recon | tags=ffuf,stealth,rate-limit,sf,maxtime -->
-
----
-
-## fuzz lfi regex match root
-LFI check — regex-match "root:x:0:" instead of guessing content size. Precise hit detection.
-
-```bash
-ffuf -u "{{URL:url}}?file=FUZZ" -w {{WORDLIST:file:/usr/share/seclists/Fuzzing/LFI/LFI-Jhaddix.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mr "root:x:0:" -noninteractive
-```
-
-<!-- meta: risk=medium | phase=attack | tags=ffuf,lfi,mr,regex -->
-
----
-
-## fuzz output all formats
-Write results in json, html, md, csv all at once — CI-friendly, feeds into report tools.
-
-```bash
-ffuf -u {{URL:url}}/FUZZ -w {{WORDLIST:file:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mc 200,301,401,403 -o {{OUT_STEM:file:ffuf-run}} -of all -noninteractive
-```
-
-<!-- meta: risk=low | phase=recon | tags=ffuf,output,json,html,md,csv -->
-
----
-
-## fuzz directories follow redirects
-Follow 3xx so auth-walled apps that 302 to /login don't cluster into one giant meaningless class.
-
-```bash
-ffuf -u {{URL:url}}/FUZZ -w {{WORDLIST:file:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mc 200,301,401,403 -r -ac -noninteractive -t 40
-```
-
-<!-- meta: risk=low | phase=recon | tags=ffuf,follow-redirects,r -->
-
----
-
-## fuzz get parameter url encoded
-URL-encode the fuzz keyword — for strict URL parsers that reject raw special chars.
-
-```bash
-ffuf -u "{{URL:url}}?id=FUZZ" -w {{WORDLIST:file:/usr/share/seclists/Fuzzing/SQLi/Generic-SQLi.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -enc "FUZZ:urlencode" -mc 200,500 -noninteractive
-```
-
-<!-- meta: risk=medium | phase=attack | tags=ffuf,enc,urlencode,sqli -->
-
----
-
-## fuzz from live command subfinder
-Chain a live command as the wordlist source (e.g. subfinder streaming subs into ffuf) — no intermediate file.
-
-```bash
-ffuf -input-cmd 'subfinder -d {{DOMAIN:domain}} -silent' -input-num 500 -u https://FUZZ -H "User-Agent: {{UA:str:$(q-ua)}}" -mc 200,301,302,403 -noninteractive
-```
-
-<!-- meta: risk=low | phase=recon | tags=ffuf,input-cmd,chain,subfinder -->
-
----
-
-## fuzz filter response regex error
-Negative filter on regex — hide any response matching "error" (or your app's error signature).
-
-```bash
-ffuf -u {{URL:url}}/FUZZ -w {{WORDLIST:file:/usr/share/seclists/Discovery/Web-Content/common.txt}} -H "User-Agent: {{UA:str:$(q-ua)}}" -mc all -fr "error" -noninteractive
-```
-
-<!-- meta: risk=low | phase=recon | tags=ffuf,fr,regex,filter -->
+<!-- meta: risk=low | phase=recon | tags=request-file,post,upload -->

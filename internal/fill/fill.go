@@ -117,31 +117,28 @@ func (st *State) resolveOne(p Placeholder) (string, bool, error) {
 
 	res, err := tui.Show(tui.Options{
 		Prompt: "  {{" + p.Name + "}}> ",
-		Header: PromptLabel(p) + "  |  Enter=pick  Type=custom  Esc=skip var  Ctrl+C=abort fill",
+		Header: PromptLabel(p) + "  |  Enter=pick  Tab=use typed  Esc=skip  Ctrl+C=abort",
 		Rows:   rows,
 	})
 	if err != nil {
 		return "", false, err
 	}
 	if res == nil || res.Cancelled {
-		// If the user typed something before cancelling, honour it as
-		// a custom value regardless of which exit key fired.
-		if res != nil && res.Query != "" {
-			return res.Query, true, nil
-		}
-		// Ctrl+C aborts the whole fill flow — caller interprets ok=false
-		// as "cancelled" and bails on the entire command.
+		// Ctrl+C aborts the whole fill flow — caller interprets
+		// ok=false as "cancelled" and bails on the entire command.
 		if res != nil && res.CancelKey == "ctrl+c" {
 			return "", false, nil
 		}
-		// Esc skips just THIS placeholder: fall back to default when
-		// one exists, otherwise substitute empty and continue. Lets
-		// the user opt out of optional flags like `-fs {{SIZE}}`
-		// without aborting the whole command. Note: a lone Esc on a
-		// placeholder with no default yields an empty substitution,
-		// which may leave the surrounding flag dangling — author
-		// cheatsheets with optional blocks ({{?TAG}}...{{/TAG}}) for
-		// flags you commonly want to drop entirely.
+		// Esc = SKIP this placeholder cleanly. Any typed text is
+		// discarded (if the user wanted that text they'd use Tab).
+		// Falls back to default when the placeholder declares one,
+		// otherwise substitutes empty and continues.
+		//
+		// Note: a lone Esc on a placeholder with no default yields
+		// an empty substitution, which may leave the surrounding
+		// flag dangling — author cheatsheets with optional blocks
+		// ({{?TAG}}...{{/TAG}}) for flags you commonly want to drop
+		// entirely so the whole flag + value segment disappears.
 		if def := p.EffectiveDefault(); def != "" {
 			return def, true, nil
 		}
