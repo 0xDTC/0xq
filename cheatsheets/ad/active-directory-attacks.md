@@ -61,13 +61,6 @@ nxc smb {{TARGET:ip}} -u "{{USERNAME:str:guest}}" -p "" --rid-brute
 
 ---
 
-## enum domain info smb
-Quick domain fingerprint.
-
-```bash
-nxc smb {{TARGET:ip}}
-```
-
 <!-- meta: risk=safe | phase=recon | tags=ad,smb,fingerprint -->
 
 ---

