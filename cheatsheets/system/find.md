@@ -50,23 +50,9 @@ find {{PATH:dir:/}} -type f -mtime -{{DAYS:int:7}} 2>/dev/null
 
 ---
 
-## find SUID files linux privesc
-Find all SUID binaries on the system. Critical for privilege escalation.
-
-```bash
-find / -perm -4000 -type f 2>/dev/null
-```
-
 <!-- meta: risk=safe | phase=misc | tags=suid,privesc,permissions -->
 
 ---
-
-## find SGID files linux privesc
-Find all SGID binaries on the system.
-
-```bash
-find / -perm -2000 -type f 2>/dev/null
-```
 
 <!-- meta: risk=safe | phase=misc | tags=sgid,privesc,permissions -->
 

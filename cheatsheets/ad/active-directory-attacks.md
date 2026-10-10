@@ -373,13 +373,6 @@ nxc smb {{DC_IP:ip:10.10.10.1}} -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pa
 
 ---
 
-## find kerberoastable SPN accounts
-Pull SPN-bearing accounts.
-
-```bash
-impacket-GetUserSPNs {{DOMAIN:domain:corp.local}}/{{USERNAME:str:user}}:{{PASSWORD:str:pass}} -dc-ip {{DC_IP:ip:10.10.10.1}}
-```
-
 <!-- meta: risk=safe | phase=enum | tags=ad,kerberoast,spn -->
 
 ---

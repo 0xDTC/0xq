@@ -161,13 +161,6 @@ schtasks /query /fo LIST /v
 
 ---
 
-## search registry password windows
-Recursively search HKLM for the string "password".
-
-```bash
-reg query {{HIVE:choice:HKLM=local machine,HKCU=current user,HKU=all loaded users,HKCR=file assoc + COM,HKCC=current hardware config}} /f "{{PATTERN:str:password}}" /t REG_SZ /s
-```
-
 <!-- meta: risk=low | phase=post | tags=registry,password,search -->
 
 ---

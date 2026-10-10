@@ -39,13 +39,6 @@ smbmap -H {{TARGET:ip}}
 
 ---
 
-## list shares smb authenticated smbmap
-List shares and permissions using valid credentials.
-
-```bash
-smbmap -H {{TARGET:ip}} -u {{USERNAME:str}} -p {{PASSWORD:str}} -d {{DOMAIN:domain:WORKGROUP}}
-```
-
 <!-- meta: risk=low | phase=enum | tags=smbmap,authenticated,shares -->
 
 ---
@@ -204,13 +197,6 @@ smbmap -H {{TARGET:ip}} -u {{USERNAME:str}} -H {{NTHASH:str}}
 
 ---
 
-## enum smb rpcclient null
-Connect to rpcclient anonymously to enumerate domain info without credentials.
-
-```bash
-rpcclient -U '' -N {{TARGET:ip}}
-```
-
 <!-- meta: risk=low | phase=enum | tags=rpcclient,null-session,anonymous -->
 
 ---
@@ -225,13 +211,6 @@ rpcclient -U '{{USERNAME:str}}%{{PASSWORD:str}}' {{TARGET:ip}}
 <!-- meta: risk=low | phase=enum | tags=rpcclient,authenticated -->
 
 ---
-
-## enum domain users rpcclient
-Run `enumdomusers` non-interactively to list domain users.
-
-```bash
-rpcclient -U '{{USERNAME:str}}%{{PASSWORD:str}}' {{TARGET:ip}} -c 'enumdomusers'
-```
 
 <!-- meta: risk=low | phase=enum | tags=rpcclient,users,enumdomusers -->
 
