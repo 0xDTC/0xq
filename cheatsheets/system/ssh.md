@@ -1,225 +1,96 @@
-# SSH
+# ssh
 
-> Secure shell for remote access, file transfer, and encrypted tunneling
+> Only the patterns you actually use. Eight entries, nothing extra.
 
-<!-- tags: ssh, scp, tunnel, port-forward, remote, keys -->
+<!-- tags: ssh, tunnel, forward, keygen, connect -->
 
----
-
-## connect to remote host
-Connect to a remote host with username.
-
-```bash
-ssh {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -p {{PORT:port:22}} -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes
-```
-
-<!-- meta: risk=low | phase=misc | tags=connect,basic,remote -->
+> **Interactive escape sequences** (type after `Enter` while connected):
+> `~.` disconnect · `~^Z` background · `~C` open command line (add port-forwards live, `-L localport:host:remoteport`) · `~#` list forwarded connections
 
 ---
 
-## connect with private key
-Connect using a private key file.
+## connect direct
+Password login — simplest form.
 
 ```bash
-ssh -i {{KEY:file:~/.ssh/id_rsa}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -p {{PORT:port:22}} -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+ssh {{USER:str}}@{{TARGET:ip}}
 ```
 
-<!-- meta: risk=low | phase=misc | tags=key,identity,authentication -->
+<!-- meta: risk=low | phase=connect | tags=basic -->
 
 ---
 
-## upload file scp
-Copy a local file to a remote host.
+## connect with key
+Private-key auth. `-i` points to your key file (id_rsa / id_ed25519 / etc).
 
 ```bash
-scp -P {{PORT:port:22}} {{LOCAL:file:./payload.sh}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}}:{{REMOTE:str:/tmp/payload.sh}}
+ssh -i {{KEY:file:~/.ssh/id_rsa}} {{USER:str}}@{{TARGET:ip}}
 ```
 
-<!-- meta: risk=low | phase=misc | tags=scp,upload,transfer -->
+<!-- meta: risk=low | phase=connect | tags=key,auth -->
 
 ---
 
-## download file scp
-Copy a file from a remote host to local machine.
+## local port forward
+Forward LOCAL_PORT on your box → REMOTE_HOST:REMOTE_PORT via the ssh target. Classic pivot: `-L 8443:127.0.0.1:8443` lets you hit a service bound to localhost on the remote.
 
 ```bash
-scp -P {{PORT:port:22}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}}:{{REMOTE:str:/etc/passwd}} {{LOCAL:file:./loot/passwd}}
+ssh -L {{LPORT:port:8443}}:{{RHOST:str:127.0.0.1}}:{{RPORT:port:8443}} {{USER:str}}@{{TARGET:ip}}
 ```
 
-<!-- meta: risk=low | phase=misc | tags=scp,download,transfer -->
+<!-- meta: risk=low | phase=pivot | tags=forward,tunnel,local -->
 
 ---
 
-## local port forward tunnel
-Forward a local port to a remote host through the SSH connection.
+## credentials spray via ncrack
+NOT ssh — ncrack brute against sshd. Lives here because it's part of the ssh workflow note. Use `-U` for userlist + `-P` for passlist.
 
 ```bash
-ssh -L {{LPORT:port:8080}}:{{RHOST:ip:127.0.0.1}}:{{RPORT:port:80}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -N
+ncrack -U {{USERS:file:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} ssh://{{TARGET:ip}}
 ```
 
-<!-- meta: risk=low | phase=misc | tags=tunnel,local,forward,pivot -->
+<!-- meta: risk=medium | phase=brute | tags=ncrack,ssh,spray -->
 
 ---
 
-## remote port forward tunnel
-Forward a remote port back to the local machine.
+## generate key rsa 4096
+Classic RSA keypair, maximum reasonable key size.
 
 ```bash
-ssh -R {{RPORT:port:9090}}:{{LHOST:ip:127.0.0.1}}:{{LPORT:port:8080}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -N
+ssh-keygen -t rsa -b 4096 -f {{KEYFILE:file:~/.ssh/id_rsa_new}}
 ```
 
-<!-- meta: risk=low | phase=misc | tags=tunnel,remote,forward,callback -->
+<!-- meta: risk=low | phase=setup | tags=keygen,rsa -->
 
 ---
 
-## dynamic socks proxy pivot
-Create a SOCKS proxy through the SSH connection for pivoting.
+## generate key dsa
+DSA keypair. Deprecated by OpenSSH defaults but still useful for legacy systems.
 
 ```bash
-ssh -D {{LPORT:port:1080}} {{USER:str:root}}@{{HOST:ip:10.10.10.1}} -N
+ssh-keygen -t dsa -f {{KEYFILE:file:~/.ssh/id_dsa_new}}
 ```
 
-<!-- meta: risk=low | phase=misc | tags=socks,proxy,dynamic,pivot -->
+<!-- meta: risk=low | phase=setup | tags=keygen,dsa,legacy -->
 
 ---
 
-## proxyjump bastion host pivot
-Connect through a jump host to reach an internal target.
+## generate key ecdsa 521
+ECDSA keypair at 521 bits (max). Smaller than RSA 4096, same security level.
 
 ```bash
-ssh -J {{JUMP_USER:str:user}}@{{JUMP:ip:10.10.10.1}} {{USER:str:root}}@{{TARGET:ip:192.168.1.100}}
+ssh-keygen -t ecdsa -b 521 -f {{KEYFILE:file:~/.ssh/id_ecdsa_new}}
 ```
 
-<!-- meta: risk=low | phase=misc | tags=proxy,jump,bastion,pivot -->
+<!-- meta: risk=low | phase=setup | tags=keygen,ecdsa -->
 
 ---
 
-## forward ssh agent keys
-Forward your local SSH agent to the remote host for key reuse.
+## generate key ed25519
+Modern default — small, fast, strong. Fixed 256-bit, no `-b` needed.
 
 ```bash
-ssh -A {{USER:str:root}}@{{HOST:ip:10.10.10.1}}
+ssh-keygen -t ed25519 -f {{KEYFILE:file:~/.ssh/id_ed25519_new}}
 ```
 
-<!-- meta: risk=med | phase=misc | tags=agent,forward,keys -->
-
----
-
-## execute remote command
-Run a command on a remote host without interactive shell.
-
-```bash
-ssh {{USER:str:root}}@{{HOST:ip:10.10.10.1}} "{{CMD:str:id && hostname && cat /etc/passwd}}"
-```
-
-<!-- meta: risk=low | phase=misc | tags=remote,execute,command -->
-
----
-
-## inline password sshpass
-Supply an SSH password inline; the -o flags skip the host-key prompt so it works on a first connect (sshpass can't answer yes/no).
-
-```bash
-sshpass -p '{{PASSWORD:str}}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{USERNAME:str}}@{{TARGET:ip}}
-```
-
-<!-- meta: risk=med | phase=misc | tags=sshpass,password,automation -->
-
----
-
-## connect legacy cipher hosts
-Connect to legacy SSH servers by enabling deprecated ciphers and key exchange.
-
-```bash
-ssh -c aes256-cbc -oKexAlgorithms=+diffie-hellman-group1-sha1 {{USERNAME:str}}@{{TARGET:ip}}
-```
-
-<!-- meta: risk=low | phase=misc | tags=ssh,legacy,cipher,kex -->
-
----
-
-## key passphrase login sshpass
-Use sshpass to pipe a passphrase into a key-based SSH login.
-
-```bash
-sshpass -P 'passphrase' -p '{{PASSPHRASE:str}}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{KEYFILE:file:id_rsa}} {{USERNAME:str}}@{{TARGET:ip}}
-```
-
-<!-- meta: risk=med | phase=misc | tags=sshpass,key,passphrase -->
-
----
-
-## run single command shorthand
-Run a single command on a remote host and exit (shorthand form).
-
-```bash
-ssh {{USERNAME:str}}@{{TARGET:ip}} '{{COMMAND:str}}'
-```
-
-<!-- meta: risk=low | phase=misc | tags=ssh,oneshot,command -->
-
----
-
-## background socks5 proxy pivot
-Create a SOCKS5 proxy in the background with no remote command.
-
-```bash
-ssh -D {{LPORT:port:1080}} -N -f {{USERNAME:str}}@{{TARGET:ip}}
-```
-
-<!-- meta: risk=low | phase=post | tags=socks5,proxy,background,pivot -->
-
----
-
-## jump host pivot shorthand
-Chain through a jump host to reach an internal target.
-
-```bash
-ssh -J {{JUMPUSER:str}}@{{JUMPHOST:ip}} {{USERNAME:str}}@{{TARGET:ip}}
-```
-
-<!-- meta: risk=low | phase=post | tags=ssh,jump,pivot,proxyjump -->
-
----
-
-## generate rsa key pair
-Create a 4096-bit RSA SSH key pair.
-
-```bash
-ssh-keygen -t rsa -b 4096 -f {{KEYFILE:file:~/.ssh/id_rsa}} -N ''
-```
-
-<!-- meta: risk=safe | phase=misc | tags=ssh-keygen,rsa,keys -->
-
----
-
-## generate ed25519 key pair
-Generate a modern Ed25519 SSH key.
-
-```bash
-ssh-keygen -t ed25519 -f {{KEYFILE:file:~/.ssh/id_ed25519}} -N ''
-```
-
-<!-- meta: risk=safe | phase=misc | tags=ssh-keygen,ed25519,keys -->
-
----
-
-## generate ecdsa key pair
-Generate a 521-bit ECDSA SSH key.
-
-```bash
-ssh-keygen -t ecdsa -b 521 -f {{KEYFILE:file:~/.ssh/id_ecdsa}} -N ''
-```
-
-<!-- meta: risk=safe | phase=misc | tags=ssh-keygen,ecdsa,keys -->
-
----
-
-## spray ssh credentials ncrack
-Spray usernames and passwords against SSH using ncrack.
-
-```bash
-ncrack -U {{USERLIST:wordlist}} -P {{PASSLIST:wordlist}} ssh://{{TARGET:ip}}:{{PORT:port:22}}
-```
-
-<!-- meta: risk=med | phase=passwords | tags=ncrack,ssh,spray -->
+<!-- meta: risk=low | phase=setup | tags=keygen,ed25519,modern -->

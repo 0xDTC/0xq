@@ -6,8 +6,8 @@
 
 ---
 
-## fast all ports then deep service scan
-**Preferred recipe.** Two stages chained with `&&`:
+## nmap chain fast all ports then deep service scan
+**Preferred recipe.** Two nmap invocations chained with `&&` — single-line bash chain, not a q-chain in `chains/`:
 1. Blazing-fast all-port TCP sweep (`-p- --min-rate 1500 -T4 -Pn`) writes grep-friendly output to `/tmp/q-tcp-<ip>.gnmap`
 2. Deep `-A -sS -sV` scan runs ONLY against the open ports pulled from stage 1 — saves ~10× time vs `-A -p-` directly.
 

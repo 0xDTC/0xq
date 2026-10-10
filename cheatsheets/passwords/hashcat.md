@@ -1,236 +1,73 @@
-# Hashcat
+# hashcat
 
-> Advanced GPU-accelerated password recovery tool
+> Only the patterns you actually use. Six entries, nothing extra.
 
-<!-- tags: hashcat, cracking, passwords, gpu, offline -->
+<!-- tags: hashcat, crack, hash, dictionary, wordlist -->
 
----
-
-## crack wordlist
-Crack hashes using a wordlist. Common modes: 0=MD5, 100=SHA1, 1000=NTLM, 1400=SHA256, 1700=SHA512, 1800=sha512crypt, 3200=bcrypt, 5600=NetNTLMv2, 13100=Kerberoast, 18200=AS-REP.
-
-```bash
-hashcat -m {{MODE:int:0}} {{HASHFILE:file:hashes.txt}} {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -o {{OUTFILE:file:cracked.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=dictionary,wordlist -->
+> **Attack mode**: all six entries use `-a 0` (dictionary) — mask / combo / hybrid live elsewhere if you ever need them.
 
 ---
 
-## crack wordlist rules
-Apply rule-based mangling to increase wordlist coverage.
-
-```bash
-hashcat -m {{MODE:int:1000}} {{HASHFILE:file:hashes.txt}} {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -r {{RULES:file:/usr/share/hashcat/rules/best64.rule}} -o {{OUTFILE:file:cracked.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=rules,mangling -->
-
----
-
-## brute mask attack
-Brute-force with a character mask pattern. Mask chars: ?l=lowercase, ?u=uppercase, ?d=digit, ?s=special, ?a=all.
-
-```bash
-hashcat -m {{MODE:int:1000}} {{HASHFILE:file:hashes.txt}} -a 3 '{{MASK:str:?u?l?l?l?l?d?d?d}}' -o {{OUTFILE:file:cracked.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=mask,bruteforce -->
-
----
-
-## crack hybrid wordlist mask
-Append a mask pattern to each word in the wordlist.
-
-```bash
-hashcat -m {{MODE:int:1000}} {{HASHFILE:file:hashes.txt}} -a 6 {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} '{{MASK:str:?d?d?d?s}}' -o {{OUTFILE:file:cracked.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=hybrid,combo -->
-
----
-
-## crack hybrid mask wordlist
-Prepend a mask pattern before each word in the wordlist.
-
-```bash
-hashcat -m {{MODE:int:1000}} {{HASHFILE:file:hashes.txt}} -a 7 '{{MASK:str:?d?d}}' {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -o {{OUTFILE:file:cracked.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=hybrid,prepend -->
-
----
-
-## show cracked potfile
-Display previously cracked hashes from the potfile.
-
-```bash
-hashcat -m {{MODE:int:1000}} {{HASHFILE:file:hashes.txt}} --show
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=show,results -->
-
----
-
-## lookup hash mode example
-Look up a hashcat mode number by example hash or name.
-
-```bash
-hashcat --example-hashes | grep -B 3 -i '{{HASH_TYPE:choice:ntlm=NT hash,md5=raw MD5,sha1=raw SHA-1,sha256=raw SHA-256,sha512=raw SHA-512,bcrypt=Blowfish crypt,mysql=MySQL hash,kerberos=Kerberos hash,netntlmv2=NetNTLMv2 responder,wpa=WPA handshake,sha512crypt=Unix SHA-512,bitlocker=BitLocker recovery,keepass=KeePass DB,wordpress=WordPress hash}}'
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=identify,mode -->
-
----
-
-## crack ntlm
-Crack Windows NTLM hashes (mode 1000).
-
-```bash
-hashcat -m 1000 {{HASHFILE:file:ntlm-hashes.txt}} {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -r /usr/share/hashcat/rules/best64.rule -o {{OUTFILE:file:cracked-ntlm.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=ntlm,windows -->
-
----
-
-## crack kerberoast krb5tgs
-Crack Kerberoast TGS-REP hashes (mode 13100).
-
-```bash
-hashcat -m 13100 {{HASHFILE:file:kerberoast-hashes.txt}} {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -r /usr/share/hashcat/rules/best64.rule -o {{OUTFILE:file:cracked-tgs.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=kerberoast,kerberos -->
-
----
-
-## identify hash mode
-Use hashcat's built-in identifier to suggest the mode for a hash.
+## identify hash
+Dump the candidate hash modes for a hash string.
 
 ```bash
 hashcat --identify '{{HASH:str}}'
 ```
 
-<!-- meta: risk=safe | phase=passwords | tags=identify,detect -->
+<!-- meta: risk=low | phase=crack | tags=identify,fingerprint -->
 
 ---
 
-## crack auto-detect mode oneliner
-Identify the hash mode and crack with rockyou in one step.
+## create hash file
+Write a single hash into a file so you can pass `-m X hashes` instead of inline.
 
 ```bash
-hash='{{HASH:str}}'; hashcat -m $(hashcat --identify "$hash" | grep -Eo '^[[:space:]]*[0-9]+' | head -n 1 | xargs) "$hash" --quiet --wordlist {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --force
+echo '{{HASH:str}}' > {{FILE:file:hashes}}
 ```
 
-<!-- meta: risk=safe | phase=passwords | tags=auto-detect,one-liner -->
+<!-- meta: risk=low | phase=crack | tags=file,prep -->
 
 ---
 
-## crack bcrypt
-Hashcat mode 1470 cracks yescrypt and 3200 cracks bcrypt; use this for bcrypt files.
+## list mode numbers by name
+Grep hashcat's -hh output for a hash-type name to find its `-m` number manually.
 
 ```bash
-hashcat -m 3200 --quiet {{HASHFILE:file:hashes}} --wordlist {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --force
+hashcat -hh | grep -i '{{TYPE:str:bcrypt}}'
 ```
 
-<!-- meta: risk=safe | phase=passwords | tags=bcrypt -->
+<!-- meta: risk=low | phase=crack | tags=mode,lookup -->
 
 ---
 
-## crack ansible vault
-Hashcat mode 16900 cracks Ansible Vault hashes (after ansible2john).
+## crack hash file with wordlist
+Dictionary attack against a hash file. MODE picker lists ALL 581 hashcat hash modes — fuzzy-filter (type "bcrypt", "ntlm", "kerb" …) to narrow. `--force` suppresses GPU warnings on VBox.
 
 ```bash
-hashcat -a 0 -m 16900 {{HASHFILE:file:hash.txt}} {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
+hashcat -m {{MODE:choice:900=MD4,0=MD5,34600=MD6 (256),100=SHA1,1300=SHA2-224,1400=SHA2-256,10800=SHA2-384,1700=SHA2-512,17300=SHA3-224,17400=SHA3-256,17500=SHA3-384,17600=SHA3-512,6000=RIPEMD-160,33600=RIPEMD-320,34800=BLAKE2b-256,600=BLAKE2b-512,31000=BLAKE2s-256,11700=GOST R 34.11-2012 (Streebog) 256-bit/ big-endian,11800=GOST R 34.11-2012 (Streebog) 512-bit/ big-endian,6900=GOST R 34.11-94,5100=Half MD5,17700=Keccak-224,17800=Keccak-256,17900=Keccak-384,18000=Keccak-512,31100=ShangMi 3 (SM3),6100=Whirlpool,70=md5(utf16le($pass)),170=sha1(utf16le($pass)),34500=sha224(sha1($pass)),34400=sha224(sha224($pass)),1470=sha256(utf16le($pass)),10870=sha384(utf16le($pass)),1770=sha512(utf16le($pass)),34810=BLAKE2b-256($pass.$salt),34820=BLAKE2b-256($salt.$pass),610=BLAKE2b-512($pass.$salt),620=BLAKE2b-512($salt.$pass),10=md5($pass.$salt),20=md5($salt.$pass),3800=md5($salt.$pass.$salt),3710=md5($salt.md5($pass)),33100=md5($salt.md5($pass).$salt),4110=md5($salt.md5($pass.$salt)),4010=md5($salt.md5($salt.$pass)),21300=md5($salt.sha1($salt.$pass)),40=md5($salt.utf16le($pass)),33000=md5($salt1.$pass.$salt2),21310=md5($salt1.sha1($salt2.$pass)),3730=md5($salt1.strtoupper(md5($salt2.$pass))),2600=md5(md5($pass)),3910=md5(md5($pass).md5($salt)),2630=md5(md5($pass.$salt)),30500=md5(md5($salt).md5(md5($pass))),3500=md5(md5(md5($pass))),3610=md5(md5(md5($pass)).$salt),31700=md5(md5(md5($pass).$salt1).$salt2),21900=md5(md5(md5($pass.$salt1)).$salt2),4400=md5(sha1($pass)),4410=md5(sha1($pass).$salt),20900=md5(sha1($pass).md5($pass).sha1($pass)),4420=md5(sha1($pass.$salt)),21200=md5(sha1($salt).md5($pass)),4430=md5(sha1($salt.$pass)),32800=md5(sha1(md5($pass))),4300=md5(strtoupper(md5($pass))),30=md5(utf16le($pass).$salt),110=sha1($pass.$salt),120=sha1($salt.$pass),4900=sha1($salt.$pass.$salt),4520=sha1($salt.sha1($pass)),24300=sha1($salt.sha1($pass.$salt)),29000=sha1($salt.sha1(utf16le($username).':'.utf16le($pass))),140=sha1($salt.utf16le($pass)),19300=sha1($salt1.$pass.$salt2),14400=sha1(CX),4700=sha1(md5($pass)),4710=sha1(md5($pass).$salt),21100=sha1(md5($pass.$salt)),18500=sha1(md5(md5($pass))),4500=sha1(sha1($pass)),4510=sha1(sha1($pass).$salt),5000=sha1(sha1($salt.$pass.$salt)),130=sha1(utf16le($pass).$salt),1310=sha224($pass.$salt),1320=sha224($salt.$pass),1410=sha256($pass.$salt),1420=sha256($salt.$pass),22300=sha256($salt.$pass.$salt),20720=sha256($salt.sha256($pass)),21420=sha256($salt.sha256_bin($pass)),1440=sha256($salt.utf16le($pass)),20800=sha256(md5($pass)),20710=sha256(sha256($pass).$salt),20730=sha256(sha256($pass.$salt)),21400=sha256(sha256_bin($pass)),1430=sha256(utf16le($pass).$salt),10810=sha384($pass.$salt),10820=sha384($salt.$pass),10840=sha384($salt.utf16le($pass)),10830=sha384(utf16le($pass).$salt),1710=sha512($pass.$salt),1720=sha512($salt.$pass),1740=sha512($salt.utf16le($pass)),32410=sha512(sha512($pass).$salt),32420=sha512(sha512_bin($pass).$salt),1730=sha512(utf16le($pass).$salt),33300=HMAC-BLAKE2S (key = $pass),50=HMAC-MD5 (key = $pass),60=HMAC-MD5 (key = $salt),6050=HMAC-RIPEMD160 (key = $pass),6060=HMAC-RIPEMD160 (key = $salt),33650=HMAC-RIPEMD320 (key = $pass),33660=HMAC-RIPEMD320 (key = $salt),150=HMAC-SHA1 (key = $pass),160=HMAC-SHA1 (key = $salt),1450=HMAC-SHA256 (key = $pass),1460=HMAC-SHA256 (key = $salt),1750=HMAC-SHA512 (key = $pass),1760=HMAC-SHA512 (key = $salt),11750=HMAC-Streebog-256 (key = $pass)/ big-endian,11760=HMAC-Streebog-256 (key = $salt)/ big-endian,11850=HMAC-Streebog-512 (key = $pass)/ big-endian,11860=HMAC-Streebog-512 (key = $salt)/ big-endian,10100=SipHash,11500=CRC32,27900=CRC32C,28000=CRC64Jones,18700=Java Object hashCode(),25700=MurmurHash,27800=MurmurHash3,34200=MurmurHash64A,34201=MurmurHash64A (zero seed),34211=MurmurHash64A truncated (zero seed),33502=RC4 104-bit DropN,33500=RC4 40-bit DropN,33501=RC4 72-bit DropN,14100=3DES (PT = $salt/ key = $pass),14000=DES (PT = $salt/ key = $pass),26401=AES-128-ECB NOKDF (PT = $salt/ key = $pass),26402=AES-192-ECB NOKDF (PT = $salt/ key = $pass),26403=AES-256-ECB NOKDF (PT = $salt/ key = $pass),15400=ChaCha20,14500=Linux Kernel Crypto API (2.4),14900=Skip32 (PT = $salt/ key = $pass),32900=PBKDF1-SHA1,11900=PBKDF2-HMAC-MD5,12000=PBKDF2-HMAC-SHA1,10900=PBKDF2-HMAC-SHA256,12100=PBKDF2-HMAC-SHA512,34000=Argon2,70000=Argon2id [Bridged: reference implementation + tunings],8900=scrypt,70100=scrypt [Bridged: Scrypt-Jane SMix],70200=scrypt [Bridged: Scrypt-Yescrypt],30601=bcrypt(HMAC-SHA256($pass)),25600=bcrypt(md5($pass)),25800=bcrypt(sha1($pass)),30600=bcrypt(sha256($pass)),28400=bcrypt(sha512($pass)),400=phpass,16100=TACACS+,30420=DANE RFC7929/RFC8162 SHA2-256,11400=SIP digest authentication (MD5),5300=IKE-PSK MD5,5400=IKE-PSK SHA1,25100=SNMPv3 HMAC-MD5-96,25000=SNMPv3 HMAC-MD5-96/HMAC-SHA1-96,25200=SNMPv3 HMAC-SHA1-96,26700=SNMPv3 HMAC-SHA224-128,26800=SNMPv3 HMAC-SHA256-192,26900=SNMPv3 HMAC-SHA384-256,27300=SNMPv3 HMAC-SHA512-384,2500=WPA-EAPOL-PBKDF2,2501=WPA-EAPOL-PMK,22000=WPA-PBKDF2-PMKID+EAPOL,22001=WPA-PMK-PMKID+EAPOL,16800=WPA-PMKID-PBKDF2,16801=WPA-PMKID-PMK,7350=IPMI2 RAKP HMAC-MD5,7300=IPMI2 RAKP HMAC-SHA1,10200=CRAM-MD5,31300=MS SNTP,16500=JWT (JSON Web Token),19600=Kerberos 5/ etype 17/ TGS-REP,19800=Kerberos 5/ etype 17/ Pre-Auth,28800=Kerberos 5/ etype 17/ DB,32100=Kerberos 5/ etype 17/ AS-REP,19700=Kerberos 5/ etype 18/ TGS-REP,19900=Kerberos 5/ etype 18/ Pre-Auth,28900=Kerberos 5/ etype 18/ DB,32200=Kerberos 5/ etype 18/ AS-REP,7500=Kerberos 5/ etype 23/ AS-REQ Pre-Auth,13100=Kerberos 5/ etype 23/ TGS-REP,18200=Kerberos 5/ etype 23/ AS-REP,5500=NetNTLMv1 / NetNTLMv1+ESS,27000=NetNTLMv1 / NetNTLMv1+ESS (NT),5600=NetNTLMv2,27100=NetNTLMv2 (NT),29100=Flask Session Cookie ($salt.$salt.$pass),28700=Amazon AWS Signature Version 4,4800=iSCSI CHAP authentication/ MD5(CHAP),8500=RACF,14200=RACF KDFAES,6300=AIX {smd5},6700=AIX {ssha1},6400=AIX {ssha256},6500=AIX {ssha512},3000=LM,19000=QNX /etc/shadow (MD5),19100=QNX /etc/shadow (SHA256),19200=QNX /etc/shadow (SHA512),19210=QNX 7 /etc/shadow (SHA512),15300=DPAPI masterkey file v1 (context 1 and 2),15310=DPAPI masterkey file v1 (context 3),15900=DPAPI masterkey file v2 (context 1 and 2),15910=DPAPI masterkey file v2 (context 3),7200=GRUB 2,12800=MS-AzureSync PBKDF2-HMAC-SHA256,8501=AS/400 DES,35200=AS/400 SSHA1,12400=BSDi Crypt/ Extended DES,1000=NTLM,9900=Radmin2,5800=Samsung Android Password/PIN,33700=Microsoft Online Account (PBKDF2-HMAC-SHA256 + AES256),28100=Windows Hello PIN/Password,13800=Windows Phone 8+ PIN/password,2410=Cisco-ASA MD5,9200=Cisco-IOS $8$ (PBKDF2-SHA256),9300=Cisco-IOS $9$ (scrypt),5700=Cisco-IOS type 4 (SHA256),5720=Cisco-ISE Hashed Password (SHA256),2400=Cisco-PIX MD5,33900=Citrix NetScaler (PBKDF2-HMAC-SHA256),8100=Citrix NetScaler (SHA1),22200=Citrix NetScaler (SHA512),1100=Domain Cached Credentials (DCC)/ MS Cache,2100=Domain Cached Credentials 2 (DCC2)/ MS Cache 2,31500=Domain Cached Credentials (DCC)/ MS Cache (NT),31600=Domain Cached Credentials 2 (DCC2)/ MS Cache 2/ (NT),7000=FortiGate (FortiOS),26300=FortiGate256 (FortiOS256),125=ArubaOS,501=Juniper IVE,22=Juniper NetScreen/SSG (ScreenOS),15100=Juniper/NetBSD sha1crypt,26500=iPhone passcode (UID key + System Keybag),122=macOS v10.4/ macOS v10.5/ macOS v10.6,1722=macOS v10.7,7100=macOS v10.8+ (PBKDF2-SHA512),3200=bcrypt $2*$/ Blowfish (Unix),500=md5crypt/ MD5 (Unix)/ Cisco-IOS $1$ (MD5),1500=descrypt/ DES (Unix)/ Traditional DES,7400=sha256crypt $5$/ SHA256 (Unix),1800=sha512crypt $6$/ SHA512 (Unix),35100=sm3crypt $sm3$/ SM3 (Unix),131=MSSQL (2000),132=MSSQL (2005),1731=MSSQL (2012/ 2014),24100=MongoDB ServerKey SCRAM-SHA-1,24200=MongoDB ServerKey SCRAM-SHA-256,12=PostgreSQL,11100=PostgreSQL CRAM (MD5),28600=PostgreSQL SCRAM-SHA-256,3100=Oracle H: Type (Oracle 7+),112=Oracle S: Type (Oracle 11+),12300=Oracle T: Type (Oracle 12+),7401=MySQL $A$ (sha256crypt),11200=MySQL CRAM (SHA1),200=MySQL323,300=MySQL4.1/MySQL5,8000=Sybase ASE,8300=DNSSEC (NSEC3),25900=KNX IP Secure - Device Authentication Code,16400=CRAM-MD5 Dovecot,1411=SSHA-256(Base64)/ LDAP {SSHA256},1711=SSHA-512(Base64)/ LDAP {SSHA512},29200=Radmin3,24900=Dahua Authentication MD5,10901=RedHat 389-DS LDAP (PBKDF2-HMAC-SHA256),24901=Besder Authentication MD5,15000=FileZilla Server >= 0.9.55,12600=ColdFusion 10+,1600=Apache $apr1$ MD5/ md5apr1/ MD5 (APR),141=Episerver 6.x < .NET 4,1441=Episerver 6.x >= .NET 4,1421=hMailServer,101=nsldap/ SHA-1(Base64)/ Netscape LDAP SHA,111=nsldaps/ SSHA-1(Base64)/ Netscape LDAP SSHA,7700=SAP CODVN B (BCODE),7701=SAP CODVN B (BCODE) from RFC_READ_TABLE,7800=SAP CODVN F/G (PASSCODE),7801=SAP CODVN F/G (PASSCODE) from RFC_READ_TABLE,10300=SAP CODVN H (PWDSALTEDHASH) iSSHA-1,35000=SAP CODVN H (PWDSALTEDHASH) isSHA512,20712=RSA Security Analytics / NetWitness (sha256),32031=Adobe AEM (SSPR/ SHA-256 with Salt),32041=Adobe AEM (SSPR/ SHA-512 with Salt),133=PeopleSoft,13500=PeopleSoft PS_TOKEN,32000=NetIQ SSPR (MD5),32050=NetIQ SSPR (PBKDF2WithHmacSHA1),32060=NetIQ SSPR (PBKDF2WithHmacSHA256),32070=NetIQ SSPR (PBKDF2WithHmacSHA512),32020=NetIQ SSPR (SHA-1 with Salt),32030=NetIQ SSPR (SHA-256 with Salt),32040=NetIQ SSPR (SHA-512 with Salt),32010=NetIQ SSPR (SHA1),21500=SolarWinds Orion,21501=SolarWinds Orion v2,24=SolarWinds Serv-U,8600=Lotus Notes/Domino 5,8700=Lotus Notes/Domino 6,9100=Lotus Notes/Domino 8,26200=OpenEdge Progress Encode,20600=Oracle Transportation Management (SHA256),4711=Huawei sha1(md5($pass).$salt),20711=AuthMe sha256,22400=AES Crypt (SHA256),27400=VMware VMX (PBKDF2-HMAC-SHA1 + AES-256-CBC),14600=LUKS v1 (legacy),29541=LUKS v1 RIPEMD-160 + AES,29542=LUKS v1 RIPEMD-160 + Serpent,29543=LUKS v1 RIPEMD-160 + Twofish,29511=LUKS v1 SHA-1 + AES,29512=LUKS v1 SHA-1 + Serpent,29513=LUKS v1 SHA-1 + Twofish,29521=LUKS v1 SHA-256 + AES,29522=LUKS v1 SHA-256 + Serpent,29523=LUKS v1 SHA-256 + Twofish,29531=LUKS v1 SHA-512 + AES,29532=LUKS v1 SHA-512 + Serpent,29533=LUKS v1 SHA-512 + Twofish,34100=LUKS v2 argon2 + SHA-256 + AES,13711=VeraCrypt RIPEMD160 + XTS 512 bit (legacy),13712=VeraCrypt RIPEMD160 + XTS 1024 bit (legacy),13713=VeraCrypt RIPEMD160 + XTS 1536 bit (legacy),13741=VeraCrypt RIPEMD160 + XTS 512 bit + boot-mode (legacy),13742=VeraCrypt RIPEMD160 + XTS 1024 bit + boot-mode (legacy),13743=VeraCrypt RIPEMD160 + XTS 1536 bit + boot-mode (legacy),29411=VeraCrypt RIPEMD160 + XTS 512 bit,29412=VeraCrypt RIPEMD160 + XTS 1024 bit,29413=VeraCrypt RIPEMD160 + XTS 1536 bit,29441=VeraCrypt RIPEMD160 + XTS 512 bit + boot-mode,29442=VeraCrypt RIPEMD160 + XTS 1024 bit + boot-mode,29443=VeraCrypt RIPEMD160 + XTS 1536 bit + boot-mode,13751=VeraCrypt SHA256 + XTS 512 bit (legacy),13752=VeraCrypt SHA256 + XTS 1024 bit (legacy),13753=VeraCrypt SHA256 + XTS 1536 bit (legacy),13761=VeraCrypt SHA256 + XTS 512 bit + boot-mode (legacy),13762=VeraCrypt SHA256 + XTS 1024 bit + boot-mode (legacy),13763=VeraCrypt SHA256 + XTS 1536 bit + boot-mode (legacy),29451=VeraCrypt SHA256 + XTS 512 bit,29452=VeraCrypt SHA256 + XTS 1024 bit,29453=VeraCrypt SHA256 + XTS 1536 bit,29461=VeraCrypt SHA256 + XTS 512 bit + boot-mode,29462=VeraCrypt SHA256 + XTS 1024 bit + boot-mode,29463=VeraCrypt SHA256 + XTS 1536 bit + boot-mode,13721=VeraCrypt SHA512 + XTS 512 bit (legacy),13722=VeraCrypt SHA512 + XTS 1024 bit (legacy),13723=VeraCrypt SHA512 + XTS 1536 bit (legacy),29421=VeraCrypt SHA512 + XTS 512 bit,29422=VeraCrypt SHA512 + XTS 1024 bit,29423=VeraCrypt SHA512 + XTS 1536 bit,13771=VeraCrypt Streebog-512 + XTS 512 bit (legacy),13772=VeraCrypt Streebog-512 + XTS 1024 bit (legacy),13773=VeraCrypt Streebog-512 + XTS 1536 bit (legacy),13781=VeraCrypt Streebog-512 + XTS 512 bit + boot-mode (legacy),13782=VeraCrypt Streebog-512 + XTS 1024 bit + boot-mode (legacy),13783=VeraCrypt Streebog-512 + XTS 1536 bit + boot-mode (legacy),29471=VeraCrypt Streebog-512 + XTS 512 bit,29472=VeraCrypt Streebog-512 + XTS 1024 bit,29473=VeraCrypt Streebog-512 + XTS 1536 bit,29481=VeraCrypt Streebog-512 + XTS 512 bit + boot-mode,29482=VeraCrypt Streebog-512 + XTS 1024 bit + boot-mode,29483=VeraCrypt Streebog-512 + XTS 1536 bit + boot-mode,13731=VeraCrypt Whirlpool + XTS 512 bit (legacy),13732=VeraCrypt Whirlpool + XTS 1024 bit (legacy),13733=VeraCrypt Whirlpool + XTS 1536 bit (legacy),29431=VeraCrypt Whirlpool + XTS 512 bit,29432=VeraCrypt Whirlpool + XTS 1024 bit,29433=VeraCrypt Whirlpool + XTS 1536 bit,23900=BestCrypt v3 Volume Encryption,24000=BestCrypt v4 Volume Encryption,16700=FileVault 2,27500=VirtualBox (PBKDF2-HMAC-SHA256 & AES-128-XTS),27600=VirtualBox (PBKDF2-HMAC-SHA256 & AES-256-XTS),20011=DiskCryptor SHA512 + XTS 512 bit,20012=DiskCryptor SHA512 + XTS 1024 bit,20013=DiskCryptor SHA512 + XTS 1536 bit,22100=BitLocker,12900=Android FDE (Samsung DEK),8800=Android FDE <= 4.3,18300=Apple File System (APFS),6211=TrueCrypt RIPEMD160 + XTS 512 bit (legacy),6212=TrueCrypt RIPEMD160 + XTS 1024 bit (legacy),6213=TrueCrypt RIPEMD160 + XTS 1536 bit (legacy),6241=TrueCrypt RIPEMD160 + XTS 512 bit + boot-mode (legacy),6242=TrueCrypt RIPEMD160 + XTS 1024 bit + boot-mode (legacy),6243=TrueCrypt RIPEMD160 + XTS 1536 bit + boot-mode (legacy),29311=TrueCrypt RIPEMD160 + XTS 512 bit,29312=TrueCrypt RIPEMD160 + XTS 1024 bit,29313=TrueCrypt RIPEMD160 + XTS 1536 bit,29341=TrueCrypt RIPEMD160 + XTS 512 bit + boot-mode,29342=TrueCrypt RIPEMD160 + XTS 1024 bit + boot-mode,29343=TrueCrypt RIPEMD160 + XTS 1536 bit + boot-mode,6221=TrueCrypt SHA512 + XTS 512 bit (legacy),6222=TrueCrypt SHA512 + XTS 1024 bit (legacy),6223=TrueCrypt SHA512 + XTS 1536 bit (legacy),29321=TrueCrypt SHA512 + XTS 512 bit,29322=TrueCrypt SHA512 + XTS 1024 bit,29323=TrueCrypt SHA512 + XTS 1536 bit,6231=TrueCrypt Whirlpool + XTS 512 bit (legacy),6232=TrueCrypt Whirlpool + XTS 1024 bit (legacy),6233=TrueCrypt Whirlpool + XTS 1536 bit (legacy),29331=TrueCrypt Whirlpool + XTS 512 bit,29332=TrueCrypt Whirlpool + XTS 1024 bit,29333=TrueCrypt Whirlpool + XTS 1536 bit,12200=eCryptfs,10400=PDF 1.1 - 1.3 (Acrobat 2 - 4),10410=PDF 1.1 - 1.3 (Acrobat 2 - 4)/ collider #1,10420=PDF 1.1 - 1.3 (Acrobat 2 - 4)/ collider #2,10510=PDF 1.3 - 1.6 (Acrobat 4 - 8) w/ RC4-40,10500=PDF 1.4 - 1.6 (Acrobat 5 - 8),25400=PDF 1.4 - 1.6 (Acrobat 5 - 8) - user and owner pass,10600=PDF 1.7 Level 3 (Acrobat 9),10700=PDF 1.7 Level 8 (Acrobat 10 - 11),9400=MS Office 2007,9500=MS Office 2010,9600=MS Office 2013,25300=MS Office 2016 - SheetProtection,9700=MS Office <= 2003 $0/$1/ MD5 + RC4,9710=MS Office <= 2003 $0/$1/ MD5 + RC4/ collider #1,9720=MS Office <= 2003 $0/$1/ MD5 + RC4/ collider #2,9810=MS Office <= 2003 $3/ SHA1 + RC4/ collider #1,9820=MS Office <= 2003 $3/ SHA1 + RC4/ collider #2,9800=MS Office <= 2003 $3/$4/ SHA1 + RC4,18400=Open Document Format (ODF) 1.2 (SHA-256/ AES),18600=Open Document Format (ODF) 1.1 (SHA-1/ Blowfish),16200=Apple Secure Notes,23300=Apple iWork,6600=1Password/ agilekeychain,8200=1Password/ cloudkeychain,31800=1Password/ mobilekeychain (1Password 8),9000=Password Safe v2,5200=Password Safe v3,6800=LastPass + LastPass sniffed,13400=KeePass (KDBX v2/v3),29700=KeePass (KDBX v2/v3) - keyfile only,34300=KeePass (KDBX v4),23400=Bitwarden,16900=Ansible Vault,26000=Mozilla key3.db,26100=Mozilla key4.db,23100=Apple Keychain,11600=7-Zip,12500=RAR3-hp,23700=RAR3-p (Uncompressed),13000=RAR5,17220=PKZIP (Compressed Multi-File),17200=PKZIP (Compressed),17225=PKZIP (Mixed Multi-File),17230=PKZIP (Mixed Multi-File Checksum-Only),17210=PKZIP (Uncompressed),20500=PKZIP Master Key,20510=PKZIP Master Key (6 byte optimization),23001=SecureZIP AES-128,23002=SecureZIP AES-192,23003=SecureZIP AES-256,31200=Veeam VBK,13600=WinZip,18900=Android Backup,32700=Kremlin Encrypt 3.0 w/NewDES,24700=Stuffit5,13200=AxCrypt 1,13300=AxCrypt 1 in-memory SHA1,23500=AxCrypt 2 AES-128,23600=AxCrypt 2 AES-256,14700=iTunes backup < 10.0,14800=iTunes backup >= 10.0,33400=mega.nz password-protected link (PBKDF2-HMAC-SHA512),8400=WBB3 (Woltlab Burning Board),33800=WBB4 (Woltlab Burning Board) [bcrypt(bcrypt($pass))],2612=PHPS,121=SMF (Simple Machines Forum) > v1.1,3711=MediaWiki B type,4521=Redmine,22800=Simpla CMS - md5($salt.$pass.md5($pass)),24800=Umbraco HMAC-SHA1,32300=Empire CMS (Admin password),11=Joomla < 2.5.18,13900=OpenCart,11000=PrestaShop,16000=Tripcode,7900=Drupal7,32600=CubeCart (whirlpool($salt.$pass.$salt)),4522=PunBB,2811=MyBB 1.2+/ IPB2+ (Invision Power Board),2611=vBulletin < v3.8.5,2711=vBulletin >= v3.8.5,21=osCommerce/ xt:Commerce,18100=TOTP (HMAC-SHA1),2000=STDOUT,99999=Plaintext,21600=Web2py pbkdf2-sha512,16501=Perl Mojolicious session cookie (HMAC-SHA256/ >= v9.19),10000=Django (PBKDF2-SHA256),124=Django (SHA-1),12150=Apache Shiro 1 SHA-512,12001=Atlassian (PBKDF2-HMAC-SHA1),19500=Ruby on Rails Restful-Authentication,27200=Ruby on Rails Restful Auth (one round/ no sitekey),30000=Python Werkzeug MD5 (HMAC-MD5 (key = $salt)),30120=Python Werkzeug SHA256 (HMAC-SHA256 (key = $salt)),20200=Python passlib pbkdf2-sha512,20300=Python passlib pbkdf2-sha256,20400=Python passlib pbkdf2-sha1,24410=PKCS#8 Private Keys (PBKDF2-HMAC-SHA1 + 3DES/AES),24420=PKCS#8 Private Keys (PBKDF2-HMAC-SHA256 + 3DES/AES),15500=JKS Java Key Store Private Keys (SHA1),17010=GPG (AES-128/AES-256 (SHA-1($pass))),17020=GPG (AES-128/AES-256 (SHA-512($pass))),17030=GPG (AES-128/AES-256 (SHA-256($pass))),17040=GPG (CAST5 (SHA-1($pass))),22911=RSA/DSA/EC/OpenSSH Private Keys ($0$),22921=RSA/DSA/EC/OpenSSH Private Keys ($6$),22931=RSA/DSA/EC/OpenSSH Private Keys ($1/ $3$),22941=RSA/DSA/EC/OpenSSH Private Keys ($4$),22951=RSA/DSA/EC/OpenSSH Private Keys ($5$),23200=XMPP SCRAM PBKDF2-SHA1,28300=Teamspeak 3 (channel hash),22600=Telegram Desktop < v2.1.14 (PBKDF2-HMAC-SHA1),24500=Telegram Desktop >= v2.1.14 (PBKDF2-HMAC-SHA512),22301=Telegram Mobile App Passcode (SHA256),23=Skype,30700=Anope IRC Services (enc_sha256),29600=Terra Station Wallet (AES256-CBC(PBKDF2($pass))),31900=MetaMask Mobile Wallet,26600=MetaMask Wallet (needs all data/ checks AES-GCM tag),26610=MetaMask Wallet (short hash/ plaintext check),29800=Bisq .wallet (scrypt),21000=BitShares v0.x - sha512(sha512_bin(pass)),28501=Bitcoin WIF private key (P2PKH)/ compressed,28502=Bitcoin WIF private key (P2PKH)/ uncompressed,28503=Bitcoin WIF private key (P2WPKH/ Bech32)/ compressed,28504=Bitcoin WIF private key (P2WPKH/ Bech32)/ uncompressed,28505=Bitcoin WIF private key (P2SH(P2WPKH))/ compressed,28506=Bitcoin WIF private key (P2SH(P2WPKH))/ uncompressed,30901=Bitcoin raw private key (P2PKH)/ compressed,30902=Bitcoin raw private key (P2PKH)/ uncompressed,30903=Bitcoin raw private key (P2WPKH/ Bech32)/ compressed,30904=Bitcoin raw private key (P2WPKH/ Bech32)/ uncompressed,30905=Bitcoin raw private key (P2SH(P2WPKH))/ compressed,30906=Bitcoin raw private key (P2SH(P2WPKH))/ uncompressed,11300=Bitcoin/Litecoin wallet.dat,16600=Electrum Wallet (Salt-Type 1-3),21700=Electrum Wallet (Salt-Type 4),21800=Electrum Wallet (Salt-Type 5),12700=Blockchain/ My Wallet,15200=Blockchain/ My Wallet/ V2,18800=Blockchain/ My Wallet/ Second Password (SHA256),34700=Blockchain/ My Wallet/ Legacy Wallets,32500=Dogechain.info Wallet,25500=Stargazer Stellar Wallet XLM,16300=Ethereum Pre-Sale Wallet/ PBKDF2-HMAC-SHA256,15600=Ethereum Wallet/ PBKDF2-HMAC-SHA256,15700=Ethereum Wallet/ SCRYPT,22500=MultiBit Classic .key (MD5),27700=MultiBit Classic .wallet (scrypt),22700=MultiBit HD (scrypt),28200=Exodus Desktop Wallet (scrypt),29910=ENCsecurity Datavault (PBKDF2/no keychain),29920=ENCsecurity Datavault (PBKDF2/keychain),29930=ENCsecurity Datavault (MD5/no keychain),29940=ENCsecurity Datavault (MD5/keychain),24600=SQLCipher,31400=SecureCRT MasterPassphrase v2,72000=Generic Hash [Bridged: Python Interpreter free-threading],73000=Generic Hash [Bridged: Python Interpreter with GIL],74000=Generic Hash [Bridged: Rust]}} --quiet {{FILE:file:hashes}} --wordlist {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --force
 ```
 
-<!-- meta: risk=safe | phase=passwords | tags=ansible,vault -->
+<!-- meta: risk=low | phase=crack | tags=dict,wordlist,rockyou,all-modes -->
 
 ---
 
-## chained bitlocker crack hashcat
-One-shot BitLocker crack: bitlocker2john extracts the hashes from the VHD, grep filters to the $0 (user password) mode, then hashcat rips it with -m 22100.
+## one liner echo and crack
+Hash → file → crack in one line. For when you have a single hash and don't want to split the step.
 
 ```bash
-bitlocker2john -i {{VHD:file:Backup.vhd}} > /tmp/q-bl.hashes && grep 'bitlocker$0' /tmp/q-bl.hashes > /tmp/q-bl.hash && hashcat -a 0 -m 22100 /tmp/q-bl.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
+echo '{{HASH:str}}' > {{FILE:file:hashes}} && hashcat --quiet -m {{MODE:choice:900=MD4,0=MD5,34600=MD6 (256),100=SHA1,1300=SHA2-224,1400=SHA2-256,10800=SHA2-384,1700=SHA2-512,17300=SHA3-224,17400=SHA3-256,17500=SHA3-384,17600=SHA3-512,6000=RIPEMD-160,33600=RIPEMD-320,34800=BLAKE2b-256,600=BLAKE2b-512,31000=BLAKE2s-256,11700=GOST R 34.11-2012 (Streebog) 256-bit/ big-endian,11800=GOST R 34.11-2012 (Streebog) 512-bit/ big-endian,6900=GOST R 34.11-94,5100=Half MD5,17700=Keccak-224,17800=Keccak-256,17900=Keccak-384,18000=Keccak-512,31100=ShangMi 3 (SM3),6100=Whirlpool,70=md5(utf16le($pass)),170=sha1(utf16le($pass)),34500=sha224(sha1($pass)),34400=sha224(sha224($pass)),1470=sha256(utf16le($pass)),10870=sha384(utf16le($pass)),1770=sha512(utf16le($pass)),34810=BLAKE2b-256($pass.$salt),34820=BLAKE2b-256($salt.$pass),610=BLAKE2b-512($pass.$salt),620=BLAKE2b-512($salt.$pass),10=md5($pass.$salt),20=md5($salt.$pass),3800=md5($salt.$pass.$salt),3710=md5($salt.md5($pass)),33100=md5($salt.md5($pass).$salt),4110=md5($salt.md5($pass.$salt)),4010=md5($salt.md5($salt.$pass)),21300=md5($salt.sha1($salt.$pass)),40=md5($salt.utf16le($pass)),33000=md5($salt1.$pass.$salt2),21310=md5($salt1.sha1($salt2.$pass)),3730=md5($salt1.strtoupper(md5($salt2.$pass))),2600=md5(md5($pass)),3910=md5(md5($pass).md5($salt)),2630=md5(md5($pass.$salt)),30500=md5(md5($salt).md5(md5($pass))),3500=md5(md5(md5($pass))),3610=md5(md5(md5($pass)).$salt),31700=md5(md5(md5($pass).$salt1).$salt2),21900=md5(md5(md5($pass.$salt1)).$salt2),4400=md5(sha1($pass)),4410=md5(sha1($pass).$salt),20900=md5(sha1($pass).md5($pass).sha1($pass)),4420=md5(sha1($pass.$salt)),21200=md5(sha1($salt).md5($pass)),4430=md5(sha1($salt.$pass)),32800=md5(sha1(md5($pass))),4300=md5(strtoupper(md5($pass))),30=md5(utf16le($pass).$salt),110=sha1($pass.$salt),120=sha1($salt.$pass),4900=sha1($salt.$pass.$salt),4520=sha1($salt.sha1($pass)),24300=sha1($salt.sha1($pass.$salt)),29000=sha1($salt.sha1(utf16le($username).':'.utf16le($pass))),140=sha1($salt.utf16le($pass)),19300=sha1($salt1.$pass.$salt2),14400=sha1(CX),4700=sha1(md5($pass)),4710=sha1(md5($pass).$salt),21100=sha1(md5($pass.$salt)),18500=sha1(md5(md5($pass))),4500=sha1(sha1($pass)),4510=sha1(sha1($pass).$salt),5000=sha1(sha1($salt.$pass.$salt)),130=sha1(utf16le($pass).$salt),1310=sha224($pass.$salt),1320=sha224($salt.$pass),1410=sha256($pass.$salt),1420=sha256($salt.$pass),22300=sha256($salt.$pass.$salt),20720=sha256($salt.sha256($pass)),21420=sha256($salt.sha256_bin($pass)),1440=sha256($salt.utf16le($pass)),20800=sha256(md5($pass)),20710=sha256(sha256($pass).$salt),20730=sha256(sha256($pass.$salt)),21400=sha256(sha256_bin($pass)),1430=sha256(utf16le($pass).$salt),10810=sha384($pass.$salt),10820=sha384($salt.$pass),10840=sha384($salt.utf16le($pass)),10830=sha384(utf16le($pass).$salt),1710=sha512($pass.$salt),1720=sha512($salt.$pass),1740=sha512($salt.utf16le($pass)),32410=sha512(sha512($pass).$salt),32420=sha512(sha512_bin($pass).$salt),1730=sha512(utf16le($pass).$salt),33300=HMAC-BLAKE2S (key = $pass),50=HMAC-MD5 (key = $pass),60=HMAC-MD5 (key = $salt),6050=HMAC-RIPEMD160 (key = $pass),6060=HMAC-RIPEMD160 (key = $salt),33650=HMAC-RIPEMD320 (key = $pass),33660=HMAC-RIPEMD320 (key = $salt),150=HMAC-SHA1 (key = $pass),160=HMAC-SHA1 (key = $salt),1450=HMAC-SHA256 (key = $pass),1460=HMAC-SHA256 (key = $salt),1750=HMAC-SHA512 (key = $pass),1760=HMAC-SHA512 (key = $salt),11750=HMAC-Streebog-256 (key = $pass)/ big-endian,11760=HMAC-Streebog-256 (key = $salt)/ big-endian,11850=HMAC-Streebog-512 (key = $pass)/ big-endian,11860=HMAC-Streebog-512 (key = $salt)/ big-endian,10100=SipHash,11500=CRC32,27900=CRC32C,28000=CRC64Jones,18700=Java Object hashCode(),25700=MurmurHash,27800=MurmurHash3,34200=MurmurHash64A,34201=MurmurHash64A (zero seed),34211=MurmurHash64A truncated (zero seed),33502=RC4 104-bit DropN,33500=RC4 40-bit DropN,33501=RC4 72-bit DropN,14100=3DES (PT = $salt/ key = $pass),14000=DES (PT = $salt/ key = $pass),26401=AES-128-ECB NOKDF (PT = $salt/ key = $pass),26402=AES-192-ECB NOKDF (PT = $salt/ key = $pass),26403=AES-256-ECB NOKDF (PT = $salt/ key = $pass),15400=ChaCha20,14500=Linux Kernel Crypto API (2.4),14900=Skip32 (PT = $salt/ key = $pass),32900=PBKDF1-SHA1,11900=PBKDF2-HMAC-MD5,12000=PBKDF2-HMAC-SHA1,10900=PBKDF2-HMAC-SHA256,12100=PBKDF2-HMAC-SHA512,34000=Argon2,70000=Argon2id [Bridged: reference implementation + tunings],8900=scrypt,70100=scrypt [Bridged: Scrypt-Jane SMix],70200=scrypt [Bridged: Scrypt-Yescrypt],30601=bcrypt(HMAC-SHA256($pass)),25600=bcrypt(md5($pass)),25800=bcrypt(sha1($pass)),30600=bcrypt(sha256($pass)),28400=bcrypt(sha512($pass)),400=phpass,16100=TACACS+,30420=DANE RFC7929/RFC8162 SHA2-256,11400=SIP digest authentication (MD5),5300=IKE-PSK MD5,5400=IKE-PSK SHA1,25100=SNMPv3 HMAC-MD5-96,25000=SNMPv3 HMAC-MD5-96/HMAC-SHA1-96,25200=SNMPv3 HMAC-SHA1-96,26700=SNMPv3 HMAC-SHA224-128,26800=SNMPv3 HMAC-SHA256-192,26900=SNMPv3 HMAC-SHA384-256,27300=SNMPv3 HMAC-SHA512-384,2500=WPA-EAPOL-PBKDF2,2501=WPA-EAPOL-PMK,22000=WPA-PBKDF2-PMKID+EAPOL,22001=WPA-PMK-PMKID+EAPOL,16800=WPA-PMKID-PBKDF2,16801=WPA-PMKID-PMK,7350=IPMI2 RAKP HMAC-MD5,7300=IPMI2 RAKP HMAC-SHA1,10200=CRAM-MD5,31300=MS SNTP,16500=JWT (JSON Web Token),19600=Kerberos 5/ etype 17/ TGS-REP,19800=Kerberos 5/ etype 17/ Pre-Auth,28800=Kerberos 5/ etype 17/ DB,32100=Kerberos 5/ etype 17/ AS-REP,19700=Kerberos 5/ etype 18/ TGS-REP,19900=Kerberos 5/ etype 18/ Pre-Auth,28900=Kerberos 5/ etype 18/ DB,32200=Kerberos 5/ etype 18/ AS-REP,7500=Kerberos 5/ etype 23/ AS-REQ Pre-Auth,13100=Kerberos 5/ etype 23/ TGS-REP,18200=Kerberos 5/ etype 23/ AS-REP,5500=NetNTLMv1 / NetNTLMv1+ESS,27000=NetNTLMv1 / NetNTLMv1+ESS (NT),5600=NetNTLMv2,27100=NetNTLMv2 (NT),29100=Flask Session Cookie ($salt.$salt.$pass),28700=Amazon AWS Signature Version 4,4800=iSCSI CHAP authentication/ MD5(CHAP),8500=RACF,14200=RACF KDFAES,6300=AIX {smd5},6700=AIX {ssha1},6400=AIX {ssha256},6500=AIX {ssha512},3000=LM,19000=QNX /etc/shadow (MD5),19100=QNX /etc/shadow (SHA256),19200=QNX /etc/shadow (SHA512),19210=QNX 7 /etc/shadow (SHA512),15300=DPAPI masterkey file v1 (context 1 and 2),15310=DPAPI masterkey file v1 (context 3),15900=DPAPI masterkey file v2 (context 1 and 2),15910=DPAPI masterkey file v2 (context 3),7200=GRUB 2,12800=MS-AzureSync PBKDF2-HMAC-SHA256,8501=AS/400 DES,35200=AS/400 SSHA1,12400=BSDi Crypt/ Extended DES,1000=NTLM,9900=Radmin2,5800=Samsung Android Password/PIN,33700=Microsoft Online Account (PBKDF2-HMAC-SHA256 + AES256),28100=Windows Hello PIN/Password,13800=Windows Phone 8+ PIN/password,2410=Cisco-ASA MD5,9200=Cisco-IOS $8$ (PBKDF2-SHA256),9300=Cisco-IOS $9$ (scrypt),5700=Cisco-IOS type 4 (SHA256),5720=Cisco-ISE Hashed Password (SHA256),2400=Cisco-PIX MD5,33900=Citrix NetScaler (PBKDF2-HMAC-SHA256),8100=Citrix NetScaler (SHA1),22200=Citrix NetScaler (SHA512),1100=Domain Cached Credentials (DCC)/ MS Cache,2100=Domain Cached Credentials 2 (DCC2)/ MS Cache 2,31500=Domain Cached Credentials (DCC)/ MS Cache (NT),31600=Domain Cached Credentials 2 (DCC2)/ MS Cache 2/ (NT),7000=FortiGate (FortiOS),26300=FortiGate256 (FortiOS256),125=ArubaOS,501=Juniper IVE,22=Juniper NetScreen/SSG (ScreenOS),15100=Juniper/NetBSD sha1crypt,26500=iPhone passcode (UID key + System Keybag),122=macOS v10.4/ macOS v10.5/ macOS v10.6,1722=macOS v10.7,7100=macOS v10.8+ (PBKDF2-SHA512),3200=bcrypt $2*$/ Blowfish (Unix),500=md5crypt/ MD5 (Unix)/ Cisco-IOS $1$ (MD5),1500=descrypt/ DES (Unix)/ Traditional DES,7400=sha256crypt $5$/ SHA256 (Unix),1800=sha512crypt $6$/ SHA512 (Unix),35100=sm3crypt $sm3$/ SM3 (Unix),131=MSSQL (2000),132=MSSQL (2005),1731=MSSQL (2012/ 2014),24100=MongoDB ServerKey SCRAM-SHA-1,24200=MongoDB ServerKey SCRAM-SHA-256,12=PostgreSQL,11100=PostgreSQL CRAM (MD5),28600=PostgreSQL SCRAM-SHA-256,3100=Oracle H: Type (Oracle 7+),112=Oracle S: Type (Oracle 11+),12300=Oracle T: Type (Oracle 12+),7401=MySQL $A$ (sha256crypt),11200=MySQL CRAM (SHA1),200=MySQL323,300=MySQL4.1/MySQL5,8000=Sybase ASE,8300=DNSSEC (NSEC3),25900=KNX IP Secure - Device Authentication Code,16400=CRAM-MD5 Dovecot,1411=SSHA-256(Base64)/ LDAP {SSHA256},1711=SSHA-512(Base64)/ LDAP {SSHA512},29200=Radmin3,24900=Dahua Authentication MD5,10901=RedHat 389-DS LDAP (PBKDF2-HMAC-SHA256),24901=Besder Authentication MD5,15000=FileZilla Server >= 0.9.55,12600=ColdFusion 10+,1600=Apache $apr1$ MD5/ md5apr1/ MD5 (APR),141=Episerver 6.x < .NET 4,1441=Episerver 6.x >= .NET 4,1421=hMailServer,101=nsldap/ SHA-1(Base64)/ Netscape LDAP SHA,111=nsldaps/ SSHA-1(Base64)/ Netscape LDAP SSHA,7700=SAP CODVN B (BCODE),7701=SAP CODVN B (BCODE) from RFC_READ_TABLE,7800=SAP CODVN F/G (PASSCODE),7801=SAP CODVN F/G (PASSCODE) from RFC_READ_TABLE,10300=SAP CODVN H (PWDSALTEDHASH) iSSHA-1,35000=SAP CODVN H (PWDSALTEDHASH) isSHA512,20712=RSA Security Analytics / NetWitness (sha256),32031=Adobe AEM (SSPR/ SHA-256 with Salt),32041=Adobe AEM (SSPR/ SHA-512 with Salt),133=PeopleSoft,13500=PeopleSoft PS_TOKEN,32000=NetIQ SSPR (MD5),32050=NetIQ SSPR (PBKDF2WithHmacSHA1),32060=NetIQ SSPR (PBKDF2WithHmacSHA256),32070=NetIQ SSPR (PBKDF2WithHmacSHA512),32020=NetIQ SSPR (SHA-1 with Salt),32030=NetIQ SSPR (SHA-256 with Salt),32040=NetIQ SSPR (SHA-512 with Salt),32010=NetIQ SSPR (SHA1),21500=SolarWinds Orion,21501=SolarWinds Orion v2,24=SolarWinds Serv-U,8600=Lotus Notes/Domino 5,8700=Lotus Notes/Domino 6,9100=Lotus Notes/Domino 8,26200=OpenEdge Progress Encode,20600=Oracle Transportation Management (SHA256),4711=Huawei sha1(md5($pass).$salt),20711=AuthMe sha256,22400=AES Crypt (SHA256),27400=VMware VMX (PBKDF2-HMAC-SHA1 + AES-256-CBC),14600=LUKS v1 (legacy),29541=LUKS v1 RIPEMD-160 + AES,29542=LUKS v1 RIPEMD-160 + Serpent,29543=LUKS v1 RIPEMD-160 + Twofish,29511=LUKS v1 SHA-1 + AES,29512=LUKS v1 SHA-1 + Serpent,29513=LUKS v1 SHA-1 + Twofish,29521=LUKS v1 SHA-256 + AES,29522=LUKS v1 SHA-256 + Serpent,29523=LUKS v1 SHA-256 + Twofish,29531=LUKS v1 SHA-512 + AES,29532=LUKS v1 SHA-512 + Serpent,29533=LUKS v1 SHA-512 + Twofish,34100=LUKS v2 argon2 + SHA-256 + AES,13711=VeraCrypt RIPEMD160 + XTS 512 bit (legacy),13712=VeraCrypt RIPEMD160 + XTS 1024 bit (legacy),13713=VeraCrypt RIPEMD160 + XTS 1536 bit (legacy),13741=VeraCrypt RIPEMD160 + XTS 512 bit + boot-mode (legacy),13742=VeraCrypt RIPEMD160 + XTS 1024 bit + boot-mode (legacy),13743=VeraCrypt RIPEMD160 + XTS 1536 bit + boot-mode (legacy),29411=VeraCrypt RIPEMD160 + XTS 512 bit,29412=VeraCrypt RIPEMD160 + XTS 1024 bit,29413=VeraCrypt RIPEMD160 + XTS 1536 bit,29441=VeraCrypt RIPEMD160 + XTS 512 bit + boot-mode,29442=VeraCrypt RIPEMD160 + XTS 1024 bit + boot-mode,29443=VeraCrypt RIPEMD160 + XTS 1536 bit + boot-mode,13751=VeraCrypt SHA256 + XTS 512 bit (legacy),13752=VeraCrypt SHA256 + XTS 1024 bit (legacy),13753=VeraCrypt SHA256 + XTS 1536 bit (legacy),13761=VeraCrypt SHA256 + XTS 512 bit + boot-mode (legacy),13762=VeraCrypt SHA256 + XTS 1024 bit + boot-mode (legacy),13763=VeraCrypt SHA256 + XTS 1536 bit + boot-mode (legacy),29451=VeraCrypt SHA256 + XTS 512 bit,29452=VeraCrypt SHA256 + XTS 1024 bit,29453=VeraCrypt SHA256 + XTS 1536 bit,29461=VeraCrypt SHA256 + XTS 512 bit + boot-mode,29462=VeraCrypt SHA256 + XTS 1024 bit + boot-mode,29463=VeraCrypt SHA256 + XTS 1536 bit + boot-mode,13721=VeraCrypt SHA512 + XTS 512 bit (legacy),13722=VeraCrypt SHA512 + XTS 1024 bit (legacy),13723=VeraCrypt SHA512 + XTS 1536 bit (legacy),29421=VeraCrypt SHA512 + XTS 512 bit,29422=VeraCrypt SHA512 + XTS 1024 bit,29423=VeraCrypt SHA512 + XTS 1536 bit,13771=VeraCrypt Streebog-512 + XTS 512 bit (legacy),13772=VeraCrypt Streebog-512 + XTS 1024 bit (legacy),13773=VeraCrypt Streebog-512 + XTS 1536 bit (legacy),13781=VeraCrypt Streebog-512 + XTS 512 bit + boot-mode (legacy),13782=VeraCrypt Streebog-512 + XTS 1024 bit + boot-mode (legacy),13783=VeraCrypt Streebog-512 + XTS 1536 bit + boot-mode (legacy),29471=VeraCrypt Streebog-512 + XTS 512 bit,29472=VeraCrypt Streebog-512 + XTS 1024 bit,29473=VeraCrypt Streebog-512 + XTS 1536 bit,29481=VeraCrypt Streebog-512 + XTS 512 bit + boot-mode,29482=VeraCrypt Streebog-512 + XTS 1024 bit + boot-mode,29483=VeraCrypt Streebog-512 + XTS 1536 bit + boot-mode,13731=VeraCrypt Whirlpool + XTS 512 bit (legacy),13732=VeraCrypt Whirlpool + XTS 1024 bit (legacy),13733=VeraCrypt Whirlpool + XTS 1536 bit (legacy),29431=VeraCrypt Whirlpool + XTS 512 bit,29432=VeraCrypt Whirlpool + XTS 1024 bit,29433=VeraCrypt Whirlpool + XTS 1536 bit,23900=BestCrypt v3 Volume Encryption,24000=BestCrypt v4 Volume Encryption,16700=FileVault 2,27500=VirtualBox (PBKDF2-HMAC-SHA256 & AES-128-XTS),27600=VirtualBox (PBKDF2-HMAC-SHA256 & AES-256-XTS),20011=DiskCryptor SHA512 + XTS 512 bit,20012=DiskCryptor SHA512 + XTS 1024 bit,20013=DiskCryptor SHA512 + XTS 1536 bit,22100=BitLocker,12900=Android FDE (Samsung DEK),8800=Android FDE <= 4.3,18300=Apple File System (APFS),6211=TrueCrypt RIPEMD160 + XTS 512 bit (legacy),6212=TrueCrypt RIPEMD160 + XTS 1024 bit (legacy),6213=TrueCrypt RIPEMD160 + XTS 1536 bit (legacy),6241=TrueCrypt RIPEMD160 + XTS 512 bit + boot-mode (legacy),6242=TrueCrypt RIPEMD160 + XTS 1024 bit + boot-mode (legacy),6243=TrueCrypt RIPEMD160 + XTS 1536 bit + boot-mode (legacy),29311=TrueCrypt RIPEMD160 + XTS 512 bit,29312=TrueCrypt RIPEMD160 + XTS 1024 bit,29313=TrueCrypt RIPEMD160 + XTS 1536 bit,29341=TrueCrypt RIPEMD160 + XTS 512 bit + boot-mode,29342=TrueCrypt RIPEMD160 + XTS 1024 bit + boot-mode,29343=TrueCrypt RIPEMD160 + XTS 1536 bit + boot-mode,6221=TrueCrypt SHA512 + XTS 512 bit (legacy),6222=TrueCrypt SHA512 + XTS 1024 bit (legacy),6223=TrueCrypt SHA512 + XTS 1536 bit (legacy),29321=TrueCrypt SHA512 + XTS 512 bit,29322=TrueCrypt SHA512 + XTS 1024 bit,29323=TrueCrypt SHA512 + XTS 1536 bit,6231=TrueCrypt Whirlpool + XTS 512 bit (legacy),6232=TrueCrypt Whirlpool + XTS 1024 bit (legacy),6233=TrueCrypt Whirlpool + XTS 1536 bit (legacy),29331=TrueCrypt Whirlpool + XTS 512 bit,29332=TrueCrypt Whirlpool + XTS 1024 bit,29333=TrueCrypt Whirlpool + XTS 1536 bit,12200=eCryptfs,10400=PDF 1.1 - 1.3 (Acrobat 2 - 4),10410=PDF 1.1 - 1.3 (Acrobat 2 - 4)/ collider #1,10420=PDF 1.1 - 1.3 (Acrobat 2 - 4)/ collider #2,10510=PDF 1.3 - 1.6 (Acrobat 4 - 8) w/ RC4-40,10500=PDF 1.4 - 1.6 (Acrobat 5 - 8),25400=PDF 1.4 - 1.6 (Acrobat 5 - 8) - user and owner pass,10600=PDF 1.7 Level 3 (Acrobat 9),10700=PDF 1.7 Level 8 (Acrobat 10 - 11),9400=MS Office 2007,9500=MS Office 2010,9600=MS Office 2013,25300=MS Office 2016 - SheetProtection,9700=MS Office <= 2003 $0/$1/ MD5 + RC4,9710=MS Office <= 2003 $0/$1/ MD5 + RC4/ collider #1,9720=MS Office <= 2003 $0/$1/ MD5 + RC4/ collider #2,9810=MS Office <= 2003 $3/ SHA1 + RC4/ collider #1,9820=MS Office <= 2003 $3/ SHA1 + RC4/ collider #2,9800=MS Office <= 2003 $3/$4/ SHA1 + RC4,18400=Open Document Format (ODF) 1.2 (SHA-256/ AES),18600=Open Document Format (ODF) 1.1 (SHA-1/ Blowfish),16200=Apple Secure Notes,23300=Apple iWork,6600=1Password/ agilekeychain,8200=1Password/ cloudkeychain,31800=1Password/ mobilekeychain (1Password 8),9000=Password Safe v2,5200=Password Safe v3,6800=LastPass + LastPass sniffed,13400=KeePass (KDBX v2/v3),29700=KeePass (KDBX v2/v3) - keyfile only,34300=KeePass (KDBX v4),23400=Bitwarden,16900=Ansible Vault,26000=Mozilla key3.db,26100=Mozilla key4.db,23100=Apple Keychain,11600=7-Zip,12500=RAR3-hp,23700=RAR3-p (Uncompressed),13000=RAR5,17220=PKZIP (Compressed Multi-File),17200=PKZIP (Compressed),17225=PKZIP (Mixed Multi-File),17230=PKZIP (Mixed Multi-File Checksum-Only),17210=PKZIP (Uncompressed),20500=PKZIP Master Key,20510=PKZIP Master Key (6 byte optimization),23001=SecureZIP AES-128,23002=SecureZIP AES-192,23003=SecureZIP AES-256,31200=Veeam VBK,13600=WinZip,18900=Android Backup,32700=Kremlin Encrypt 3.0 w/NewDES,24700=Stuffit5,13200=AxCrypt 1,13300=AxCrypt 1 in-memory SHA1,23500=AxCrypt 2 AES-128,23600=AxCrypt 2 AES-256,14700=iTunes backup < 10.0,14800=iTunes backup >= 10.0,33400=mega.nz password-protected link (PBKDF2-HMAC-SHA512),8400=WBB3 (Woltlab Burning Board),33800=WBB4 (Woltlab Burning Board) [bcrypt(bcrypt($pass))],2612=PHPS,121=SMF (Simple Machines Forum) > v1.1,3711=MediaWiki B type,4521=Redmine,22800=Simpla CMS - md5($salt.$pass.md5($pass)),24800=Umbraco HMAC-SHA1,32300=Empire CMS (Admin password),11=Joomla < 2.5.18,13900=OpenCart,11000=PrestaShop,16000=Tripcode,7900=Drupal7,32600=CubeCart (whirlpool($salt.$pass.$salt)),4522=PunBB,2811=MyBB 1.2+/ IPB2+ (Invision Power Board),2611=vBulletin < v3.8.5,2711=vBulletin >= v3.8.5,21=osCommerce/ xt:Commerce,18100=TOTP (HMAC-SHA1),2000=STDOUT,99999=Plaintext,21600=Web2py pbkdf2-sha512,16501=Perl Mojolicious session cookie (HMAC-SHA256/ >= v9.19),10000=Django (PBKDF2-SHA256),124=Django (SHA-1),12150=Apache Shiro 1 SHA-512,12001=Atlassian (PBKDF2-HMAC-SHA1),19500=Ruby on Rails Restful-Authentication,27200=Ruby on Rails Restful Auth (one round/ no sitekey),30000=Python Werkzeug MD5 (HMAC-MD5 (key = $salt)),30120=Python Werkzeug SHA256 (HMAC-SHA256 (key = $salt)),20200=Python passlib pbkdf2-sha512,20300=Python passlib pbkdf2-sha256,20400=Python passlib pbkdf2-sha1,24410=PKCS#8 Private Keys (PBKDF2-HMAC-SHA1 + 3DES/AES),24420=PKCS#8 Private Keys (PBKDF2-HMAC-SHA256 + 3DES/AES),15500=JKS Java Key Store Private Keys (SHA1),17010=GPG (AES-128/AES-256 (SHA-1($pass))),17020=GPG (AES-128/AES-256 (SHA-512($pass))),17030=GPG (AES-128/AES-256 (SHA-256($pass))),17040=GPG (CAST5 (SHA-1($pass))),22911=RSA/DSA/EC/OpenSSH Private Keys ($0$),22921=RSA/DSA/EC/OpenSSH Private Keys ($6$),22931=RSA/DSA/EC/OpenSSH Private Keys ($1/ $3$),22941=RSA/DSA/EC/OpenSSH Private Keys ($4$),22951=RSA/DSA/EC/OpenSSH Private Keys ($5$),23200=XMPP SCRAM PBKDF2-SHA1,28300=Teamspeak 3 (channel hash),22600=Telegram Desktop < v2.1.14 (PBKDF2-HMAC-SHA1),24500=Telegram Desktop >= v2.1.14 (PBKDF2-HMAC-SHA512),22301=Telegram Mobile App Passcode (SHA256),23=Skype,30700=Anope IRC Services (enc_sha256),29600=Terra Station Wallet (AES256-CBC(PBKDF2($pass))),31900=MetaMask Mobile Wallet,26600=MetaMask Wallet (needs all data/ checks AES-GCM tag),26610=MetaMask Wallet (short hash/ plaintext check),29800=Bisq .wallet (scrypt),21000=BitShares v0.x - sha512(sha512_bin(pass)),28501=Bitcoin WIF private key (P2PKH)/ compressed,28502=Bitcoin WIF private key (P2PKH)/ uncompressed,28503=Bitcoin WIF private key (P2WPKH/ Bech32)/ compressed,28504=Bitcoin WIF private key (P2WPKH/ Bech32)/ uncompressed,28505=Bitcoin WIF private key (P2SH(P2WPKH))/ compressed,28506=Bitcoin WIF private key (P2SH(P2WPKH))/ uncompressed,30901=Bitcoin raw private key (P2PKH)/ compressed,30902=Bitcoin raw private key (P2PKH)/ uncompressed,30903=Bitcoin raw private key (P2WPKH/ Bech32)/ compressed,30904=Bitcoin raw private key (P2WPKH/ Bech32)/ uncompressed,30905=Bitcoin raw private key (P2SH(P2WPKH))/ compressed,30906=Bitcoin raw private key (P2SH(P2WPKH))/ uncompressed,11300=Bitcoin/Litecoin wallet.dat,16600=Electrum Wallet (Salt-Type 1-3),21700=Electrum Wallet (Salt-Type 4),21800=Electrum Wallet (Salt-Type 5),12700=Blockchain/ My Wallet,15200=Blockchain/ My Wallet/ V2,18800=Blockchain/ My Wallet/ Second Password (SHA256),34700=Blockchain/ My Wallet/ Legacy Wallets,32500=Dogechain.info Wallet,25500=Stargazer Stellar Wallet XLM,16300=Ethereum Pre-Sale Wallet/ PBKDF2-HMAC-SHA256,15600=Ethereum Wallet/ PBKDF2-HMAC-SHA256,15700=Ethereum Wallet/ SCRYPT,22500=MultiBit Classic .key (MD5),27700=MultiBit Classic .wallet (scrypt),22700=MultiBit HD (scrypt),28200=Exodus Desktop Wallet (scrypt),29910=ENCsecurity Datavault (PBKDF2/no keychain),29920=ENCsecurity Datavault (PBKDF2/keychain),29930=ENCsecurity Datavault (MD5/no keychain),29940=ENCsecurity Datavault (MD5/keychain),24600=SQLCipher,31400=SecureCRT MasterPassphrase v2,72000=Generic Hash [Bridged: Python Interpreter free-threading],73000=Generic Hash [Bridged: Python Interpreter with GIL],74000=Generic Hash [Bridged: Rust]}} {{FILE}} --wordlist {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --force
 ```
 
-<!-- meta: risk=high | phase=passwords | tags=bitlocker,chained,hashcat,crack -->
+<!-- meta: risk=low | phase=crack | tags=oneliner,inline -->
 
 ---
 
-## chained zip crack hashcat
-Zip password crack via zip2john → hashcat -m 17225 (compressed encrypted zip). Use -m 13600 for classic ZipCrypto.
+## auto identify then crack
+Shell interpolation — `--identify` picks the mode, head -1 takes the first candidate, xargs trims whitespace, then crack. Works when hashcat can confidently fingerprint the hash.
 
 ```bash
-zip2john {{ZIPFILE:file:secret.zip}} > /tmp/q-zip.hash && hashcat -a 0 -m 17225 /tmp/q-zip.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
+hash="{{HASH:str}}"; hashcat -m $(hashcat --identify "$hash" | grep -Eo '^[[:space:]]*[0-9]+' | head -n 1 | xargs) "$hash" --quiet --wordlist {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} --force
 ```
 
-<!-- meta: risk=safe | phase=passwords | tags=zip,chained,hashcat,crack -->
-
----
-
-## chained rar crack hashcat
-RAR5 password crack via rar2john → hashcat -m 13000. Use -m 12500 for RAR3.
-
-```bash
-rar2john {{RARFILE:file:secret.rar}} > /tmp/q-rar.hash && hashcat -a 0 -m 13000 /tmp/q-rar.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=rar,chained,hashcat,crack -->
-
----
-
-## chained 7z crack hashcat
-7-Zip password crack via 7z2john → hashcat -m 11600.
-
-```bash
-7z2john {{ARCHIVE:file:secret.7z}} > /tmp/q-7z.hash && hashcat -a 0 -m 11600 /tmp/q-7z.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=7z,chained,hashcat,crack -->
-
----
-
-## chained pdf crack hashcat
-PDF password crack: pdf2john.pl → hashcat -m 10500 (PDF 1.4–1.6). For PDF 1.7 Level 8 use -m 10700.
-
-```bash
-pdf2john.pl {{PDFFILE:file:doc.pdf}} > /tmp/q-pdf.hash && hashcat -a 0 -m 10500 /tmp/q-pdf.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=pdf,chained,hashcat,crack -->
-
----
-
-## chained office doc crack hashcat
-MS Office doc/xlsx/pptx password crack: office2john → hashcat -m 9600 (2013+). Use -m 9500 for Office 2010, -m 9400 for 2007.
-
-```bash
-office2john.py {{OFFICEFILE:file:doc.docx}} > /tmp/q-office.hash && hashcat -a 0 -m 9600 /tmp/q-office.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
-```
-
-<!-- meta: risk=safe | phase=passwords | tags=office,doc,chained,hashcat,crack -->
-
----
-
-## chained keepass crack hashcat
-KeePass .kdbx database crack: keepass2john → hashcat -m 13400.
-
-```bash
-keepass2john {{KDBXFILE:file:passwords.kdbx}} > /tmp/q-kp.hash && hashcat -a 0 -m 13400 /tmp/q-kp.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
-```
-
-<!-- meta: risk=high | phase=passwords | tags=keepass,chained,hashcat,crack -->
-
----
-
-## chained ssh key crack hashcat
-Passphrase-protected SSH private key crack: ssh2john → hashcat -m 22921.
-
-```bash
-ssh2john {{KEYFILE:file:id_rsa}} > /tmp/q-ssh.hash && hashcat -a 0 -m 22921 /tmp/q-ssh.hash {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}}
-```
-
-<!-- meta: risk=high | phase=passwords | tags=ssh,key,chained,hashcat,crack -->
+<!-- meta: risk=low | phase=crack | tags=oneliner,auto-identify,shell -->

