@@ -300,7 +300,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.query = append(m.query[:m.qcur], m.query[end:]...)
 			m.recompute()
 
-		// ── multi-select controls (only when Options.Multi) ───
+		// ── Tab —  Multi: mark/unmark row.  Non-Multi: accept the
+		// typed query VERBATIM, ignoring whichever row is highlighted.
+		// Fixes the "I typed `a` but Enter picked `Jenny Crawford`"
+		// surprise where fuzzy filter happens to leave a session value
+		// in the match set.
 		case "tab":
 			if m.opts.Multi && len(m.filtered) > 0 {
 				idx := m.filtered[m.cursor].OrigIdx
@@ -312,6 +316,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.cursor < len(m.filtered)-1 {
 					m.cursor++
 				}
+			} else if !m.opts.Multi {
+				// Return with Selected deliberately nil so the caller
+				// knows to use Query instead of the highlighted row.
+				m.result.Selected = nil
+				m.result.Query = string(m.query)
+				return m, tea.Quit
 			}
 		case "ctrl+d":
 			if m.opts.Multi {
