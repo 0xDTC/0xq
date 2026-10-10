@@ -5,6 +5,30 @@
 
 > Cross-forest or non-DC LDAP targets: bloodyAD's `--host` takes the LDAP endpoint, but Kerberos operations need a separate `--kdcHost` pointing at a DC in the target's forest. Missed `--kdcHost` → cryptic auth failures.
 
+> **Chain entries** bundle common bloodyAD enumeration sequences. Each sub-command re-authenticates (bloodyAD is Python, no persistent session) — fine for enum. Semicolons used so missing attributes / empty results don't block the next step.
+
+## bloodyad chain enum writables and trusts
+Writable objects + domain trusts + DNS dump + OU tree walk. Every "what can I see / where can I pivot" primitive bloodyAD exposes.
+
+```bash
+h={{DC:ip}}; d={{DOMAIN:domain}}; u={{USER:str}}; p={{PASS:str}}; bloodyAD --host "$h" -d "$d" -u "$u" -p "$p" get writable ; bloodyAD --host "$h" -d "$d" -u "$u" -p "$p" get trusts ; bloodyAD --host "$h" -d "$d" -u "$u" -p "$p" get dnsDump ; bloodyAD --host "$h" -d "$d" -u "$u" -p "$p" get children
+```
+
+<!-- meta: risk=low | phase=enum | tags=bloodyad,chain,writable,trusts,dns,ou -->
+
+---
+
+## bloodyad chain enum user and permissions
+Target one user — all attributes + nested group membership + LDAP search for SPN/UPN/memberOf. Full picture of one subject account.
+
+```bash
+h={{DC:ip}}; d={{DOMAIN:domain}}; u={{USER:str}}; p={{PASS:str}}; t={{TARGET_USER:str}}; bloodyAD --host "$h" -d "$d" -u "$u" -p "$p" get object "$t" ; bloodyAD --host "$h" -d "$d" -u "$u" -p "$p" get membership "$t" ; bloodyAD --host "$h" -d "$d" -u "$u" -p "$p" get search --filter "(samaccountname=$t)" --attr memberOf,userPrincipalName,servicePrincipalName,description
+```
+
+<!-- meta: risk=low | phase=enum | tags=bloodyad,chain,user,permissions,membership,ldap -->
+
+---
+
 ## get writable objects
 List every object the current user can write to — maps immediate ACL-based privesc paths.
 

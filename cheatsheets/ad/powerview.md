@@ -3,6 +3,52 @@
 
 <!-- tags: ad,powerview,enumeration,acl,delegation,kerberos -->
 
+> **Chain entries below** bundle common PowerView sequences you'd normally run back-to-back. Each cmdlet runs independently (semicolon-separated) — missing privileges or empty results on one don't block the rest. Load PowerView first (see "load powerview in memory powerview" below).
+
+## powerview chain full domain recon
+Fire the whole "what does this domain look like" survey — domain + DC + SID, every user/group/computer, GPOs + OUs, then kerberoastable + asreproastable users. One Ctrl+Q, 10 cmdlets, full picture.
+
+```bash
+Get-Domain ; Get-DomainController ; Get-DomainSID ; Get-DomainUser -Properties samaccountname,description ; Get-DomainGroup ; Get-DomainComputer -Properties dnshostname,operatingsystem ; Get-DomainGPO | Select-Object displayname,gpcfilesyspath ; Get-DomainOU -Properties name,distinguishedname ; Get-DomainUser -SPN -Properties samaccountname,serviceprincipalname ; Get-DomainUser -PreauthNotRequired -Properties samaccountname
+```
+
+<!-- meta: risk=low | phase=enum | tags=powerview,chain,recon,users,groups,computers,gpo,ou,spn,asreproast -->
+
+---
+
+## powerview chain delegation and ticket pivot hunt
+Everything delegation-related: unconstrained (computers + users), constrained (users + computers), RBCD configs, gMSA readable, LAPS readable. All ticket-pivot primitives in one go.
+
+```bash
+Get-DomainComputer -Unconstrained -Properties dnshostname ; Get-DomainUser -TrustedToAuth -Properties samaccountname,msds-allowedtodelegateto ; Get-DomainComputer -TrustedToAuth -Properties dnshostname,msds-allowedtodelegateto ; Get-DomainObject -LDAPFilter '(msDS-AllowedToActOnBehalfOfOtherIdentity=*)' -Properties samaccountname,msds-allowedtoactonbehalfofotheridentity ; Get-DomainObject -LDAPFilter '(ms-DS-GroupMSAMembership=*)' -Properties samaccountname,ms-ds-groupmsamembership ; Get-DomainObject -LDAPFilter '(ms-mcs-admpwd=*)' -Properties samaccountname,ms-mcs-admpwd
+```
+
+<!-- meta: risk=medium | phase=enum | tags=powerview,chain,delegation,unconstrained,constrained,rbcd,gmsa,laps -->
+
+---
+
+## powerview chain acl audit full
+Full ACL audit path: find interesting ACLs, get ACLs on DA/EA, foreign group members, DA owner. The combination surfaces every escalation vector PowerView can see.
+
+```bash
+Find-InterestingDomainAcl -ResolveGUIDs ; Get-DomainObjectAcl -Identity 'Domain Admins' -ResolveGUIDs ; Get-DomainObjectAcl -Identity 'Enterprise Admins' -ResolveGUIDs ; Find-ForeignGroup -Verbose ; Get-DomainObject -Identity 'Domain Admins' | Select-Object -ExpandProperty nTSecurityDescriptor | Select-Object Owner
+```
+
+<!-- meta: risk=medium | phase=enum | tags=powerview,chain,acl,audit,escalation,owner -->
+
+---
+
+## powerview chain host user hunt
+Where can I log in + who's logged in where. find-local-admin-access + net sessions on the logon server + logged-on users + user-hunter sweep. HIGH SMB NOISE — multiple hosts queried; use only when EDR noise is acceptable.
+
+```bash
+Find-LocalAdminAccess -Verbose ; Get-NetSession -ComputerName $env:LOGONSERVER.Substring(2) ; Get-NetLoggedon -ComputerName $env:LOGONSERVER.Substring(2) ; Invoke-UserHunter -Verbose
+```
+
+<!-- meta: risk=high | phase=enum | tags=powerview,chain,user-hunt,local-admin,sessions,opsec -->
+
+---
+
 ## enumerate domain users powerview
 Return every user object (or one named user) from the domain.
 

