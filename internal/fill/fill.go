@@ -17,7 +17,7 @@ import (
 // prompts once.
 type State struct {
 	Sess       *session.Session
-	VarHistory string                       // dir for per-name value history TSVs
+	VarHistory string                     // dir for per-name value history TSVs
 	Detectors  map[string]func() []string // name → auto-detect func (LHOST etc.)
 	transient  map[string]string
 }
@@ -259,8 +259,8 @@ func askYesNo(prompt string) bool {
 		Prompt: prompt + "  ",
 		Header: "↑↓ pick  Enter=confirm  Esc=no",
 		Rows: []tui.Row{
-			{Display: "no",  Search: "no",  Payload: false, Rank: 0},
-			{Display: "yes", Search: "yes", Payload: true,  Rank: 1},
+			{Display: "no", Search: "no", Payload: false, Rank: 0},
+			{Display: "yes", Search: "yes", Payload: true, Rank: 1},
 		},
 		Height: 3,
 	})
@@ -306,7 +306,9 @@ func (st *State) appendHistory(name, value string) {
 			break
 		}
 	}
-	_ = os.WriteFile(path, []byte(strings.Join(out, "\n")+"\n"), 0o644)
+	// 0600: per-name history keeps the last 20 values for every
+	// placeholder, PASS/HASH/TOKEN included.
+	_ = os.WriteFile(path, []byte(strings.Join(out, "\n")+"\n"), 0o600)
 }
 
 // targetCompat mirrors lib/variables.sh — some placeholder types

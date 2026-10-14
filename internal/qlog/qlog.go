@@ -55,7 +55,8 @@ func Init(dataDir string) {
 		_ = os.Rename(p, p+".old")
 	}
 
-	f, err := os.OpenFile(p, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	// 0600: the debug log records command and prompt activity.
+	f, err := os.OpenFile(p, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "[!] qlog init:", err)
 		active = false

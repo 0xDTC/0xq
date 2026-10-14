@@ -55,8 +55,8 @@ type KeyAction func(row *Row, query string) (accept bool, err error)
 // Bind maps a key label (e.g. "ctrl+b") to a KeyAction. Bindings are
 // consulted BEFORE the default handling so callers can override.
 type Bind struct {
-	Key    string    // bubbletea key spec — "ctrl+b", "alt+enter", etc.
-	Label  string    // shown in the header
+	Key    string // bubbletea key spec — "ctrl+b", "alt+enter", etc.
+	Label  string // shown in the header
 	Action KeyAction
 }
 
@@ -67,7 +67,7 @@ type Options struct {
 	Rows         []Row
 	InitialQuery string
 	Multi        bool
-	Height       int  // list rows; 0 → autosize
+	Height       int // list rows; 0 → autosize
 	Binds        []Bind
 	NoMarker     bool // set to true to hide the ⚙/★ MRU column
 
@@ -178,7 +178,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.clampCursor()
 	case tea.KeyMsg:
 		key := msg.String()
-		qlog.Action("picker", "key", "key=%q query=%q qcur=%d filtered=%d", key, string(m.query), m.qcur, len(m.filtered))
+		// Log the keystroke and query *shape* only, never its content:
+		// during a fill the query IS the value being typed, so logging
+		// it writes passwords and tokens straight into debug.log.
+		qlog.Action("picker", "key", "key=%q qlen=%d qcur=%d filtered=%d", key, len(m.query), m.qcur, len(m.filtered))
 		// Custom binds first.
 		for _, b := range m.opts.Binds {
 			if key == b.Key {

@@ -206,7 +206,8 @@ func MRU(dataDir string) []string {
 func (s *Session) HistoryLog(command string, rc, durationSec int) error {
 	line := fmt.Sprintf("%s\t%d\t%d\t%s\n",
 		nowTS(), rc, durationSec, strings.ReplaceAll(strings.ReplaceAll(command, "\t", " "), "\n", " ; "))
-	f, err := os.OpenFile(filepath.Join(s.Dir, "history.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	// 0600: assembled commands routinely carry -p/-H secrets.
+	f, err := os.OpenFile(filepath.Join(s.Dir, "history.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}
@@ -219,7 +220,9 @@ func (s *Session) HistoryLog(command string, rc, durationSec int) error {
 
 func writeLines(path string, lines []string) error {
 	tmp := path + ".tmp"
-	f, err := os.Create(tmp)
+	// 0600 rather than os.Create's 0666&^umask: this backs the session
+	// vars file, which holds filled PASS/HASH/NTLM placeholder values.
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}
