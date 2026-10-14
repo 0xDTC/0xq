@@ -33,6 +33,16 @@ jobs:
         run: |
           echo "Q_ROOT=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
 
+      - name: gofmt — formatting must be clean
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::these files are not gofmt-clean:"
+            echo "$unformatted"
+            gofmt -d .
+            exit 1
+          fi
+
       - name: go vet
         run: go vet ./...
 
@@ -48,21 +58,13 @@ jobs:
           echo "index size:"
           wc -l cache/index.tsv
 
-      # q lint prints findings to stderr and exits 0 (findings are
-      # advisory, not errors). CI passes if the finding count doesn't
-      # regress past the baseline. Adjust MAX_FINDINGS when the design
-      # accepts a new intentional cross-list.
+      # Findings are advisory, so CI gates on a baseline rather than on
+      # any finding at all. `--max N` applies that gate inside q and
+      # exits nonzero itself, so there is no summary line to scrape.
+      # Lower the number as the tree gets cleaner; raise it only for a
+      # deliberate new cross-list.
       - name: q lint — no regression past baseline
-        run: |
-          set -o pipefail
-          findings=$(./q lint 2>&1 | tail -1 | grep -oE '^[0-9]+' || echo 0)
-          MAX_FINDINGS=12
-          echo "findings: $findings  baseline: $MAX_FINDINGS"
-          if [ "$findings" -gt "$MAX_FINDINGS" ]; then
-            echo "::error::q lint regressed — $findings findings (baseline is $MAX_FINDINGS). Run 'q lint' locally to see them."
-            ./q lint || true
-            exit 1
-          fi
+        run: ./q lint --max 12
 
       - name: staticcheck — no unused symbols
         # SA1000-level checks are noisy; only flag the U1000 (dead code)
