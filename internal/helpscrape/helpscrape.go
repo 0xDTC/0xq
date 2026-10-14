@@ -61,6 +61,12 @@ func runHelp(tool string, args ...string) string {
 	case <-done:
 	case <-time.After(2 * time.Second):
 		_ = c.Process.Kill()
+		// Wait for c.Wait() to return before touching buf. Because
+		// Stdout is a *bytes.Buffer rather than an *os.File, os/exec
+		// runs an internal goroutine copying into it, and only Wait
+		// joins that goroutine — reading buf straight after Kill is a
+		// data race against the copier.
+		<-done
 	}
 	return buf.String()
 }
