@@ -121,14 +121,44 @@ BWIDGET
     esac
 }
 
+# Export Q_ROOT so the installed binary can find its content.
+#
+# Without this, q resolves its root by walking up from the executable
+# looking for cheatsheets/ — and from $HOME/.local/bin that search never
+# matches, so it silently falls back to the current directory and the
+# index, cheatsheets and chains all appear empty depending on where you
+# happen to be standing. The source tree is the only place that content
+# lives, so pin it explicitly.
+install_qroot() {
+    local rc="$1" shell="$2"
+    touch "$rc"
+    if grep -Fq 'export Q_ROOT=' "$rc" 2>/dev/null; then
+        local cur
+        cur="$(grep -F 'export Q_ROOT=' "$rc" | tail -1)"
+        if [[ "$cur" == *"$SCRIPT_DIR"* ]]; then
+            info "$shell Q_ROOT already points at $SCRIPT_DIR — skipping"
+        else
+            warn "$rc sets Q_ROOT to something else:"
+            warn "    $cur"
+            warn "leaving it alone — update it by hand if q can't find cheatsheets/"
+        fi
+        return
+    fi
+    printf '\n# q — where the cheatsheet tree lives (needed by the installed binary)\nexport Q_ROOT=%q\n' \
+        "$SCRIPT_DIR" >> "$rc"
+    success "Q_ROOT added to $rc"
+}
+
 CURRENT_SHELL="$(basename "${SHELL:-/bin/bash}")"
 case "$CURRENT_SHELL" in
-    zsh)   install_widget "$HOME/.zshrc"  zsh  ;;
-    bash)  install_widget "$HOME/.bashrc" bash ;;
+    zsh)   install_qroot "$HOME/.zshrc"  zsh
+           install_widget "$HOME/.zshrc"  zsh  ;;
+    bash)  install_qroot "$HOME/.bashrc" bash
+           install_widget "$HOME/.bashrc" bash ;;
     *)
         warn "unrecognised shell '$CURRENT_SHELL' — installing both widgets"
-        [[ -f "$HOME/.zshrc"  ]] && install_widget "$HOME/.zshrc"  zsh
-        [[ -f "$HOME/.bashrc" ]] && install_widget "$HOME/.bashrc" bash
+        [[ -f "$HOME/.zshrc"  ]] && { install_qroot "$HOME/.zshrc"  zsh;  install_widget "$HOME/.zshrc"  zsh;  }
+        [[ -f "$HOME/.bashrc" ]] && { install_qroot "$HOME/.bashrc" bash; install_widget "$HOME/.bashrc" bash; }
         ;;
 esac
 
