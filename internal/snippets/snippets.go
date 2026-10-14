@@ -22,8 +22,8 @@
 //	  - {key: KEY, desc: "text", payload: 'text'}
 //
 // Values can be bare (terminated by ',' or '}'), double-quoted with
-// \" and \\ escapes, or single-quoted with '' as the literal-quote
-// escape. Payloads containing '}' or ',' MUST be quoted. Block
+// \" and \\ escapes, or single-quoted with two apostrophes as the
+// literal-quote escape. Payloads containing '}' or ',' MUST be quoted. Block
 // scalars (|, >) and nested structures are not supported — flow
 // style keeps parsing predictable without a YAML dependency.
 package snippets
@@ -194,9 +194,9 @@ func parseFile(path string, sink map[string]Snippet) error {
 
 // parseFlowMap parses a YAML flow-style mapping `{k: v, k: v, ...}`
 // into a plain map. Keys are bare identifiers; values can be bare,
-// double-quoted (with \" and \\ escapes), or single-quoted (with ''
-// as a literal-quote escape). Whitespace around keys and values is
-// trimmed.
+// double-quoted (with \" and \\ escapes), or single-quoted (with two
+// apostrophes as a literal-quote escape). Whitespace around keys and
+// values is trimmed.
 func parseFlowMap(s string) (map[string]string, error) {
 	s = strings.TrimSpace(s)
 	if !strings.HasPrefix(s, "{") || !strings.HasSuffix(s, "}") {
@@ -290,10 +290,11 @@ func readDoubleQuoted(s string, i int) (string, int, error) {
 	return "", i, errors.New("snippets: unterminated double-quoted string")
 }
 
-// readSingleQuoted consumes s[i:] starting at an opening '\'',
-// returning the string content plus the index after the closing
-// '\''. The only escape recognised is '' → literal single quote
-// (matches YAML single-quoted scalar rules).
+// readSingleQuoted consumes s[i:] starting at an opening single
+// quote, returning the string content plus the index after the
+// closing single quote. The only escape recognised is two
+// apostrophes → literal single quote (matches YAML single-quoted
+// scalar rules).
 func readSingleQuoted(s string, i int) (string, int, error) {
 	if i >= len(s) || s[i] != '\'' {
 		return "", i, errors.New("snippets: expected single quote")
