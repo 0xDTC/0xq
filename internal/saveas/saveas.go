@@ -88,7 +88,7 @@ func writeHeader(path string) error {
 	defer f.Close()
 	_, err = io.WriteString(f, `# Saved
 
-> Commands you saved via ` + "`[s] Save-as`" + ` at the confirm prompt. Each entry gets a title you chose plus a stock ` + "`risk=low | phase=custom`" + ` meta line — edit with ` + "`q edit saved`" + ` to reorganize into other categories later.
+> Commands you saved via `+"`[s] Save-as`"+` at the confirm prompt. Each entry gets a title you chose plus a stock `+"`risk=low | phase=custom`"+` meta line — edit with `+"`q edit saved`"+` to reorganize into other categories later.
 
 <!-- tags: saved, custom, user -->
 

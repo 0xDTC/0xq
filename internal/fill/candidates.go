@@ -64,12 +64,12 @@ type Sources struct {
 // picker and win the default-Enter action.
 //
 // The order (matching the bash tree so muscle memory transfers):
-//   1. [session]   whatever the session var already holds
-//   2. [choice]    for CHOICE type, every option (with hints)
-//   3. [default]   the placeholder's declared default (non-choice)
-//   4. [auto]      auto-detected values (LHOST, iface IP)
-//   5. [target]    matching session targets
-//   6. [recent]    per-var value history, newest first
+//  1. [session]   whatever the session var already holds
+//  2. [choice]    for CHOICE type, every option (with hints)
+//  3. [default]   the placeholder's declared default (non-choice)
+//  4. [auto]      auto-detected values (LHOST, iface IP)
+//  5. [target]    matching session targets
+//  6. [recent]    per-var value history, newest first
 func BuildCandidates(p Placeholder, src Sources) []Candidate {
 	var out []Candidate
 	seen := map[string]bool{}

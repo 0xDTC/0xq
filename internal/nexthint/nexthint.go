@@ -12,8 +12,8 @@ import "strings"
 // rule maps a tag (lowercase, matched substring-in-any) to a
 // suggestion sentence. First matching rule wins.
 type rule struct {
-	tag    string
-	hint   string
+	tag      string
+	hint     string
 	pickWith string // what to type into `q` to reach the suggested item
 }
 

@@ -3,11 +3,12 @@
 // vuln" and expects those subsequences to bubble the right rows.
 //
 // Score composition (higher = better):
-//   +100  contiguous match bonus (all query chars adjacent in target)
-//   + 50  match at word boundary (space, /, -, _ before match position)
-//   + 10  per matched character
-//   -  2  per unmatched character between matches
-//   -  1  per character of target before the first match
+//
+//	+100  contiguous match bonus (all query chars adjacent in target)
+//	+ 50  match at word boundary (space, /, -, _ before match position)
+//	+ 10  per matched character
+//	-  2  per unmatched character between matches
+//	-  1  per character of target before the first match
 //
 // Non-match → score 0, drop from results.
 package tui
@@ -34,10 +35,10 @@ func Score(target, query string) int {
 	best := 0
 	for i := 0; i+len(q) <= len(t); i++ {
 		if t[i:i+len(q)] == q {
-			s := 200                    // substring base
-			s += 10 * len(q)            // per matched char
-			s -= i                      // prefer earlier position
-			s -= (len(t) - len(q)) / 4  // prefer shorter targets
+			s := 200                   // substring base
+			s += 10 * len(q)           // per matched char
+			s -= i                     // prefer earlier position
+			s -= (len(t) - len(q)) / 4 // prefer shorter targets
 			if i == 0 {
 				s += 100 // full prefix
 			} else if isWordBoundary(t[i-1]) {

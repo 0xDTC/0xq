@@ -12,7 +12,7 @@ func TestScore(t *testing.T) {
 		{"nmap", "mp", true},
 		{"nmap", "xyz", false},
 		{"regripper single plugin", "regr plug", true},
-		{"regripper single plugin", "PLUGIN", true},   // case-insensitive
+		{"regripper single plugin", "PLUGIN", true}, // case-insensitive
 		{"regripper single plugin", "zzzzz", false},
 		{"", "nmap", false},
 		{"nmap", "", true},

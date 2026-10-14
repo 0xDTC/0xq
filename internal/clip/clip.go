@@ -3,15 +3,15 @@
 //
 // Detection order (first success wins):
 //
-//	1. Q_CLIP=osc52          → force OSC52 (skip local tools)
-//	2. Q_CLIP=<tool>         → force a specific local tool
-//	3. Local clipboard tool  → wl-copy / xclip / xsel / pbcopy / clip.exe
-//	4. OSC52 escape          → written to /dev/tty; tmux / kitty /
-//	                           wezterm / iTerm2 / Alacritty forward
-//	                           it to the local system clipboard as
-//	                           long as the terminal's clipboard-write
-//	                           permission is set (tmux: `set -g
-//	                           set-clipboard on`).
+//  1. Q_CLIP=osc52          → force OSC52 (skip local tools)
+//  2. Q_CLIP=<tool>         → force a specific local tool
+//  3. Local clipboard tool  → wl-copy / xclip / xsel / pbcopy / clip.exe
+//  4. OSC52 escape          → written to /dev/tty; tmux / kitty /
+//     wezterm / iTerm2 / Alacritty forward
+//     it to the local system clipboard as
+//     long as the terminal's clipboard-write
+//     permission is set (tmux: `set -g
+//     set-clipboard on`).
 //
 // A hard failure (no local tool AND no /dev/tty for OSC52) returns
 // an error naming what was tried so the caller can print an install
@@ -183,4 +183,3 @@ func have(name string) bool {
 	_, err := exec.LookPath(name)
 	return err == nil
 }
-
