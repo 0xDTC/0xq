@@ -23,12 +23,27 @@ _q_complete() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     COMPREPLY=()
 
-    # Resolve index path — honour $Q_CACHE_DIR override.
+    # Resolve index path. Default lives at $Q_ROOT/cache/index.tsv — the
+    # XDG data dir holds sessions/history, NOT the index, so the old
+    # fallback never matched and the token pool was always empty.
     local idx
     if [[ -n "${Q_CACHE_DIR:-}" ]]; then
         idx="$Q_CACHE_DIR/index.tsv"
+    elif [[ -n "${Q_ROOT:-}" ]]; then
+        idx="$Q_ROOT/cache/index.tsv"
     else
-        idx="${HOME}/.local/share/q/index.tsv"
+        # Derive the root from the resolved `q` binary, mirroring the
+        # walk-up probe the binary itself does.
+        local qbin d
+        qbin=$(command -v q 2>/dev/null) || qbin=""
+        [[ -n "$qbin" ]] && qbin=$(readlink -f "$qbin" 2>/dev/null || echo "$qbin")
+        d=$(dirname "${qbin:-/nonexistent}")
+        idx=""
+        for _ in 1 2 3 4; do
+            if [[ -r "$d/cache/index.tsv" ]]; then idx="$d/cache/index.tsv"; break; fi
+            d=$(dirname "$d")
+        done
+        [[ -z "$idx" ]] && idx="${HOME}/.local/share/q/index.tsv"
     fi
 
     # Rebuild the cached token pool only when the index changes.
@@ -44,15 +59,19 @@ _q_complete() {
             while IFS= read -r tok; do
                 _Q_COMPLETE_TOKENS+=("$tok")
             done < <(
+                # Keep only identifier-ish tokens — splitting titles on
+                # whitespace otherwise yields punctuation fragments
+                # ("&", "(MFT,", "$J") that just pollute the menu.
                 awk -F'\t' 'NF>=3 { print $2; print $3 }' "$idx" 2>/dev/null \
                     | tr -s '[:space:]' '\n' \
-                    | LC_ALL=C sort -u \
-                    | grep -v '^$'
+                    | LC_ALL=C grep -E '^[A-Za-z0-9][A-Za-z0-9._+-]+$' \
+                    | LC_ALL=C sort -u
             )
         fi
     fi
 
-    local subcmds="edit rebuild lint config get history log tools help"
+    # Keep in sync with the dispatch switch in cmd/q/main.go.
+    local subcmds="rebuild lint config history log edit session var target update doctor new help"
 
     # Position 1: first arg after `q`.
     if (( COMP_CWORD == 1 )); then
@@ -72,7 +91,27 @@ _q_complete() {
                 COMPREPLY=( $(compgen -W "-f follow tail clear reset cat" -- "$cur") )
             fi
             ;;
-        rebuild|lint|history|tools|help)
+        session)
+            if (( COMP_CWORD == 2 )); then
+                COMPREPLY=( $(compgen -W "list ls new use switch current active rm delete" -- "$cur") )
+            fi
+            ;;
+        var)
+            if (( COMP_CWORD == 2 )); then
+                COMPREPLY=( $(compgen -W "list ls get set rm delete unset" -- "$cur") )
+            fi
+            ;;
+        target)
+            if (( COMP_CWORD == 2 )); then
+                COMPREPLY=( $(compgen -W "list ls add rm delete clear" -- "$cur") )
+            fi
+            ;;
+        lint)
+            if (( COMP_CWORD == 2 )); then
+                COMPREPLY=( $(compgen -W "--strict" -- "$cur") )
+            fi
+            ;;
+        rebuild|history|update|doctor|help)
             # No further arguments.
             ;;
         *)

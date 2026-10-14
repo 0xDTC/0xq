@@ -22,11 +22,24 @@ _q() {
     local idx mtime
     local -a subcmds
 
-    # Resolve index path — honour $Q_CACHE_DIR override.
+    # Resolve index path. Default lives at $Q_ROOT/cache/index.tsv — the
+    # XDG data dir holds sessions/history, NOT the index, so the old
+    # fallback never matched and the token pool was always empty.
     if [[ -n "${Q_CACHE_DIR-}" ]]; then
         idx="$Q_CACHE_DIR/index.tsv"
+    elif [[ -n "${Q_ROOT-}" ]]; then
+        idx="$Q_ROOT/cache/index.tsv"
     else
-        idx="${HOME}/.local/share/q/index.tsv"
+        local qbin d
+        qbin=${$(command -v q 2>/dev/null):-}
+        [[ -n "$qbin" ]] && qbin=${$(readlink -f "$qbin" 2>/dev/null):-$qbin}
+        d=${qbin:h}
+        idx=""
+        for _ in 1 2 3 4; do
+            if [[ -r "$d/cache/index.tsv" ]]; then idx="$d/cache/index.tsv"; break; fi
+            d=${d:h}
+        done
+        [[ -z "$idx" ]] && idx="${HOME}/.local/share/q/index.tsv"
     fi
 
     # Rebuild the cached token pool only when the index changes.
@@ -41,24 +54,32 @@ _q() {
         if [[ -r "$idx" ]]; then
             _Q_COMPLETE_TOKENS=(
                 ${(f)"$(
+                    # Keep only identifier-ish tokens — splitting titles on
+                    # whitespace otherwise yields punctuation fragments
+                    # ("&", "(MFT,", "$J") that just pollute the menu.
                     awk -F'\t' 'NF>=3 { print $2; print $3 }' "$idx" 2>/dev/null \
                         | tr -s '[:space:]' '\n' \
-                        | LC_ALL=C sort -u \
-                        | grep -v '^$'
+                        | LC_ALL=C grep -E '^[A-Za-z0-9][A-Za-z0-9._+-]+$' \
+                        | LC_ALL=C sort -u
                 )"}
             )
         fi
     fi
 
+    # Keep in sync with the dispatch switch in cmd/q/main.go.
     subcmds=(
         'edit:open a cheatsheet in $EDITOR'
         'rebuild:rebuild the index'
         'lint:report duplicate commands'
-        'config:read a config knob'
-        'get:read a config knob (alias)'
+        'config:show config knobs'
         'history:show session history'
         'log:show / tail / clear the debug log'
-        'tools:list indexed tools'
+        'session:create / switch / list engagement sessions'
+        'var:get / set / list session variables'
+        'target:add / list / remove session targets'
+        'update:git pull the cheatsheet tree'
+        'doctor:check required tools and versions'
+        'new:scaffold a new cheatsheet'
         'help:show usage'
     )
 
@@ -79,7 +100,28 @@ _q() {
                 _values 'log action' '-f' 'follow' 'tail' 'clear' 'reset' 'cat'
             fi
             ;;
-        rebuild|lint|history|tools|help)
+        session)
+            if (( CURRENT == 3 )); then
+                _values 'session action' 'list' 'ls' 'new' 'use' 'switch' \
+                    'current' 'active' 'rm' 'delete'
+            fi
+            ;;
+        var)
+            if (( CURRENT == 3 )); then
+                _values 'var action' 'list' 'ls' 'get' 'set' 'rm' 'delete' 'unset'
+            fi
+            ;;
+        target)
+            if (( CURRENT == 3 )); then
+                _values 'target action' 'list' 'ls' 'add' 'rm' 'delete' 'clear'
+            fi
+            ;;
+        lint)
+            if (( CURRENT == 3 )); then
+                _values 'lint flag' '--strict[exit nonzero on findings]'
+            fi
+            ;;
+        rebuild|history|update|doctor|help)
             ;;
         *)
             compadd -a _Q_COMPLETE_TOKENS
