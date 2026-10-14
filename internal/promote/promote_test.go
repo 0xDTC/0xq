@@ -100,3 +100,57 @@ real target 10.10.11.42`
 		t.Error("real IP 10.10.11.42 not promoted")
 	}
 }
+
+// Two-label names must promote: on an AD engagement the domain FQDN is
+// the most valuable artefact in the output, and an earlier regex that
+// required three labels dropped every one of them.
+func TestParse_TwoLabelDomains(t *testing.T) {
+	sample := `Domain Name: amzcorp.local
+[+] joined to htb.local
+Host is example.com`
+	got := Parse(sample)
+	seen := map[string]bool{}
+	for _, f := range got {
+		seen[string(f.Kind)+"|"+f.Value] = true
+	}
+	for _, want := range []string{"domain|amzcorp.local", "domain|htb.local", "domain|example.com"} {
+		if !seen[want] {
+			t.Errorf("expected %s — got %+v", want, got)
+		}
+	}
+}
+
+// Allowing two-label domains makes filenames syntactically valid, so
+// they have to be filtered or every bit of tool output becomes a target.
+func TestParse_IgnoreFilenamesAsDomains(t *testing.T) {
+	sample := `wrote results to scan.json and notes.txt
+running exploit.py against the host
+see report.pdf / payload.exe / dump.sqlite`
+	got := Parse(sample)
+	for _, f := range got {
+		if f.Kind != KindDomain {
+			continue
+		}
+		switch f.Value {
+		case "scan.json", "notes.txt", "exploit.py", "report.pdf", "payload.exe", "dump.sqlite":
+			t.Errorf("filename promoted as domain: %s", f.Value)
+		}
+	}
+}
+
+// Engagement-plausible TLDs must survive the filename filter.
+func TestParse_KeepEngagementTLDs(t *testing.T) {
+	sample := `dc01.corp.internal
+fileserver.lan
+web.htb`
+	got := Parse(sample)
+	seen := map[string]bool{}
+	for _, f := range got {
+		seen[string(f.Kind)+"|"+f.Value] = true
+	}
+	for _, want := range []string{"domain|dc01.corp.internal", "domain|fileserver.lan", "domain|web.htb"} {
+		if !seen[want] {
+			t.Errorf("expected %s — got %+v", want, got)
+		}
+	}
+}
