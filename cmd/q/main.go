@@ -86,7 +86,7 @@ func main() {
 			os.Exit(1)
 		}
 	case "lint":
-		if err := lint(); err != nil {
+		if err := runLint(args[1:]); err != nil {
 			fmt.Fprintln(os.Stderr, "[-] lint:", err)
 			os.Exit(1)
 		}
@@ -250,7 +250,7 @@ PLACEHOLDERS  (in cheatsheet command templates)
     {{NAME}}                       plain string
     {{NAME:type:default}}          typed (str|ip|url|port|file|dir|domain|...)
     {{NAME:choice:a,b=hint,c}}     pick from a list, optional hints
-    {{NAME:helpflags:tool}}        pick a flag from ` + "`tool --help`" + ` output
+    {{NAME:helpflags:tool}}        pick a flag from `+"`tool --help`"+` output
     {{NAME:wordlist:default}}      picker of curated SecLists / wordlists files
     {{NAME:snippet:key}}           expand a named snippet (reverse shells, PTY upgrades)
     {{?TAG}}...{{/TAG}}            optional block (asks yes/no)
@@ -425,9 +425,16 @@ func runFillAndConfirmWithHint(env *config.Env, sess *session.Session, e index.E
 // values option can loop back through fill.Interactive without
 // duplicating the code.
 func runFillAndConfirm(env *config.Env, sess *session.Session, template string, forceInteractive, inline bool) error {
-	st := fill.NewState(sess, filepath.Join(env.DataDir, "var_history"))
-
 	for {
+		// Fresh State per attempt. State.transient records every
+		// placeholder resolved during a fill run so a var referenced
+		// twice only prompts once — but carrying it across the [v]
+		// Change values loop makes Interactive skip *every*
+		// placeholder and hand back the raw, unsubstituted template.
+		// Session vars persist independently of State, so the previous
+		// answers are still offered as the top picker candidate.
+		st := fill.NewState(sess, filepath.Join(env.DataDir, "var_history"))
+
 		var filled string
 		var err error
 		if forceInteractive {
@@ -1635,23 +1642,27 @@ func rebuildIndex() error {
 
 // lint runs a battery of static checks across every cheatsheet:
 //
-//	1. Cross-file duplicate commands (original behaviour)
-//	2. Web-request commands missing a {{UA}} placeholder
-//	3. Deprecated flags (--random-agent, --random-user-agent, -json without -jsonl)
-//	4. Placeholder name inconsistencies (TARGET vs TARGET_IP for the same tool)
-//	5. Scanner commands without a timeout guard
+//  1. Cross-file duplicate commands (original behaviour)
+//  2. Web-request commands missing a {{UA}} placeholder
+//  3. Deprecated flags (--random-agent, --random-user-agent, -json without -jsonl)
+//  4. Placeholder name inconsistencies (TARGET vs TARGET_IP for the same tool)
+//  5. Scanner commands without a timeout guard
 //
 // Every finding prints as `<severity> <file>:<title> — <detail>`.
-// Exits nonzero on any finding so CI/pre-commit can gate on it.
-func lint() error {
+//
+// Findings are advisory: plain `q lint` always exits 0. Use the gates in
+// runLint (--strict / --max N) when something needs to fail on them.
+// Returns the finding count so callers can apply those gates without
+// scraping the printed summary.
+func lint() (int, error) {
 	root, err := qRoot()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	idxPath := filepath.Join(cacheDir(root), "index.tsv")
 	entries, err := index.ReadFile(idxPath)
 	if err != nil {
-		return fmt.Errorf("read index (run `q rebuild` first): %w", err)
+		return 0, fmt.Errorf("read index (run `q rebuild` first): %w", err)
 	}
 
 	findings := 0
@@ -1683,9 +1694,59 @@ func lint() error {
 
 	if findings == 0 {
 		fmt.Fprintln(os.Stderr, "[+] lint clean.")
-		return nil
+		return 0, nil
 	}
 	fmt.Fprintf(os.Stderr, "\n%d finding(s).\n", findings)
+	return findings, nil
+}
+
+// runLint parses `lint` arguments and applies the exit-code gate:
+//
+//	q lint             advisory — prints findings, always exits 0
+//	q lint --strict    exit nonzero if there is any finding
+//	q lint --max N     exit nonzero only past a baseline of N findings
+//
+// --max exists so CI can gate on a baseline without scraping the
+// human-readable summary line for a number.
+func runLint(args []string) error {
+	strict := false
+	maxFindings := -1
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--strict":
+			strict = true
+		case a == "--max":
+			if i+1 >= len(args) {
+				return fmt.Errorf("--max needs a number")
+			}
+			n, err := strconv.Atoi(args[i+1])
+			if err != nil {
+				return fmt.Errorf("--max %q: not a number", args[i+1])
+			}
+			maxFindings = n
+			i++
+		case strings.HasPrefix(a, "--max="):
+			n, err := strconv.Atoi(strings.TrimPrefix(a, "--max="))
+			if err != nil {
+				return fmt.Errorf("%s: not a number", a)
+			}
+			maxFindings = n
+		default:
+			return fmt.Errorf("unknown flag %q (want --strict or --max N)", a)
+		}
+	}
+
+	findings, err := lint()
+	if err != nil {
+		return err
+	}
+	if strict && findings > 0 {
+		return fmt.Errorf("%d finding(s) with --strict", findings)
+	}
+	if maxFindings >= 0 && findings > maxFindings {
+		return fmt.Errorf("%d finding(s) exceeds baseline of %d", findings, maxFindings)
+	}
 	return nil
 }
 
@@ -1760,8 +1821,8 @@ var deprecatedFlags = map[string]string{
 // scannerNeedsTimeout lists tools whose long default runtime should be
 // bounded by a `timeout` prefix or a tool-specific --maxtime flag.
 var scannerNeedsTimeout = map[string]bool{
-	"nikto":  true,
-	"amass":  true,
+	"nikto":   true,
+	"amass":   true,
 	"masscan": true,
 }
 
@@ -2049,9 +2110,10 @@ func highlightPlaceholders(cmd, yellow, dim, reset string) string {
 
 // previewFill substitutes every {{NAME:type:default}} in cmd with
 // (in order):
-//   session-var value  →  green
-//   declared default    →  green
-//   <?NAME?>            →  red   (also counts toward missing)
+//
+//	session-var value  →  green
+//	declared default    →  green
+//	<?NAME?>            →  red   (also counts toward missing)
 //
 // Returns (rendered, missingCount). Optional blocks are left
 // intact — the preview shows the pre-optional shape.
