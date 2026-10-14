@@ -27,6 +27,7 @@ import (
 	"github.com/0xDTC/0xq/internal/config"
 	"github.com/0xDTC/0xq/internal/executor"
 	"github.com/0xDTC/0xq/internal/fill"
+	"github.com/0xDTC/0xq/internal/groups"
 	"github.com/0xDTC/0xq/internal/index"
 	"github.com/0xDTC/0xq/internal/nexthint"
 	"github.com/0xDTC/0xq/internal/parser"
@@ -145,6 +146,13 @@ type interactiveFilter struct {
 	Risk     string
 	Tag      string
 	Platform string
+	// Group narrows to one of the top-level groups defined in
+	// internal/groups (e.g. "AD", "Web", "System"). Empty = no
+	// group filter (either skipped via --all or user Esc'd the
+	// group picker). SkipGroupPicker suppresses the interactive
+	// group picker entirely — set by --all.
+	Group           string
+	SkipGroupPicker bool
 }
 
 // extractPickerFilters walks args, pulls out any --phase/--risk/--tag/
@@ -178,6 +186,11 @@ func extractPickerFilters(args []string) ([]string, interactiveFilter) {
 			filter.Tag = strings.ToLower(takeNext())
 		case "--platform":
 			filter.Platform = strings.ToLower(takeNext())
+		case "--group":
+			filter.Group = takeNext()
+			filter.SkipGroupPicker = true
+		case "--all":
+			filter.SkipGroupPicker = true
 		default:
 			out = append(out, a)
 		}
@@ -225,6 +238,8 @@ USAGE
     q --help | -h
 
 FILTERS  (prepend to any picker/query invocation)
+    --group X                skip group picker, narrow to group (Global|AD|Web|System|Post|Passwords|Cloud|Wireless)
+    --all                    skip group picker, show every command
     --phase X                narrow to phase (recon|enum|attack|post|dfir|...)
     --risk X                 narrow to risk  (low|medium|high|safe)
     --tag X                  narrow to entries whose tags contain X (substring)
@@ -279,6 +294,58 @@ ENV
 //
 // filter narrows the row set BEFORE fuzzy search (metadata restrict).
 // Empty-fields filter = no restriction (behaviour identical to before).
+// pickerPrompt renders the main picker's prompt, embedding the active
+// group name when one is selected (e.g. "q [AD]> "). Empty group → the
+// bare "q> " prompt, unchanged from before.
+func pickerPrompt(g *groups.Group) string {
+	if g == nil {
+		return "q> "
+	}
+	return "q [" + g.Name + "]> "
+}
+
+// showGroupPicker prompts the user to pick one of the top-level groups
+// defined in internal/groups. Returns the chosen group (nil if the
+// user hit Esc — "all"). Row counts per group are computed from the
+// current entries so empty groups are hidden.
+func showGroupPicker(entries []index.Entry) (*groups.Group, error) {
+	counts := map[string]int{}
+	for _, e := range entries {
+		counts[strings.ToLower(e.Category)]++
+	}
+	var rows []tui.Row
+	for i := range groups.Defaults {
+		g := &groups.Defaults[i]
+		total := 0
+		for _, d := range g.Dirs {
+			total += counts[strings.ToLower(d)]
+		}
+		if total == 0 {
+			continue
+		}
+		rows = append(rows, tui.Row{
+			Display: fmt.Sprintf("%-10s  %4d  %s", g.Name, total, g.Hint),
+			Search:  g.Name + " " + g.Hint,
+			Rank:    i,
+			Payload: g,
+		})
+	}
+	res, err := tui.Show(tui.Options{
+		Prompt:   "group> ",
+		Header:   "pick a category  Enter=select  Esc=all commands",
+		Rows:     rows,
+		NoMarker: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Cancelled || res.Selected == nil {
+		return nil, nil
+	}
+	g, _ := res.Selected.Payload.(*groups.Group)
+	return g, nil
+}
+
 func interactive(query string, inline bool, filter interactiveFilter) error {
 	env, err := config.Load()
 	if err != nil {
@@ -294,6 +361,22 @@ func interactive(query string, inline bool, filter interactiveFilter) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// Interactive group picker — fires only when the user didn't pass
+	// --group / --all and didn't type a query. A typed query means they
+	// know what they're looking for; skip the extra step.
+	var chosenGroup *groups.Group
+	if filter.Group != "" {
+		if g, ok := groups.FindByName(filter.Group); ok {
+			chosenGroup = g
+		}
+	} else if !filter.SkipGroupPicker && query == "" {
+		g, err := showGroupPicker(entries)
+		if err != nil {
+			return err
+		}
+		chosenGroup = g
 	}
 
 	mru := session.MRU(env.DataDir)
@@ -313,6 +396,10 @@ func interactive(query string, inline bool, filter interactiveFilter) error {
 	filtered := 0
 	for _, e := range entries {
 		if !platformOK(e.Platform, osFilter) {
+			continue
+		}
+		if chosenGroup != nil && !chosenGroup.Matches(e.Category) {
+			filtered++
 			continue
 		}
 		if !matchesFilter(e, filter) {
@@ -348,7 +435,7 @@ func interactive(query string, inline bool, filter interactiveFilter) error {
 	// some terminals bind it to end-of-line.
 	editAction := func(_ *tui.Row, _ string) (bool, error) { return true, nil }
 	res, err := tui.Show(tui.Options{
-		Prompt:       "q> ",
+		Prompt:       pickerPrompt(chosenGroup),
 		Header:       "★ recent  Enter=run  Ctrl+F/F4=change vars  Ctrl+E/F3=edit file  Esc=quit",
 		Rows:         rows,
 		InitialQuery: query,
