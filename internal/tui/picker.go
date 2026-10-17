@@ -208,9 +208,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			if len(m.filtered) == 0 {
-				// No matches — but the caller may want the typed
-				// query as a custom value. Return it verbatim.
-				m.result.Cancelled = true
+				// No matches — but Enter is an explicit commit,
+				// not a cancel. Return the typed query verbatim
+				// so callers like the fill flow can use it as
+				// the placeholder value. Selected stays nil
+				// (nothing to pick); Cancelled stays false
+				// (Esc / Ctrl+C are the only cancels). Callers
+				// that need "no row selected" check Selected == nil.
 				m.result.Query = string(m.query)
 				return m, tea.Quit
 			}
